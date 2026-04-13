@@ -1,0 +1,315 @@
+{
+  "version": "1.0",
+  "questions": [
+    {
+      "id": 1,
+      "model": "self",
+      "dimension": "self_esteem",
+      "text_zh": "在团队合作中，你通常扮演的角色是？",
+      "text_en": "In a team, what role do you usually play?",
+      "options": [
+        { "key": "A", "text_zh": "主动带领方向，协调分工", "text_en": "Lead the direction and coordinate tasks", "value": "H" },
+        { "key": "B", "text_zh": "配合团队，完成自己的部分", "text_en": "Cooperate and complete my part", "value": "M" },
+        { "key": "C", "text_zh": "默默做事，不主动发言", "text_en": "Work quietly without speaking up", "value": "L" }
+      ]
+    },
+    {
+      "id": 2,
+      "model": "self",
+      "dimension": "self_esteem",
+      "text_zh": "面对他人的批评，你的第一反应是？",
+      "text_en": "How do you react to criticism from others?",
+      "options": [
+        { "key": "A", "text_zh": "理性分析，有用的接受，无用的忽略", "text_en": "Analyze rationally, accept what's useful", "value": "H" },
+        { "key": "B", "text_zh": "有点不舒服，但会反思一下", "text_en": "A bit uncomfortable, but will reflect", "value": "M" },
+        { "key": "C", "text_zh": "很难接受，容易内耗", "text_en": "Hard to accept, tend to overthink", "value": "L" }
+      ]
+    },
+    {
+      "id": 3,
+      "model": "self",
+      "dimension": "self_clarity",
+      "text_zh": "你能清楚地知道自己想要什么吗？",
+      "text_en": "Do you clearly know what you want?",
+      "options": [
+        { "key": "A", "text_zh": "很清晰，有明确的目标和规划", "text_en": "Very clear, with specific goals and plans", "value": "H" },
+        { "key": "B", "text_zh": "大致知道，但偶尔迷茫", "text_en": "Generally know, but occasionally confused", "value": "M" },
+        { "key": "C", "text_zh": "不太确定，经常摇摆", "text_en": "Not sure, often摇摆", "value": "L" }
+      ]
+    },
+    {
+      "id": 4,
+      "model": "self",
+      "dimension": "self_clarity",
+      "text_zh": "当朋友问你对某件事的看法时，你会？",
+      "text_en": "When friends ask your opinion, you would?",
+      "options": [
+        { "key": "A", "text_zh": "直接表达自己的观点，不怕冲突", "text_en": "Express directly, not afraid of conflict", "value": "H" },
+        { "key": "B", "text_zh": "看情况，有时候会委婉一些", "text_en": "Depends, sometimes be tactful", "value": "M" },
+        { "key": "C", "text_zh": "尽量附和别人，避免表达真实想法", "text_en": "Try to agree, avoid expressing real thoughts", "value": "L" }
+      ]
+    },
+    {
+      "id": 5,
+      "model": "self",
+      "dimension": "core_values",
+      "text_zh": "你做事的出发点通常是？",
+      "text_en": "What's your starting point when doing things?",
+      "options": [
+        { "key": "A", "text_zh": "是否符合自己的原则和价值观", "text_en": "Whether it aligns with my principles", "value": "H" },
+        { "key": "B", "text_zh": "综合考虑利弊和他人感受", "text_en": "Consider pros/cons and others' feelings", "value": "M" },
+        { "key": "C", "text_zh": "主要看别人怎么做，跟着走", "text_en": "Follow what others do", "value": "L" }
+      ]
+    },
+    {
+      "id": 6,
+      "model": "emotional",
+      "dimension": "attachment_security",
+      "text_zh": "在亲密关系中，你的安全感主要来自？",
+      "text_en": "In close relationships, your sense of security comes from?",
+      "options": [
+        { "key": "A", "text_zh": "自己内心的稳定，不太依赖对方", "text_en": "Inner stability, not too dependent", "value": "H" },
+        { "key": "B", "text_zh": "双方的沟通和陪伴", "text_en": "Mutual communication and companionship", "value": "M" },
+        { "key": "C", "text_zh": "对方时刻的回应和确认", "text_en": "Constant responses and reassurance", "value": "L" }
+      ]
+    },
+    {
+      "id": 7,
+      "model": "emotional",
+      "dimension": "emotional_investment",
+      "text_zh": "当朋友向你倾诉烦恼时，你会？",
+      "text_en": "When friends share their troubles, you?",
+      "options": [
+        { "key": "A", "text_zh": "耐心倾听，但不会过度卷入", "text_en": "Listen patiently, don't get too involved", "value": "H" },
+        { "key": "B", "text_zh": "认真共情，有时会被影响心情", "text_en": "Empathize deeply, sometimes affected", "value": "M" },
+        { "key": "C", "text_zh": "完全沉浸其中，比自己还着急", "text_en": "Fully immersed, more anxious than them", "value": "L" }
+      ]
+    },
+    {
+      "id": 8,
+      "model": "emotional",
+      "dimension": "boundaries",
+      "text_zh": "你能接受朋友之间有不同的亲密程度吗？",
+      "text_en": "Can you accept different levels of closeness with friends?",
+      "options": [
+        { "key": "A", "text_zh": "很自然，每个人有不同距离", "text_en": "Natural, different distances for different people", "value": "H" },
+        { "key": "B", "text_zh": "能接受，但偶尔会有点失落", "text_en": "Can accept, but occasionally feel lost", "value": "M" },
+        { "key": "C", "text_zh": "很难接受，希望最好的朋友只对自己最好", "text_en": "Hard to accept, want best friend to only be best with me", "value": "L" }
+      ]
+    },
+    {
+      "id": 9,
+      "model": "emotional",
+      "dimension": "attachment_security",
+      "text_zh": "你在感情中的表现更接近？",
+      "text_en": "How do you behave in relationships?",
+      "options": [
+        { "key": "A", "text_zh": "独立自在，给彼此空间", "text_en": "Independent, give each other space", "value": "H" },
+        { "key": "B", "text_zh": "适度依赖，需要陪伴但不黏人", "text_en": "Moderate dependence, need company but not clingy", "value": "M" },
+        { "key": "C", "text_zh": "容易焦虑，总担心被抛弃", "text_en": "Easily anxious, worry about being abandoned", "value": "L" }
+      ]
+    },
+    {
+      "id": 10,
+      "model": "emotional",
+      "dimension": "boundaries",
+      "text_zh": "你会为了维护关系而委屈自己吗？",
+      "text_en": "Would you委屈 yourself to maintain a relationship?",
+      "options": [
+        { "key": "A", "text_zh": "不会，关系需要双向奔赴", "text_en": "No, relationships need mutual effort", "value": "H" },
+        { "key": "B", "text_zh": "偶尔会，但不想变成习惯", "text_en": "Occasionally, but don't want it to become habit", "value": "M" },
+        { "key": "C", "text_zh": "经常，害怕失去这段关系", "text_en": "Often, afraid of losing the relationship", "value": "L" }
+      ]
+    },
+    {
+      "id": 11,
+      "model": "attitude",
+      "dimension": "worldview",
+      "text_zh": "你对世界的基本看法是？",
+      "text_en": "What's your basic view of the world?",
+      "options": [
+        { "key": "A", "text_zh": "总体上相信人性本善，世界在变好", "text_en": "Believe in human goodness, world is improving", "value": "H" },
+        { "key": "B", "text_zh": "有好有坏，看具体情况", "text_en": "Good and bad, depends on the situation", "value": "M" },
+        { "key": "C", "text_zh": "比较悲观，觉得人性自私", "text_en": "Rather pessimistic, human nature is selfish", "value": "L" }
+      ]
+    },
+    {
+      "id": 12,
+      "model": "attitude",
+      "dimension": "rules_flexibility",
+      "text_zh": "面对规则，你的态度是？",
+      "text_en": "What's your attitude towards rules?",
+      "options": [
+        { "key": "A", "text_zh": "规则是参考，关键看实际情况灵活处理", "text_en": "Rules are reference, handle flexibly", "value": "H" },
+        { "key": "B", "text_zh": "大部分时候遵守，偶尔变通", "text_en": "Follow most of the time, occasionally adapt", "value": "M" },
+        { "key": "C", "text_zh": "严格按规则来，不遵守就会不安", "text_en": "Strictly follow rules, uneasy if not", "value": "L" }
+      ]
+    },
+    {
+      "id": 13,
+      "model": "attitude",
+      "dimension": "sense_of_purpose",
+      "text_zh": "你做事的目标感强吗？",
+      "text_en": "Do you have a strong sense of purpose?",
+      "options": [
+        { "key": "A", "text_zh": "很强，有清晰的中长期目标", "text_en": "Very strong, clear medium/long-term goals", "value": "H" },
+        { "key": "B", "text_zh": "有一些短期目标，长期的还在摸索", "text_en": "Some short-term goals, long-term still exploring", "value": "M" },
+        { "key": "C", "text_zh": "随性而为，走一步看一步", "text_en": "Go with the flow, take it step by step", "value": "L" }
+      ]
+    },
+    {
+      "id": 14,
+      "model": "attitude",
+      "dimension": "rules_flexibility",
+      "text_zh": "当计划被打乱时，你会？",
+      "text_en": "When plans are disrupted, you?",
+      "options": [
+        { "key": "A", "text_zh": "快速调整，重新制定方案", "text_en": "Quickly adjust and make a new plan", "value": "H" },
+        { "key": "B", "text_zh": "有点烦躁，但能慢慢适应", "text_en": "A bit frustrated, but can adapt slowly", "value": "M" },
+        { "key": "C", "text_zh": "很焦虑，不知道该怎么办", "text_en": "Very anxious, don't know what to do", "value": "L" }
+      ]
+    },
+    {
+      "id": 15,
+      "model": "attitude",
+      "dimension": "worldview",
+      "text_zh": "你做选择时更看重？",
+      "text_en": "When making choices, you value more?",
+      "options": [
+        { "key": "A", "text_zh": "这件事有没有意义、有没有价值", "text_en": "Whether it's meaningful and valuable", "value": "H" },
+        { "key": "B", "text_zh": "性价比和实际收益", "text_en": "Cost-effectiveness and actual returns", "value": "M" },
+        { "key": "C", "text_zh": "别人怎么看，会不会被认可", "text_en": "What others think, whether approved", "value": "L" }
+      ]
+    },
+    {
+      "id": 16,
+      "model": "action",
+      "dimension": "motivation",
+      "text_zh": "你做事的动力主要来自？",
+      "text_en": "Where does your motivation mainly come from?",
+      "options": [
+        { "key": "A", "text_zh": "内在兴趣和热情驱动", "text_en": "Inner interest and passion", "value": "H" },
+        { "key": "B", "text_zh": "外部奖励和目标驱动", "text_en": "External rewards and goals", "value": "M" },
+        { "key": "C", "text_zh": "别人的期待和压力驱动", "text_en": "Others' expectations and pressure", "value": "L" }
+      ]
+    },
+    {
+      "id": 17,
+      "model": "action",
+      "dimension": "decision_style",
+      "text_zh": "面对重要决策，你的方式是？",
+      "text_en": "How do you handle important decisions?",
+      "options": [
+        { "key": "A", "text_zh": "快速分析利弊，果断拍板", "text_en": "Quick analysis, decisive", "value": "H" },
+        { "key": "B", "text_zh": "深思熟虑，综合多方意见", "text_en": "Think carefully, integrate opinions", "value": "M" },
+        { "key": "C", "text_zh": "犹豫不决，容易反复", "text_en": "Hesitant, easy to go back and forth", "value": "L" }
+      ]
+    },
+    {
+      "id": 18,
+      "model": "action",
+      "dimension": "execution",
+      "text_zh": "想到一个好主意后，你会？",
+      "text_en": "After having a good idea, you?",
+      "options": [
+        { "key": "A", "text_zh": "马上动手，边做边调整", "text_en": "Start immediately, adjust as I go", "value": "H" },
+        { "key": "B", "text_zh": "先规划一下，再开始执行", "text_en": "Plan first, then execute", "value": "M" },
+        { "key": "C", "text_zh": "想想而已，真正行动的不多", "text_en": "Just think about it, rarely take action", "value": "L" }
+      ]
+    },
+    {
+      "id": 19,
+      "model": "action",
+      "dimension": "execution",
+      "text_zh": "你更喜欢哪种工作状态？",
+      "text_en": "Which work style do you prefer?",
+      "options": [
+        { "key": "A", "text_zh": "高效冲刺，短时间集中产出", "text_en": "Efficient sprints, focused output", "value": "H" },
+        { "key": "B", "text_zh": "稳步前进，保持匀速", "text_en": "Steady progress, maintain pace", "value": "M" },
+        { "key": "C", "text_zh": "间歇性爆发，经常拖延", "text_en": "Intermittent bursts, often procrastinate", "value": "L" }
+      ]
+    },
+    {
+      "id": 20,
+      "model": "action",
+      "dimension": "decision_style",
+      "text_zh": "你做决策时更依赖？",
+      "text_en": "When making decisions, you rely more on?",
+      "options": [
+        { "key": "A", "text_zh": "直觉 + 数据，两者结合", "text_en": "Intuition + data, both combined", "value": "H" },
+        { "key": "B", "text_zh": "理性分析，多方验证", "text_en": "Rational analysis, verify from multiple angles", "value": "M" },
+        { "key": "C", "text_zh": "别人的建议，怕自己判断错", "text_en": "Others' advice, afraid of wrong judgment", "value": "L" }
+      ]
+    },
+    {
+      "id": 21,
+      "model": "social",
+      "dimension": "social_initiative",
+      "text_zh": "在社交场合中，你通常是？",
+      "text_en": "At social events, you usually?",
+      "options": [
+        { "key": "A", "text_zh": "主动破冰，自然地和陌生人聊天", "text_en": "Initiate conversations, chat naturally with strangers", "value": "H" },
+        { "key": "B", "text_zh": "有人搭话就聊，不太主动", "text_en": "Chat when approached, not very proactive", "value": "M" },
+        { "key": "C", "text_zh": "躲在角落，希望没人注意到我", "text_en": "Hide in corner, hope no one notices me", "value": "L" }
+      ]
+    },
+    {
+      "id": 22,
+      "model": "social",
+      "dimension": "interpersonal_boundaries",
+      "text_zh": "你和朋友之间的界限感如何？",
+      "text_en": "How are your boundaries with friends?",
+      "options": [
+        { "key": "A", "text_zh": "清晰明确，尊重彼此隐私", "text_en": "Clear and definite, respect each other's privacy", "value": "H" },
+        { "key": "B", "text_zh": "比较近，但不过度干涉", "text_en": "Relatively close, but don't over-interfere", "value": "M" },
+        { "key": "C", "text_zh": "很模糊，喜欢了解朋友的一切", "text_en": "Very blurry, like to know everything about friends", "value": "L" }
+      ]
+    },
+    {
+      "id": 23,
+      "model": "social",
+      "dimension": "expression",
+      "text_zh": "你表达自我的方式是？",
+      "text_en": "How do you express yourself?",
+      "options": [
+        { "key": "A", "text_zh": "真实直接，不伪装自己", "text_en": "Authentic and direct, no disguise", "value": "H" },
+        { "key": "B", "text_zh": "看场合和对象适度调整", "text_en": "Adjust moderately based on context", "value": "M" },
+        { "key": "C", "text_zh": "经常隐藏真实想法，怕被评判", "text_en": "Often hide real thoughts, fear judgment", "value": "L" }
+      ]
+    },
+    {
+      "id": 24,
+      "model": "social",
+      "dimension": "social_initiative",
+      "text_zh": "你对社交的态度是？",
+      "text_en": "What's your attitude towards socializing?",
+      "options": [
+        { "key": "A", "text_zh": "享受社交，能从社交中获得能量", "text_en": "Enjoy socializing, gain energy from it", "value": "H" },
+        { "key": "B", "text_zh": "可以社交，但需要独处恢复", "text_en": "Can socialize, but need alone time to recover", "value": "M" },
+        { "key": "C", "text_zh": "能免则免，社交消耗太大", "text_en": "Avoid if possible, too draining", "value": "L" }
+      ]
+    },
+    {
+      "id": 25,
+      "model": "social",
+      "dimension": "expression",
+      "text_zh": "你在社交媒体上的表现？",
+      "text_en": "How do you behave on social media?",
+      "options": [
+        { "key": "A", "text_zh": "和现实中差不多，比较真实", "text_en": "Similar to real life, quite authentic", "value": "H" },
+        { "key": "B", "text_zh": "经过一定包装，但不离谱", "text_en": "Some packaging, but not outrageous", "value": "M" },
+        { "key": "C", "text_zh": "精心经营人设，和本人有差距", "text_en": "Carefully curated persona, differs from real self", "value": "L" }
+      ]
+    }
+  ],
+  "hidden_question": {
+    "id": 26,
+    "text_zh": "周末深夜独处时，你通常会？",
+    "text_en": "What do you usually do alone on weekend late nights?",
+    "options": [
+      { "key": "A", "text_zh": "看书、学习、做自己的事", "text_en": "Read, study, do my own thing" },
+      { "key": "B", "text_zh": "刷手机、追剧、放松一下", "text_en": "Scroll phone, binge shows, relax" },
+      { "key": "C", "text_zh": "约朋友喝酒/聚会 🍺", "text_en": "Meet friends for drinks/party 🍺", "triggers_hidden": true }
+    ]
+  }
+}
