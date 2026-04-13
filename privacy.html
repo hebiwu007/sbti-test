@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>隐私政策 - SBTI 人格测试</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: 'Inter', 'Noto Sans SC', sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <div class="max-w-2xl mx-auto px-4 py-8">
+    <div class="bg-white rounded-2xl p-6 shadow-lg mb-6">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">隐私政策</h1>
+        <button onclick="toggleLang()" class="px-3 py-1 border border-purple-300 rounded-full text-purple-500 hover:bg-purple-50 text-sm">
+          EN
+        </button>
+      </div>
+      
+      <div class="prose max-w-none text-gray-600 space-y-4">
+        <h2 class="text-lg font-semibold text-gray-800">数据收集</h2>
+        <p>SBTI 人格测试仅收集您在答题过程中产生的匿名答案数据。这些数据仅用于计算您的测试结果，不包含任何可识别个人身份的信息。</p>
+        
+        <h2 class="text-lg font-semibold text-gray-800">数据使用</h2>
+        <p>您的答案数据仅用于：
+        <ul class="list-disc pl-5 mt-2 space-y-1">
+          <li>计算并展示您的测试结果</li>
+          <li>生成匿名统计数据（测试总数等）</li>
+          <li>改进测试题目质量</li>
+        </ul>
+        </p>
+        
+        <h2 class="text-lg font-semibold text-gray-800">数据存储</h2>
+        <p>您的答案数据仅存储在您本地设备的浏览器中（localStorage）。我们不会将您的数据上传到任何服务器。</p>
+        
+        <h2 class="text-lg font-semibold text-gray-800">Cookie 与追踪</h2>
+        <p>我们不使用 Cookie，不进行任何形式的用户追踪。</p>
+        
+        <h2 class="text-lg font-semibold text-gray-800">数据删除</h2>
+        <p>您可以随时删除本地存储的数据。点击下方按钮将清除所有本地数据。</p>
+        
+        <button onclick="deleteData()" class="mt-4 px-6 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition">
+          删除我的数据
+        </button>
+        <p id="deleteMsg" class="mt-2 text-green-600 hidden">数据已删除</p>
+      </div>
+    </div>
+    
+    <a href="index.html" class="block text-center text-purple-500 hover:text-purple-700">
+      ← 返回测试
+    </a>
+  </div>
+  
+  <script>
+    let lang = 'zh';
+    
+    function toggleLang() {
+      lang = lang === 'zh' ? 'en' : 'zh';
+      render();
+    }
+    
+    function deleteData() {
+      localStorage.removeItem('sbti_test_count');
+      // Keep language preference
+      const savedLang = localStorage.getItem('sbti_lang');
+      localStorage.clear();
+      if (savedLang) localStorage.setItem('sbti_lang', savedLang);
+      
+      document.getElementById('deleteMsg').classList.remove('hidden');
+      setTimeout(() => {
+        document.getElementById('deleteMsg').classList.add('hidden');
+      }, 3000);
+    }
+    
+    function render() {
+      const content = lang === 'zh' ? {
+        title: '隐私政策',
+        sections: [
+          { title: '数据收集', text: 'SBTI 人格测试仅收集您在答题过程中产生的匿名答案数据。这些数据仅用于计算您的测试结果，不包含任何可识别个人身份的信息。' },
+          { title: '数据使用', text: '您的答案数据仅用于：计算并展示您的测试结果；生成匿名统计数据（测试总数等）；改进测试题目质量。' },
+          { title: '数据存储', text: '您的答案数据仅存储在您本地设备的浏览器中（localStorage）。我们不会将您的数据上传到任何服务器。' },
+          { title: 'Cookie 与追踪', text: '我们不使用 Cookie，不进行任何形式的用户追踪。' },
+          { title: '数据删除', text: '您可以随时删除本地存储的数据。点击下方按钮将清除所有本地数据。' }
+        ],
+        deleteBtn: '删除我的数据',
+        back: '← 返回测试'
+      } : {
+        title: 'Privacy Policy',
+        sections: [
+          { title: 'Data Collection', text: 'SBTI Personality Test only collects anonymous answer data generated during your test. This data is used solely to calculate your test results and does not contain any personally identifiable information.' },
+          { title: 'Data Usage', text: 'Your answer data is used only for: calculating and displaying your test results; generating anonymous statistics (total tests, etc.); improving test question quality.' },
+          { title: 'Data Storage', text: 'Your answer data is stored only in your local device browser (localStorage). We do not upload your data to any server.' },
+          { title: 'Cookies & Tracking', text: 'We do not use cookies and do not perform any form of user tracking.' },
+          { title: 'Data Deletion', text: 'You can delete locally stored data at any time. Clicking the button below will clear all local data.' }
+        ],
+        deleteBtn: 'Delete My Data',
+        back: '← Back to Test'
+      };
+      
+      document.querySelector('h1').textContent = content.title;
+      document.querySelector('button').textContent = lang === 'zh' ? 'EN' : '中文';
+      document.querySelector('button').onclick = toggleLang;
+      document.querySelector('a').textContent = content.back;
+      document.querySelector('button[type="button"]').textContent = content.deleteBtn;
+      
+      // Update content
+      const prose = document.querySelector('.prose');
+      prose.innerHTML = content.sections.map(s => `
+        <h2 class="text-lg font-semibold text-gray-800">${s.title}</h2>
+        <p>${s.text}</p>
+      `).join('');
+    }
+  </script>
+</body>
+</html>
