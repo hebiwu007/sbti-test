@@ -110,9 +110,9 @@ function renderLanding() {
   app.innerHTML = `
     <div class="min-h-screen flex flex-col items-center justify-center px-4 bg-gradient-to-b from-cream to-white">
       <div class="text-center max-w-md mx-auto">
-        <h1 class="text-4xl font-bold text-purple-600 mb-4">${t('app_title')}</h1>
-        <p class="text-xl text-gray-600 mb-8">${t('app_subtitle')}</p>
-        <button onclick="startQuiz()" class="px-8 py-4 bg-purple-600 text-white rounded-full text-lg font-medium hover:bg-purple-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+        <h1 class="text-4xl md:text-5xl font-bold text-purple-600 mb-4">${t('app_title')}</h1>
+        <p class="text-xl md:text-2xl text-gray-600 mb-8">${t('app_subtitle')}</p>
+        <button onclick="startQuiz()" class="px-8 py-4 md:px-10 md:py-5 bg-purple-600 text-white rounded-full text-lg md:text-xl font-medium hover:bg-purple-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-1 active:scale-95">
           ${t('start_btn')}
         </button>
         <p class="mt-6 text-gray-500 text-sm">
@@ -152,19 +152,19 @@ function renderQuiz() {
       </div>
       <div class="flex-1 flex flex-col items-center justify-center px-4 py-8">
         <div class="w-full max-w-md">
-          <p class="text-purple-500 font-medium mb-4">
+          <p class="text-purple-500 font-medium mb-4 text-base md:text-lg">
             ${t('question_prefix')}${currentQuestion + 1}${t('question_suffix')}
           </p>
-          <h2 class="text-2xl font-bold text-gray-800 mb-8 text-center">
+          <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-8 text-center">
             ${lang === 'zh' ? q.text_zh : q.text_en}
           </h2>
           <div class="space-y-3">
             ${q.options.map((opt, i) => `
               <button onclick="selectAnswer(${currentQuestion}, '${opt.value}')" 
-                class="w-full p-4 text-left border-2 rounded-xl transition-all duration-200 hover:border-purple-400 hover:bg-purple-50 ${answers[currentQuestion] === opt.value ? 'border-purple-500 bg-purple-100' : 'border-gray-200 bg-white'}"
+                class="w-full p-5 md:p-4 text-left border-2 rounded-2xl md:rounded-xl transition-all duration-200 hover:border-purple-400 hover:bg-purple-50 active:scale-[0.98] ${answers[currentQuestion] === opt.value ? 'border-purple-500 bg-purple-100' : 'border-gray-200 bg-white'}"
                 style="${answers[currentQuestion] === opt.value ? 'border-color: #8B5CF6' : ''}">
-                <span class="inline-block w-8 h-8 rounded-full bg-purple-100 text-purple-600 font-bold text-center leading-8 mr-3">${opt.key}</span>
-                <span class="text-gray-700">${lang === 'zh' ? opt.text_zh : opt.text_en}</span>
+                <span class="inline-block w-10 h-10 md:w-8 md:h-8 rounded-full bg-purple-100 text-purple-600 font-bold text-center leading-10 md:leading-8 mr-3 text-lg md:text-base">${opt.key}</span>
+                <span class="text-gray-700 text-base md:text-lg">${lang === 'zh' ? opt.text_zh : opt.text_en}</span>
               </button>
             `).join('')}
           </div>
@@ -172,11 +172,11 @@ function renderQuiz() {
       </div>
       <div class="p-4 flex justify-between max-w-md mx-auto w-full">
         <button onclick="prevQuestion()" ${currentQuestion === 0 ? 'disabled' : ''} 
-          class="px-6 py-3 rounded-full border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+          class="px-6 py-3 md:px-8 md:py-4 rounded-full border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-base md:text-lg">
           ${t('prev_btn')}
         </button>
         <button onclick="nextQuestion()" ${!answers[currentQuestion] ? 'disabled' : ''}
-          class="px-6 py-3 rounded-full bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed">
+          class="px-6 py-3 md:px-8 md:py-4 rounded-full bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-base md:text-lg">
           ${currentQuestion === questions.length - 1 ? t('finish_btn') : t('next_btn')}
         </button>
       </div>
