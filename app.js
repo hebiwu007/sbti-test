@@ -685,4 +685,4 @@ function findMatchedPersonality() {
     }
   }
   return matched;
-}
+}// Cloudflare Pages native GitHub integration - Tue Apr 14 11:14:35 AM CST 2026
