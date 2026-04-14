@@ -82,7 +82,20 @@ const i18n = {
     confirm: "确认",
     cancel: "取消",
     close: "关闭",
-    lang_toggle: "EN"
+    lang_toggle: "EN",
+    
+    // Daily Quiz
+    daily_quiz: "每日一测",
+    daily_quiz_title: "今日情境题",
+    daily_quiz_desc: "每天一道情境题，了解你的选择倾向",
+    submit_answer: "提交答案",
+    already_answered: "今日已参与",
+    daily_stats: "今日统计",
+    answer_distribution: "答案分布",
+    people_answered: "人已参与",
+    view_your_answer: "查看我的答案",
+    streak_days: "连续参与天数",
+    total_participants: "总参与人数"
   },
   
   en: {
@@ -167,7 +180,20 @@ const i18n = {
     confirm: "Confirm",
     cancel: "Cancel",
     close: "Close",
-    lang_toggle: "中文"
+    lang_toggle: "中文",
+    
+    // Daily Quiz
+    daily_quiz: "Daily Quiz",
+    daily_quiz_title: "Today's Situation",
+    daily_quiz_desc: "One question per day to understand your tendencies",
+    submit_answer: "Submit Answer",
+    already_answered: "Already participated today",
+    daily_stats: "Today's Stats",
+    answer_distribution: "Answer Distribution",
+    people_answered: "people answered",
+    view_your_answer: "View My Answer",
+    streak_days: "Streak Days",
+    total_participants: "Total Participants"
   }
 };
 

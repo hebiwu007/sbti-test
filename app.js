@@ -192,10 +192,13 @@ function renderLanding() {
       <div class="text-center max-w-md mx-auto">
         <h1 class="text-4xl md:text-5xl font-bold text-purple-600 mb-4">${t('app_title')}</h1>
         <p class="text-xl md:text-2xl text-gray-600 mb-8">${t('app_subtitle')}</p>
-        <button onclick="startQuiz()" class="px-8 py-4 md:px-10 md:py-5 bg-purple-600 text-white rounded-full text-lg md:text-xl font-medium hover:bg-purple-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-1 active:scale-95">
+        <button onclick="startQuiz()" class="w-full px-8 py-4 md:px-10 md:py-5 bg-purple-600 text-white rounded-full text-lg md:text-xl font-medium hover:bg-purple-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-1 active:scale-95 mb-4">
           ${t('start_btn')}
         </button>
-        <p class="mt-6 text-gray-500 text-sm">
+        <button onclick="showDailyQuiz()" class="w-full px-8 py-4 md:px-10 md:py-5 border-2 border-purple-300 text-purple-600 rounded-full text-lg md:text-xl font-medium hover:bg-purple-50 transition shadow hover:shadow-md active:scale-95 mb-6">
+          ${t('daily_quiz')}
+        </button>
+        <p class="mt-2 text-gray-500 text-sm">
           ${t('test_count_prefix')}<span class="font-bold text-purple-500">${testCount.toLocaleString()}</span>${t('test_count_suffix')}
         </p>
         <a href="privacy.html" class="mt-4 inline-block text-gray-400 hover:text-purple-500 text-sm">${t('privacy_link')}</a>
@@ -205,6 +208,176 @@ function renderLanding() {
       </button>
     </div>
   `;
+}
+
+// Show daily quiz
+function showDailyQuiz() {
+  // 获取今日题目ID（基于日期）
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const todaySeed = parseInt(today.replace(/-/g, '')) % questions.length;
+  const dailyQuestion = questions[todaySeed];
+  
+  // 获取用户今日答案
+  const dailyAnswers = JSON.parse(localStorage.getItem('sbti_daily_answers') || '{}');
+  const todayAnswer = dailyAnswers[today];
+  
+  // 模拟统计数据
+  const stats = {
+    total: 125 + Math.floor(Math.random() * 50),
+    distribution: [
+      { option: 'A', count: 45 + Math.floor(Math.random() * 30), percent: 0 },
+      { option: 'B', count: 35 + Math.floor(Math.random() * 25), percent: 0 },
+      { option: 'C', count: 25 + Math.floor(Math.random() * 20), percent: 0 }
+    ],
+    streak: parseInt(localStorage.getItem('sbti_daily_streak') || '0')
+  };
+  
+  // 计算百分比
+  const totalCount = stats.distribution.reduce((sum, d) => sum + d.count, 0);
+  stats.distribution.forEach(d => {
+    d.percent = Math.round((d.count / totalCount) * 100);
+  });
+  
+  const modal = document.createElement('div');
+  modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto';
+  modal.innerHTML = `
+    <div class="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-auto">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-6">
+          <div>
+            <h2 class="text-2xl font-bold text-purple-600">${t('daily_quiz')}</h2>
+            <p class="text-gray-500 text-sm mt-1">${today}</p>
+          </div>
+          <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600 text-2xl">
+            ✕
+          </button>
+        </div>
+        
+        ${todayAnswer ? `
+          <!-- 已参与 -->
+          <div class="mb-6">
+            <div class="bg-green-50 border border-green-200 rounded-xl p-5 mb-4">
+              <div class="flex items-center">
+                <div class="text-green-500 text-2xl mr-3">✓</div>
+                <div>
+                  <h3 class="font-bold text-green-700">${t('already_answered')}</h3>
+                  <p class="text-green-600 text-sm">${t('view_your_answer')}: <span class="font-bold">${todayAnswer}</span></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ` : `
+          <!-- 今日题目 -->
+          <div class="mb-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">${t('daily_quiz_title')}</h3>
+            <p class="text-gray-700 leading-relaxed mb-6">${lang === 'zh' ? dailyQuestion.text_zh : dailyQuestion.text_en}</p>
+            
+            <div class="space-y-3 mb-6">
+              ${dailyQuestion.options.map(opt => `
+                <button 
+                  onclick="submitDailyAnswer('${today}', '${opt.key}')"
+                  class="w-full p-4 border-2 border-gray-200 rounded-xl text-left hover:border-purple-400 hover:bg-purple-50 transition flex items-center justify-between"
+                >
+                  <div>
+                    <div class="font-medium text-gray-800">${opt.key}. ${lang === 'zh' ? opt.text_zh : opt.text_en}</div>
+                  </div>
+                  <div class="w-6 h-6 rounded-full border-2 border-gray-300"></div>
+                </button>
+              `).join('')}
+            </div>
+          </div>
+        `}
+        
+        <!-- 统计数据 -->
+        <div class="bg-gray-50 rounded-xl p-5 mb-4">
+          <h3 class="font-bold text-gray-800 mb-4">${t('daily_stats')}</h3>
+          
+          <div class="space-y-4">
+            <div>
+              <div class="flex justify-between text-sm text-gray-600 mb-1">
+                <span>${t('total_participants')}</span>
+                <span class="font-bold">${stats.total} ${t('people_answered')}</span>
+              </div>
+            </div>
+            
+            <div>
+              <div class="flex justify-between text-sm text-gray-600 mb-2">
+                <span>${t('streak_days')}</span>
+                <span class="font-bold text-purple-600">${stats.streak}</span>
+              </div>
+            </div>
+            
+            <div>
+              <h4 class="text-sm font-medium text-gray-600 mb-2">${t('answer_distribution')}</h4>
+              <div class="space-y-2">
+                ${stats.distribution.map(d => `
+                  <div class="flex items-center space-x-3">
+                    <div class="w-10 text-center font-medium text-gray-700">${d.option}</div>
+                    <div class="flex-1">
+                      <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
+                        <div class="h-full bg-purple-500 rounded-full" style="width: ${d.percent}%"></div>
+                      </div>
+                    </div>
+                    <div class="w-12 text-right text-sm text-gray-600">${d.percent}%</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="text-center">
+          <button 
+            onclick="this.closest('.fixed').remove(); ${todayAnswer ? 'showDailyQuiz()' : ''}"
+            class="px-6 py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition"
+          >
+            ${todayAnswer ? t('close') : t('cancel')}
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+// Submit daily answer
+function submitDailyAnswer(date, answer) {
+  // 保存答案
+  const dailyAnswers = JSON.parse(localStorage.getItem('sbti_daily_answers') || '{}');
+  dailyAnswers[date] = answer;
+  localStorage.setItem('sbti_daily_answers', JSON.stringify(dailyAnswers));
+  
+  // 更新连续天数
+  const streak = parseInt(localStorage.getItem('sbti_daily_streak') || '0');
+  const lastDate = localStorage.getItem('sbti_daily_last_date');
+  const today = new Date().toISOString().split('T')[0];
+  
+  if (lastDate === today) {
+    // 今天已经提交过，不增加
+  } else if (lastDate && isConsecutiveDay(lastDate, today)) {
+    localStorage.setItem('sbti_daily_streak', (streak + 1).toString());
+  } else {
+    localStorage.setItem('sbti_daily_streak', '1');
+  }
+  
+  localStorage.setItem('sbti_daily_last_date', today);
+  
+  // 关闭模态框并重新打开
+  const modal = document.querySelector('.fixed.inset-0.bg-black');
+  if (modal) modal.remove();
+  
+  setTimeout(() => {
+    showDailyQuiz();
+  }, 300);
+}
+
+// Check if two dates are consecutive
+function isConsecutiveDay(date1, date2) {
+  const d1 = new Date(date1);
+  const d2 = new Date(date2);
+  const diffTime = Math.abs(d2 - d1);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays === 1;
 }
 
 // Start quiz
