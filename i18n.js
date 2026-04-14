@@ -32,6 +32,12 @@ const i18n = {
     share_title: "我的SBTI人格类型",
     share_text_prefix: "我的SBTI人格是",
     share_text_suffix: "，快来测测你的！",
+    share_templates: [
+      "{prefix} {code}（{name}）{suffix}\n{url}",
+      "居然是{code}！{tagline}\n你也来试试 👉 {url}",
+      "{code} - {name}\n{desc}\n测测你是哪个 → {url}",
+      "这个人格测试太准了！我是{code}({name})\n{tagline}\n{url}"
+    ],
     restart_btn: "再次测试",
     match_score: "匹配度",
     
@@ -131,7 +137,20 @@ const i18n = {
     medium_similarity: "中度相似",
     low_similarity: "差异较大",
     generate_compare_card: "生成对比卡片",
-    no_comparison: "暂无对比数据"
+    no_comparison: "暂无对比数据",
+
+    // Ranking submit
+    submit_to_ranking: "提交到排行榜",
+    ranking_nickname: "昵称",
+    ranking_signature: "一句话签名（选填）",
+    ranking_submit_btn: "提交",
+    ranking_success: "提交成功！",
+    your_guest_code: "你的临时码",
+    your_rank: "你在该类型的排名",
+    view_type_ranking: "查看排名",
+    submit_ranking_desc: "输入昵称提交到排行榜，凭临时码可查看排名",
+    nickname_required: "请输入昵称",
+    nickname_too_long: "昵称最多16个字符"
   },
   
   en: {
@@ -166,6 +185,12 @@ const i18n = {
     share_title: "My SBTI Personality Type",
     share_text_prefix: "My SBTI type is",
     share_text_suffix: ". Take the test to find yours!",
+    share_templates: [
+      "{prefix} {code} ({name}){suffix}\n{url}",
+      "I got {code}! {tagline}\nTry it yourself 👉 {url}",
+      "{code} - {name}\n{desc}\nTake the test → {url}",
+      "This personality test is spot on! I'm {code} ({name})\n{tagline}\n{url}"
+    ],
     restart_btn: "Test Again",
     match_score: "Match Rate",
     
@@ -265,7 +290,20 @@ const i18n = {
     medium_similarity: "Medium Similarity",
     low_similarity: "Low Similarity",
     generate_compare_card: "Generate Comparison Card",
-    no_comparison: "No comparison data"
+    no_comparison: "No comparison data",
+
+    // Ranking submit
+    submit_to_ranking: "Submit to Leaderboard",
+    ranking_nickname: "Nickname",
+    ranking_signature: "One-line signature (optional)",
+    ranking_submit_btn: "Submit",
+    ranking_success: "Submitted successfully!",
+    your_guest_code: "Your guest code",
+    your_rank: "Your rank in this type",
+    view_type_ranking: "View Rankings",
+    submit_ranking_desc: "Enter a nickname to join the leaderboard. Use your guest code to check your rank later.",
+    nickname_required: "Please enter a nickname",
+    nickname_too_long: "Nickname must be 16 characters or less"
   }
 };
 

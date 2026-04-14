@@ -49,6 +49,14 @@ export default {
       if (path === '/api/count' && request.method === 'GET')
         return await handleCount(env, corsHeaders);
 
+      // Daily quiz - submit answer
+      if (path === '/api/daily/submit' && request.method === 'POST')
+        return await handleDailySubmit(request, env, corsHeaders);
+
+      // Daily quiz - get stats
+      if (path === '/api/daily/stats' && request.method === 'GET')
+        return await handleDailyStats(request, env, corsHeaders);
+
       return new Response(JSON.stringify({ error: 'Not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -92,6 +100,16 @@ async function handleInit(env, h) {
   try { await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_rk_personality ON rankings(personality_code)').run(); } catch(e) {}
   try { await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_rk_score ON rankings(match_score DESC)').run(); } catch(e) {}
   try { await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_rk_guest ON rankings(guest_code)').run(); } catch(e) {}
+
+  // daily_quiz table
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS daily_quiz (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    guest_code TEXT,
+    quiz_date TEXT NOT NULL,
+    answer TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`).run();
+  try { await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_dq_date ON daily_quiz(quiz_date)').run(); } catch(e) {}
 
   return json({ success: true, message: 'Database v2 initialized' }, h);
 }
@@ -236,6 +254,46 @@ async function handleCount(env, h) {
   const today = await env.DB.prepare("SELECT COUNT(*) as c FROM test_results WHERE created_at >= date('now')").first();
   const ranked = await env.DB.prepare('SELECT COUNT(*) as total FROM rankings').first();
   return json({ total: total.total, today: today.c, ranked: ranked.total }, h);
+}
+
+// ============ Daily Quiz ============
+async function handleDailySubmit(request, env, h) {
+  const body = await request.json();
+  const { quiz_date, answer, guest_code } = body;
+  if (!quiz_date || !answer) return json({ error: 'quiz_date and answer required' }, h, 400);
+
+  // Check if already answered today
+  const existing = await env.DB.prepare(
+    'SELECT id FROM daily_quiz WHERE guest_code = ? AND quiz_date = ?'
+  ).bind(guest_code || '__none__', quiz_date).first();
+
+  if (existing) return json({ error: 'already answered', already: true }, h);
+
+  await env.DB.prepare(
+    'INSERT INTO daily_quiz (guest_code, quiz_date, answer) VALUES (?, ?, ?)'
+  ).bind(guest_code || null, quiz_date, answer).run();
+
+  // Get distribution
+  const stats = await env.DB.prepare(
+    'SELECT answer, COUNT(*) as count FROM daily_quiz WHERE quiz_date = ? GROUP BY answer'
+  ).bind(quiz_date).all();
+
+  return json({ success: true, stats: stats.results }, h);
+}
+
+async function handleDailyStats(request, env, h) {
+  const url = new URL(request.url);
+  const date = url.searchParams.get('date') || new Date().toISOString().split('T')[0];
+
+  const stats = await env.DB.prepare(
+    'SELECT answer, COUNT(*) as count FROM daily_quiz WHERE quiz_date = ? GROUP BY answer'
+  ).bind(date).all();
+
+  const total = await env.DB.prepare(
+    'SELECT COUNT(*) as total FROM daily_quiz WHERE quiz_date = ?'
+  ).bind(date).first();
+
+  return json({ date, total: total.total, distribution: stats.results }, h);
 }
 
 // ============ Helpers ============

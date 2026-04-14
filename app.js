@@ -290,7 +290,7 @@ function renderLanding(refCode) {
 }
 
 // Show daily quiz
-function showDailyQuiz() {
+async function showDailyQuiz() {
   // 获取今日题目ID（基于日期）
   const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
   const todaySeed = parseInt(today.replace(/-/g, '')) % questions.length;
@@ -300,16 +300,41 @@ function showDailyQuiz() {
   const dailyAnswers = JSON.parse(localStorage.getItem('sbti_daily_answers') || '{}');
   const todayAnswer = dailyAnswers[today];
   
-  // 模拟统计数据
-  const stats = {
-    total: 125 + Math.floor(Math.random() * 50),
-    distribution: [
-      { option: 'A', count: 45 + Math.floor(Math.random() * 30), percent: 0 },
-      { option: 'B', count: 35 + Math.floor(Math.random() * 25), percent: 0 },
-      { option: 'C', count: 25 + Math.floor(Math.random() * 20), percent: 0 }
-    ],
-    streak: parseInt(localStorage.getItem('sbti_daily_streak') || '0')
-  };
+  // 获取真实统计数据（带 fallback）
+  let stats;
+  try {
+    const res = await fetch(`https://sbti-api.hebiwu007.workers.dev/api/daily/stats?date=${today}`);
+    const data = await res.json();
+    if (data.distribution && data.distribution.length > 0) {
+      stats = {
+        total: data.total || 0,
+        distribution: data.distribution.map(d => ({
+          option: d.answer, count: d.count, percent: 0
+        })),
+        streak: parseInt(localStorage.getItem('sbti_daily_streak') || '0')
+      };
+    } else {
+      stats = {
+        total: data.total || 0,
+        distribution: [
+          { option: 'A', count: 0, percent: 0 },
+          { option: 'B', count: 0, percent: 0 },
+          { option: 'C', count: 0, percent: 0 }
+        ],
+        streak: parseInt(localStorage.getItem('sbti_daily_streak') || '0')
+      };
+    }
+  } catch (e) {
+    stats = {
+      total: 0,
+      distribution: [
+        { option: 'A', count: 0, percent: 0 },
+        { option: 'B', count: 0, percent: 0 },
+        { option: 'C', count: 0, percent: 0 }
+      ],
+      streak: parseInt(localStorage.getItem('sbti_daily_streak') || '0')
+    };
+  }
   
   // 计算百分比
   const totalCount = stats.distribution.reduce((sum, d) => sum + d.count, 0);
@@ -420,8 +445,8 @@ function showDailyQuiz() {
 }
 
 // Submit daily answer
-function submitDailyAnswer(date, answer) {
-  // 保存答案
+async function submitDailyAnswer(date, answer) {
+  // 保存答案本地
   const dailyAnswers = JSON.parse(localStorage.getItem('sbti_daily_answers') || '{}');
   dailyAnswers[date] = answer;
   localStorage.setItem('sbti_daily_answers', JSON.stringify(dailyAnswers));
@@ -440,6 +465,16 @@ function submitDailyAnswer(date, answer) {
   }
   
   localStorage.setItem('sbti_daily_last_date', today);
+
+  // 提交到 API
+  try {
+    const guestCode = localStorage.getItem('sbti_guest_code') || null;
+    await fetch('https://sbti-api.hebiwu007.workers.dev/api/daily/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ quiz_date: date, answer, guest_code: guestCode })
+    });
+  } catch (e) { /* silent */ }
   
   // 关闭模态框并重新打开
   const modal = document.querySelector('.fixed.inset-0.bg-black');
@@ -610,6 +645,8 @@ function calculateResult(isDrunk) {
       }
     }
     result = matchedPersonality;
+    // Calculate match score: max distance is 50 (25 dims × 2), score = (1 - dist/50) × 100
+    result._matchScore = Math.max(0, Math.round((1 - minDistance / 50) * 1000) / 10);
   }
   
   currentPersonality = result;
@@ -655,6 +692,7 @@ function calculateDistance(pattern1, pattern2) {
 async function submitToLeaderboard(personality) {
   try {
     const mbti = localStorage.getItem('sbti_mbti') || null;
+    const pattern = calculateUserPattern();
     await fetch('https://sbti-api.hebiwu007.workers.dev/api/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -662,7 +700,8 @@ async function submitToLeaderboard(personality) {
         personality_code: personality.code,
         mbti_type: mbti,
         language: lang,
-        pattern: personality.pattern
+        pattern: pattern,
+        match_score: personality._matchScore || null
       })
     });
   } catch (e) { /* silent fail */ }
@@ -702,6 +741,7 @@ function renderResult(personality) {
           <h1 class="text-5xl font-bold mb-2" style="color: ${personality.color}">${personality.code}</h1>
           <h2 class="text-2xl text-gray-700 mb-2">${lang === 'zh' ? personality.name_zh : personality.name_en}</h2>
           <p class="text-lg text-gray-500">${lang === 'zh' ? personality.tagline_zh : personality.tagline_en}</p>
+          ${personality._matchScore ? `<p class=\"mt-2 text-sm font-medium text-purple-500\">${t('match_score')}: ${personality._matchScore}%</p>` : ''}
         </div>
         <div class="bg-white rounded-2xl p-6 shadow-lg mb-6">
           <p class="text-gray-700 leading-relaxed text-center">
@@ -774,6 +814,7 @@ function renderResult(personality) {
           <button onclick="showDetailedAnalysis()" class="py-3 border-2 border-green-500 text-green-600 rounded-full font-medium hover:bg-green-50 transition">${t('detailed_analysis')}</button>
           <button onclick="showComparison()" class="py-3 border-2 border-blue-500 text-blue-600 rounded-full font-medium hover:bg-blue-50 transition">${t('compare')}</button>
           <button onclick="showLeaderboard()" class="col-span-2 py-3 border-2 border-orange-500 text-orange-600 rounded-full font-medium hover:bg-orange-50 transition">${t('leaderboard')}</button>
+          <button onclick="showRankingSubmit()" class="col-span-2 py-3 border-2 border-amber-500 text-amber-600 rounded-full font-medium hover:bg-amber-50 transition">${t('submit_to_ranking')}</button>
           <button onclick="restartQuiz()" class="col-span-2 py-3 border-2 border-purple-300 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${t('restart_btn')}</button>
         </div>
         <a href="privacy.html" class="block text-center text-gray-400 hover:text-purple-500 text-sm mb-4">${t('privacy_link')}</a>
@@ -1094,14 +1135,29 @@ function shareResult() {
   }
 }
 
+// Generate share text from templates
+function getShareText(personality) {
+  const templates = t('share_templates');
+  const template = templates[Math.floor(Math.random() * templates.length)];
+  const url = `${window.location.origin}/?ref=${personality.code}`;
+  const name = lang === 'zh' ? personality.name_zh : personality.name_en;
+  const tagline = lang === 'zh' ? personality.tagline_zh : personality.tagline_en;
+  const desc = (lang === 'zh' ? personality.desc_zh : personality.desc_en).substring(0, 40);
+  return template
+    .replace(/{prefix}/g, t('share_text_prefix'))
+    .replace(/{suffix}/g, t('share_text_suffix'))
+    .replace(/{code}/g, personality.code)
+    .replace(/{name}/g, name)
+    .replace(/{tagline}/g, tagline)
+    .replace(/{desc}/g, desc)
+    .replace(/{url}/g, url);
+}
+
 // Copy share link with personality code
 function copyShareLink() {
   const personality = currentPersonality || findMatchedPersonality();
   if (!personality) return;
-  const url = `${window.location.origin}/?ref=${personality.code}`;
-  const text = lang === 'zh'
-    ? `${t('share_text_prefix')} ${personality.code}（${personality.name_zh}）${t('share_text_suffix')}\n${url}`
-    : `${t('share_text_prefix')} ${personality.code} (${personality.name_en})${t('share_text_suffix')}\n${url}`;
+  const text = getShareText(personality);
   
   if (navigator.clipboard) {
     navigator.clipboard.writeText(text).then(() => {
@@ -1118,9 +1174,7 @@ function shareNative() {
   if (!personality) return;
   const url = `${window.location.origin}/?ref=${personality.code}`;
   const title = t('share_title');
-  const text = lang === 'zh'
-    ? `${t('share_text_prefix')} ${personality.code}（${personality.name_zh}）${t('share_text_suffix')}`
-    : `${t('share_text_prefix')} ${personality.code} (${personality.name_en})${t('share_text_suffix')}`;
+  const text = getShareText(personality);
   
   if (navigator.share) {
     navigator.share({ title, text, url }).catch(() => {});
@@ -1271,6 +1325,179 @@ function shareResultWithMBTI() {
 }
 
 // Show detailed personality analysis
+// Show ranking submit form
+function showRankingSubmit() {
+  const personality = currentPersonality || findMatchedPersonality();
+  if (!personality) return;
+  const avatar = getPersonalityAvatar(personality.code);
+  const existingNickname = localStorage.getItem('sbti_ranking_nickname') || '';
+  const existingGuestCode = localStorage.getItem('sbti_guest_code') || '';
+
+  const modal = document.createElement('div');
+  modal.id = 'rankingModal';
+  modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50';
+  modal.innerHTML = `
+    <div class="bg-white rounded-2xl max-w-md w-full overflow-auto max-h-[90vh]">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-bold text-gray-800">${t('submit_to_ranking')}</h2>
+          <button onclick="document.getElementById('rankingModal').remove()" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+        </div>
+        <div class="flex items-center gap-3 mb-4 p-3 rounded-xl" style="background:${personality.color}10;border:2px solid ${personality.color}">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg" style="background:${personality.color}20;border:2px solid ${personality.color}">${avatar}</div>
+          <div>
+            <div class="font-bold" style="color:${personality.color}">${personality.code} — ${lang === 'zh' ? personality.name_zh : personality.name_en}</div>
+            <div class="text-sm text-gray-500">${personality._matchScore ? t('match_score') + ': ' + personality._matchScore + '%' : ''}</div>
+          </div>
+        </div>
+        <p class="text-gray-500 text-sm mb-4">${t('submit_ranking_desc')}</p>
+        ${existingGuestCode ? `<div class="bg-green-50 rounded-xl p-3 mb-4 text-sm text-green-700">✅ ${t('your_guest_code')}: <strong>${existingGuestCode}</strong></div>` : ''}
+        <div class="space-y-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">${t('ranking_nickname')} *</label>
+            <input id="rankingNickname" type="text" maxlength="16" value="${existingNickname}" placeholder="${lang === 'zh' ? '2-16个字符' : '2-16 characters'}" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none text-lg">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">${t('ranking_signature')}</label>
+            <input id="rankingSignature" type="text" maxlength="50" placeholder="${lang === 'zh' ? '一句话介绍自己' : 'Describe yourself in one line'}" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none">
+          </div>
+        </div>
+        <div id="rankingError" class="text-red-500 text-sm mt-2 hidden"></div>
+        <button onclick="doSubmitRanking()" class="w-full mt-4 py-3 bg-amber-500 text-white rounded-full font-medium hover:bg-amber-600 transition text-lg">${t('ranking_submit_btn')}</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+// Actually submit ranking
+async function doSubmitRanking() {
+  const personality = currentPersonality || findMatchedPersonality();
+  if (!personality) return;
+  const nickname = document.getElementById('rankingNickname').value.trim();
+  const signature = document.getElementById('rankingSignature').value.trim();
+  const errEl = document.getElementById('rankingError');
+
+  if (!nickname || nickname.length < 1) {
+    errEl.textContent = t('nickname_required');
+    errEl.classList.remove('hidden');
+    return;
+  }
+  if (nickname.length > 16) {
+    errEl.textContent = t('nickname_too_long');
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  try {
+    const mbti = localStorage.getItem('sbti_mbti') || null;
+    const res = await fetch('https://sbti-api.hebiwu007.workers.dev/api/ranking/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nickname,
+        personality_code: personality.code,
+        match_score: personality._matchScore || null,
+        mbti_type: mbti,
+        signature: signature || null
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      localStorage.setItem('sbti_ranking_nickname', nickname);
+      localStorage.setItem('sbti_guest_code', data.guest_code);
+      const modal = document.getElementById('rankingModal');
+      if (modal) modal.querySelector('.bg-white').innerHTML = `
+        <div class="p-6 text-center">
+          <div class="text-5xl mb-4">🎉</div>
+          <h3 class="text-xl font-bold text-gray-800 mb-2">${t('ranking_success')}</h3>
+          <div class="bg-purple-50 rounded-xl p-4 mb-4">
+            <p class="text-sm text-gray-500">${t('your_guest_code')}</p>
+            <p class="text-2xl font-bold text-purple-600 font-mono">${data.guest_code}</p>
+          </div>
+          <div class="bg-amber-50 rounded-xl p-4 mb-4">
+            <p class="text-sm text-gray-500">${t('your_rank')}</p>
+            <p class="text-2xl font-bold text-amber-600"># ${data.rank}</p>
+          </div>
+          <p class="text-gray-400 text-sm mb-4">${lang === 'zh' ? '请保存临时码，凭此码可查看排名' : 'Save your guest code to check your rank later'}</p>
+          <button onclick="document.getElementById('rankingModal').remove();showTypeRankings('${personality.code}')" class="w-full py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition">${t('view_type_ranking')}</button>
+        </div>
+      `;
+    } else {
+      errEl.textContent = data.error || 'Error';
+      errEl.classList.remove('hidden');
+    }
+  } catch (e) {
+    errEl.textContent = 'Network error';
+    errEl.classList.remove('hidden');
+  }
+}
+
+// Show rankings by personality type
+async function showTypeRankings(typeCode) {
+  const personality = currentPersonality || findMatchedPersonality();
+  const app = document.getElementById('app');
+  const p = personalities.find(p => p.code === typeCode);
+  const emojiMap = {'CTRL':'🎯','BOSS':'👑','SHIT':'😒','PEACE':'🕊️','CARE':'🤗','LONE':'🐺','FUN':'🎉','DEEP':'🌌','REAL':'💎','GHOST':'👻','WARM':'☀️','EDGE':'🗡️','SAGE':'🧙','WILD':'🐆','COOL':'😎','SOFT':'🍬','SHARP':'⚡','DREAM':'💭','LOGIC':'🤖','SPARK':'✨','FLOW':'🌊','ROOT':'🌳','SKY':'☁️','FREE':'🦋','DARK':'🌑','STAR':'⭐','ECHO':'🔊'};
+  const emoji = emojiMap[typeCode] || '💫';
+  const color = p ? p.color : '#8B5CF6';
+  const name = p ? (lang === 'zh' ? p.name_zh : p.name_en) : typeCode;
+
+  app.innerHTML = `
+    <div class="min-h-screen bg-gradient-to-b from-cream to-white overflow-auto">
+      <div class="max-w-md mx-auto px-4 py-8">
+        <div class="flex items-center mb-6">
+          <button onclick="showLeaderboard()" class="text-purple-600 mr-3">←</button>
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full flex items-center justify-center" style="background:${color}20;border:2px solid ${color}">${emoji}</div>
+            <h1 class="text-xl font-bold" style="color:${color}">${typeCode} — ${name}</h1>
+          </div>
+        </div>
+        <div id="type-rank-list" class="space-y-3">
+          <div class="text-center py-8 text-gray-400">Loading...</div>
+        </div>
+      </div>
+      <button onclick="toggleLang()" class="fixed top-4 right-4 px-3 py-1 border border-purple-300 rounded-full text-purple-500 hover:bg-purple-50 text-sm">${lang === 'zh' ? 'EN' : '中文'}</button>
+    </div>
+  `;
+
+  try {
+    const res = await fetch(`https://sbti-api.hebiwu007.workers.dev/api/rankings?type=${typeCode}&limit=50`);
+    const data = await res.json();
+    const list = document.getElementById('type-rank-list');
+    const myGuestCode = localStorage.getItem('sbti_guest_code');
+
+    if (!data.rankings || !data.rankings.length) {
+      list.innerHTML = `<div class="text-center py-8 text-gray-400">${lang === 'zh' ? '暂无排名数据' : 'No rankings yet'}</div>`;
+      return;
+    }
+
+    const medals = ['🥇','🥈','🥉'];
+    list.innerHTML = data.rankings.map((r, i) => {
+      const isMe = myGuestCode && r.guest_code === myGuestCode;
+      const medal = i < 3 ? medals[i] : `<span class="text-gray-400">${i + 1}</span>`;
+      return `
+        <div class="bg-white rounded-xl p-4 shadow-sm ${isMe ? 'ring-2 ring-purple-500' : ''}">
+          <div class="flex items-center gap-3">
+            <div class="text-xl w-8 text-center">${medal}</div>
+            <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg" style="background:${color}20;border:2px solid ${color}">${emoji}</div>
+            <div class="flex-1">
+              <div class="font-bold ${isMe ? 'text-purple-600' : 'text-gray-800'}">${r.nickname}${isMe ? ' (You)' : ''}</div>
+              <div class="text-sm text-gray-500">${r.signature || (r.mbti_type || '')}</div>
+            </div>
+            <div class="text-right">
+              <div class="font-bold text-amber-600">${r.match_score ? r.match_score + '%' : '-'}</div>
+              <div class="text-xs text-gray-400">${t('match_score')}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    document.getElementById('type-rank-list').innerHTML = '<div class="text-center py-8 text-red-400">Error loading rankings</div>';
+  }
+}
+
 // Show Leaderboard
 async function showLeaderboard(period = 'all') {
   const app = document.getElementById('app');
@@ -1358,6 +1585,7 @@ async function showLeaderboard(period = 'all') {
         <div class="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
           <div class="h-full rounded-full" style="width:${barW}%;background:${color}"></div>
         </div>
+        <button onclick="showTypeRankings('${item.personality_code}')" class="mt-2 text-xs font-medium" style="color:${color}">${t('view_type_ranking')} →</button>
       </div>
     `;
   }).join('');
