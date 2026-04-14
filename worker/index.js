@@ -245,7 +245,44 @@ async function handleStats(env, h) {
   const total = await env.DB.prepare('SELECT COUNT(*) as total FROM test_results').first();
   const ranked = await env.DB.prepare('SELECT COUNT(*) as total FROM rankings').first();
 
-  return json({ total: total.total, ranked: ranked.total, distribution: dist.results }, h);
+  // Completion rate: count how many have mbti_type filled vs total
+  const withMBTI = await env.DB.prepare(
+    "SELECT COUNT(*) as count FROM test_results WHERE mbti_type IS NOT NULL AND mbti_type != ''"
+  ).first();
+
+  // MBTI cross distribution
+  const mbtiCross = await env.DB.prepare(
+    `SELECT mbti_type, personality_code, COUNT(*) as count
+     FROM test_results WHERE mbti_type IS NOT NULL AND mbti_type != ''
+     GROUP BY mbti_type, personality_code ORDER BY mbti_type, count DESC`
+  ).all();
+
+  // Top MBTI types
+  const mbtiDist = await env.DB.prepare(
+    `SELECT mbti_type, COUNT(*) as count,
+     ROUND(COUNT(*)*100.0/(SELECT COUNT(*) FROM test_results WHERE mbti_type IS NOT NULL AND mbti_type != ''),1) as pct
+     FROM test_results WHERE mbti_type IS NOT NULL AND mbti_type != ''
+     GROUP BY mbti_type ORDER BY count DESC`
+  ).all();
+
+  // Daily quiz participation
+  const dailyTotal = await env.DB.prepare('SELECT COUNT(*) as total FROM daily_quiz').first();
+  const dailyStreaks = await env.DB.prepare(
+    'SELECT guest_code, COUNT(*) as days FROM daily_quiz GROUP BY guest_code ORDER BY days DESC LIMIT 10'
+  ).all();
+
+  return json({
+    total: total.total,
+    ranked: ranked.total,
+    distribution: dist.results,
+    completion_rate: total.total > 0 ? {
+      with_mbti: withMBTI.count,
+      mbti_rate: Math.round(withMBTI.count / total.total * 1000) / 10
+    } : { with_mbti: 0, mbti_rate: 0 },
+    mbti_distribution: mbtiDist.results,
+    mbti_cross: mbtiCross.results,
+    daily_quiz: { total_participations: dailyTotal.total, top_streaks: dailyStreaks.results }
+  }, h);
 }
 
 // ============ Count ============
