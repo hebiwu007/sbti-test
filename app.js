@@ -327,10 +327,16 @@ function renderLanding(refCode) {
   });
 }
 
+// Get today's date string in local timezone (YYYY-MM-DD)
+function getLocalDate() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
 // Show daily quiz
 async function showDailyQuiz() {
-  // 获取今日题目ID（基于日期）
-  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  // 获取今日题目ID（基于本地日期）
+  const today = getLocalDate();
   const todaySeed = parseInt(today.replace(/-/g, '')) % questions.length;
   const dailyQuestion = questions[todaySeed];
   
@@ -403,7 +409,7 @@ async function showDailyQuiz() {
                 <div class="text-green-500 text-2xl mr-3">✓</div>
                 <div>
                   <h3 class="font-bold text-green-700">${t('already_answered')}</h3>
-                  <p class="text-green-600 text-sm">${t('view_your_answer')}: <span class="font-bold">${todayAnswer}</span></p>
+                  <p class="text-green-600 text-sm">${lang === 'zh' ? '你的答案' : 'Your answer'}: <span class="font-bold">${todayAnswer}. ${lang === 'zh' ? dailyQuestion.options.find(o => o.key === todayAnswer)?.text_zh : dailyQuestion.options.find(o => o.key === todayAnswer)?.text_en}</span></p>
                 </div>
               </div>
             </div>
@@ -498,7 +504,7 @@ async function submitDailyAnswer(date, answer) {
   // 更新连续天数
   const streak = parseInt(localStorage.getItem('sbti_daily_streak') || '0');
   const lastDate = localStorage.getItem('sbti_daily_last_date');
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDate();
   
   if (lastDate === today) {
     // 今天已经提交过，不增加
@@ -768,7 +774,8 @@ async function submitToLeaderboard(personality) {
         mbti_type: mbti,
         language: lang,
         pattern: pattern,
-        match_score: personality._matchScore || null
+        match_score: personality._matchScore || null,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || null
       })
     });
   } catch (e) { /* silent fail */ }

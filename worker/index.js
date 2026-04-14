@@ -84,8 +84,10 @@ async function handleInit(env, h) {
     language TEXT DEFAULT 'zh',
     pattern TEXT,
     match_score REAL,
+    timezone TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`).run();
+  try { await env.DB.prepare('ALTER TABLE test_results ADD COLUMN timezone TEXT').run(); } catch(e) {}
   try { await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_tr_personality ON test_results(personality_code)').run(); } catch(e) {}
   try { await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_tr_created ON test_results(created_at)').run(); } catch(e) {}
 
@@ -123,12 +125,12 @@ async function handleInit(env, h) {
 // ============ Submit anonymous result ============
 async function handleSubmit(request, env, h) {
   const body = await request.json();
-  const { personality_code, mbti_type, language, pattern, match_score } = body;
+  const { personality_code, mbti_type, language, pattern, match_score, timezone } = body;
   if (!personality_code) return json({ error: 'personality_code required' }, h, 400);
 
   const r = await env.DB.prepare(
-    'INSERT INTO test_results (personality_code, mbti_type, language, pattern, match_score) VALUES (?,?,?,?,?)'
-  ).bind(personality_code, mbti_type || null, language || 'zh', pattern || null, match_score || null).run();
+    'INSERT INTO test_results (personality_code, mbti_type, language, pattern, match_score, timezone) VALUES (?,?,?,?,?,?)'
+  ).bind(personality_code, mbti_type || null, language || 'zh', pattern || null, match_score || null, timezone || null).run();
 
   return json({ success: true, id: r.meta.last_row_id }, h);
 }
@@ -239,10 +241,8 @@ async function handleLeaderboard(env, h, url) {
   else if (period === 'week') conditions.push("created_at >= date('now', '-7 days')");
   else if (period === 'month') conditions.push("created_at >= date('now', '-30 days')");
 
-  // Region filter (applied to rankings table via timezone column)
-  let useRankings = false;
+  // Region filter (using timezone column)
   if (region && regionMap[region.toLowerCase()]) {
-    useRankings = true;
     const prefixes = regionMap[region.toLowerCase()];
     const tzConditions = prefixes.map(p => "timezone LIKE ?").join(' OR ');
     conditions.push(`(${tzConditions})`);
@@ -251,22 +251,13 @@ async function handleLeaderboard(env, h, url) {
 
   const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
 
-  let results, total;
-  if (useRankings) {
-    results = await env.DB.prepare(
-      `SELECT personality_code, COUNT(*) as count FROM rankings ${whereClause} GROUP BY personality_code ORDER BY count DESC LIMIT ?`
-    ).bind(...params, limit).all();
-    total = await env.DB.prepare(
-      `SELECT COUNT(*) as total FROM rankings ${whereClause}`
-    ).bind(...params).first();
-  } else {
-    results = await env.DB.prepare(
-      `SELECT personality_code, COUNT(*) as count FROM test_results ${whereClause} GROUP BY personality_code ORDER BY count DESC LIMIT ?`
-    ).bind(...params, limit).all();
-    total = await env.DB.prepare(
-      `SELECT COUNT(*) as total FROM test_results ${whereClause}`
-    ).bind(...params).first();
-  }
+  // Always query test_results for personality popularity ranking
+  results = await env.DB.prepare(
+    `SELECT personality_code, COUNT(*) as count FROM test_results ${whereClause} GROUP BY personality_code ORDER BY count DESC LIMIT ?`
+  ).bind(...params, limit).all();
+  total = await env.DB.prepare(
+    `SELECT COUNT(*) as total FROM test_results ${whereClause}`
+  ).bind(...params).first();
 
   return json({ leaderboard: results.results, total: total.total, period, region: region || 'global' }, h);
 }
