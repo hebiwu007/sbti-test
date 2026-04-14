@@ -308,7 +308,7 @@ function renderLanding(refCode) {
           <button onclick="showMBTIIntersection()" class="flex flex-col items-center p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition border border-gray-100">
             <span class="text-3xl mb-2">🧠</span>
             <span class="font-medium text-gray-700 text-sm">${t('mbti_cross')}</span>
-            <span class="text-xs text-gray-400 mt-1">${lang === 'zh' ? 'MBTI×SBTI' : 'Cross analysis'}</span>
+            <span class="text-xs text-gray-400 mt-1">MBTI × SBTI</span>
           </button>
         </div>
         
@@ -1330,6 +1330,12 @@ function fallbackCopy(text) {
 }
 
 // Restart quiz
+// Go back to home page from any sub-page
+function goHomeFromLeaderboard() {
+  currentPersonality = null;
+  renderLanding();
+}
+
 function restartQuiz() {
   currentQuestion = 0;
   answers = {};
@@ -1447,7 +1453,7 @@ function showMBTIIntersection() {
                 <div class="text-xs text-gray-400 mb-1">${g.label}</div>
                 <div class="grid grid-cols-4 gap-2">
                   ${g.types.map(type => `
-                    <button onclick="document.querySelectorAll('.mbti-type-btn').forEach(b=>b.classList.remove('bg-purple-600','text-white','border-purple-600'));this.classList.add('bg-purple-600','text-white','border-purple-600');this.dataset.selected='1'" data-type="${type}" class="mbti-type-btn px-2 py-2 border-2 border-gray-200 rounded-lg text-sm font-medium hover:border-purple-400 transition ${mbti === type ? 'bg-purple-600 text-white border-purple-600' : ''}">${type}</button>
+                    <button onclick="document.querySelectorAll('.mbti-type-btn').forEach(b=>{b.classList.remove('bg-purple-600','text-white','border-purple-600');b.dataset.selected='';});this.classList.add('bg-purple-600','text-white','border-purple-600');this.dataset.selected='1'" data-type="${type}" class="mbti-type-btn px-2 py-2 border-2 border-gray-200 rounded-lg text-sm font-medium hover:border-purple-400 transition ${mbti === type ? 'bg-purple-600 text-white border-purple-600' : ''}">${type}</button>
                   `).join('')}
                 </div>
               </div>
@@ -1732,7 +1738,7 @@ async function showLeaderboard(period = 'all', region = '') {
     <div class="min-h-screen bg-gradient-to-b from-cream to-white overflow-auto">
       <div class="max-w-md mx-auto px-4 py-8">
         <div class="flex items-center mb-6">
-          <button onclick="renderResult(currentPersonality || findMatchedPersonality())" class="text-purple-600 mr-3">←</button>
+          <button onclick="goHomeFromLeaderboard()" class="text-purple-600 mr-3">←</button>
           <h1 class="text-2xl font-bold text-gray-800">${t('leaderboard_title')}</h1>
         </div>
 
