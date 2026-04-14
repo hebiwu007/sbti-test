@@ -2239,8 +2239,26 @@ function generateComparisonCard(friendCode) {
   ctx.fillStyle = '#9CA3AF';
   ctx.font = '36px Inter, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('sbti-test.pages.dev', 540, 1780);
-  ctx.fillText(lang === 'zh' ? `${personality.code} × ${friendPersonality.code} 人格对比` : `${personality.code} × ${friendPersonality.code} Comparison`, 540, 1850);
+  ctx.fillText('sbti-test.pages.dev', 540, 1750);
+  ctx.fillText(lang === 'zh' ? `${personality.code} × ${friendPersonality.code} 人格对比` : `${personality.code} × ${friendPersonality.code} Comparison`, 540, 1820);
+  
+  // 二维码
+  const qrContainer = document.createElement('div');
+  qrContainer.style.display = 'none';
+  document.body.appendChild(qrContainer);
+  new QRCode(qrContainer, {
+    text: `${window.location.origin}/?ref=${personality.code}`,
+    width: 100,
+    height: 100,
+    colorDark: '#374151',
+    colorLight: '#FFFFFF',
+    correctLevel: QRCode.CorrectLevel.L
+  });
+  const qrCanvas = qrContainer.querySelector('canvas');
+  if (qrCanvas) {
+    ctx.drawImage(qrCanvas, 490, 1860, 100, 100);
+  }
+  document.body.removeChild(qrContainer);
   
   // 复制或下载
   canvas.toBlob(blob => {
