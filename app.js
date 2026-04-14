@@ -211,7 +211,14 @@ function shuffleQuestions() {
 
 function initApp() {
   shuffleQuestions();
-  renderLanding();
+  // Check for share ref parameter
+  const params = new URLSearchParams(window.location.search);
+  const refCode = params.get('ref');
+  if (refCode && personalities.find(p => p.code === refCode)) {
+    renderLanding(refCode);
+  } else {
+    renderLanding();
+  }
 }
 
 // Language toggle
@@ -227,11 +234,36 @@ function t(key) {
 }
 
 // Render landing page
-function renderLanding() {
+function renderLanding(refCode) {
   const app = document.getElementById('app');
+  
+  // Build referral preview if coming from share link
+  let refPreview = '';
+  if (refCode) {
+    const refP = personalities.find(p => p.code === refCode);
+    if (refP) {
+      const emojiMap = {'CTRL':'🎯','BOSS':'👑','SHIT':'😒','PEACE':'🕊️','CARE':'🤗','LONE':'🐺','FUN':'🎉','DEEP':'🌌','REAL':'💎','GHOST':'👻','WARM':'☀️','EDGE':'🗡️','SAGE':'🧙','WILD':'🐆','COOL':'😎','SOFT':'🍬','SHARP':'⚡','DREAM':'💭','LOGIC':'🤖','SPARK':'✨','FLOW':'🌊','ROOT':'🌳','SKY':'☁️','FREE':'🦋','DARK':'🌑','STAR':'⭐','ECHO':'🔊'};
+      const emoji = emojiMap[refCode] || '💫';
+      const name = lang === 'zh' ? refP.name_zh : refP.name_en;
+      const tagline = lang === 'zh' ? refP.tagline_zh : refP.tagline_en;
+      refPreview = `
+        <div class="bg-white rounded-2xl p-4 shadow-lg mb-6 border-2" style="border-color:${refP.color}40">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center text-2xl" style="background:${refP.color}20;border:2px solid ${refP.color}">${emoji}</div>
+            <div class="text-left">
+              <div class="text-sm text-gray-500">${lang === 'zh' ? '你的朋友获得了' : 'Your friend got'}</div>
+              <div class="font-bold text-lg" style="color:${refP.color}">${refCode} — ${name}</div>
+              <div class="text-sm text-gray-400">${tagline}</div>
+            </div>
+          </div>
+        </div>`;
+    }
+  }
+  
   app.innerHTML = `
     <div class="min-h-screen flex flex-col items-center justify-center px-4 bg-gradient-to-b from-cream to-white">
       <div class="text-center max-w-md mx-auto">
+        ${refPreview}
         <h1 class="text-4xl md:text-5xl font-bold text-purple-600 mb-4">${t('app_title')}</h1>
         <p class="text-xl md:text-2xl text-gray-600 mb-8">${t('app_subtitle')}</p>
         <button onclick="startQuiz()" class="w-full px-8 py-4 md:px-10 md:py-5 bg-purple-600 text-white rounded-full text-lg md:text-xl font-medium hover:bg-purple-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-1 active:scale-95 mb-4">
@@ -736,7 +768,9 @@ function renderResult(personality) {
         </div>
         
         <div class="grid grid-cols-2 gap-4 mb-8">
-          <button onclick="shareResult()" class="col-span-2 py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition">${t('share_btn')}</button>
+          <button onclick="shareResult()" class="col-span-2 py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition">${t('share_card')}</button>
+          <button onclick="copyShareLink()" class="py-3 border-2 border-purple-400 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${t('share_link')}</button>
+          <button onclick="shareNative()" class="py-3 border-2 border-purple-400 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${t('share_native')}</button>
           <button onclick="showDetailedAnalysis()" class="py-3 border-2 border-green-500 text-green-600 rounded-full font-medium hover:bg-green-50 transition">${t('detailed_analysis')}</button>
           <button onclick="showComparison()" class="py-3 border-2 border-blue-500 text-blue-600 rounded-full font-medium hover:bg-blue-50 transition">${t('compare')}</button>
           <button onclick="showLeaderboard()" class="col-span-2 py-3 border-2 border-orange-500 text-orange-600 rounded-full font-medium hover:bg-orange-50 transition">${t('leaderboard')}</button>
@@ -1058,6 +1092,63 @@ function shareResult() {
     link.click();
     alert(lang === 'zh' ? '图片已下载' : 'Image downloaded');
   }
+}
+
+// Copy share link with personality code
+function copyShareLink() {
+  const personality = currentPersonality || findMatchedPersonality();
+  if (!personality) return;
+  const url = `${window.location.origin}/?ref=${personality.code}`;
+  const text = lang === 'zh'
+    ? `${t('share_text_prefix')} ${personality.code}（${personality.name_zh}）${t('share_text_suffix')}\n${url}`
+    : `${t('share_text_prefix')} ${personality.code} (${personality.name_en})${t('share_text_suffix')}\n${url}`;
+  
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast(t('share_copied'));
+    }).catch(() => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+// Native share (mobile)
+function shareNative() {
+  const personality = currentPersonality || findMatchedPersonality();
+  if (!personality) return;
+  const url = `${window.location.origin}/?ref=${personality.code}`;
+  const title = t('share_title');
+  const text = lang === 'zh'
+    ? `${t('share_text_prefix')} ${personality.code}（${personality.name_zh}）${t('share_text_suffix')}`
+    : `${t('share_text_prefix')} ${personality.code} (${personality.name_en})${t('share_text_suffix')}`;
+  
+  if (navigator.share) {
+    navigator.share({ title, text, url }).catch(() => {});
+  } else {
+    copyShareLink();
+  }
+}
+
+// Toast notification
+function showToast(msg) {
+  const toast = document.createElement('div');
+  toast.className = 'fixed top-20 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg z-50 text-sm font-medium';
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; }, 1500);
+  setTimeout(() => toast.remove(), 2000);
+}
+
+// Fallback copy
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;opacity:0';
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand('copy');
+  ta.remove();
+  showToast(t('share_copied'));
 }
 
 // Restart quiz
