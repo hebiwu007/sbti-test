@@ -26,6 +26,13 @@ const i18n = {
     restart_btn: "再次测试",
     match_score: "匹配度",
     
+    // MBTI
+    mbti_cross: "MBTI × SBTI 交叉解读",
+    not_selected: "未选择",
+    clear_selection: "清除选择",
+    view_intersection: "查看交叉解读",
+    share_with_mbti: "分享带MBTI的结果",
+    
     // Radar chart
     dimensions: {
       self_esteem: "自我价值感",
@@ -95,6 +102,13 @@ const i18n = {
     share_btn: "Share Result",
     restart_btn: "Test Again",
     match_score: "Match Rate",
+    
+    // MBTI
+    mbti_cross: "MBTI × SBTI Intersection",
+    not_selected: "Not selected",
+    clear_selection: "Clear selection",
+    view_intersection: "View intersection",
+    share_with_mbti: "Share with MBTI",
     
     // Radar chart
     dimensions: {
