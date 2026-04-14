@@ -28,6 +28,44 @@ const modelColors = {
   social: '#3B82F6'
 };
 
+// Personality avatars (abstract emoji representation)
+const personalityAvatars = {
+  'CTRL': '🎯',   // The Controller
+  'BOSS': '👑',   // The Boss
+  'SHIT': '😒',   // The Cynic
+  'PEACE': '🕊️',  // The Peacemaker
+  'HHHH': '🔥',   // Gigilord
+  'COMF': '🛋️',   // Comfort Seeker
+  'BORN': '🌟',   // Natural Born Star
+  'FREE': '🕊️',   // The Free Spirit
+  'WORK': '💼',   // The Worker
+  'DEEP': '🌌',   // The Deep Thinker
+  'LOVE': '❤️',   // The Lover
+  'CARE': '🤗',   // The Caretaker
+  'DRAM': '🎭',   // The Drama Queen/King
+  'WILD': '🐆',   // The Wild Child
+  'SHY': '🌱',    // The Shy One
+  'HERO': '🦸',   // The Hero
+  'SAFE': '🛡️',   // The Safety Guard
+  'MESS': '🌀',   // The Messy One
+  'QUIT': '⏸️',   // The Quitter
+  'LAZY': '🦥',   // The Lazy One
+  'OVER': '⚡',   // Overachiever
+  'PERF': '✨',   // The Perfectionist
+  'FAKE': '🎭',   // The Fake One
+  'REAL': '💎',   // The Real Deal
+  'SMUG': '😏',   // The Smug One
+  'MOOD': '🌧️',   // Mood Swinger
+  'CHAD': '💪',   // The Chad
+  'DADA': '🎨',   // The Dadaist
+  'DRUNK': '🍺',  // The Drunk One
+};
+
+// Get avatar for personality code
+function getPersonalityAvatar(code) {
+  return personalityAvatars[code] || '🧩';
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
   await loadData();
@@ -322,11 +360,15 @@ function calculateDistance(pattern1, pattern2) {
 // Render result
 function renderResult(personality) {
   const app = document.getElementById('app');
+  const avatar = getPersonalityAvatar(personality.code);
   
   app.innerHTML = `
     <div class="min-h-screen bg-gradient-to-b from-cream to-white overflow-auto">
       <div class="max-w-md mx-auto px-4 py-8">
         <div class="text-center mb-8">
+          <div class="inline-flex items-center justify-center w-20 h-20 rounded-full text-3xl mb-4" style="background-color: ${personality.color}20; border: 2px solid ${personality.color}">
+            ${avatar}
+          </div>
           <p class="text-purple-500 font-medium mb-2">${t('your_type')}</p>
           <h1 class="text-5xl font-bold mb-2" style="color: ${personality.color}">${personality.code}</h1>
           <h2 class="text-2xl text-gray-700 mb-2">${lang === 'zh' ? personality.name_zh : personality.name_en}</h2>
@@ -475,6 +517,9 @@ function shareResult() {
     return;
   }
   
+  // 获取人格头像
+  const avatar = getPersonalityAvatar(personality.code);
+  
   // 生成 9:16 分享卡片图片 (1080x1920)
   const canvas = document.createElement('canvas');
   canvas.width = 1080;
@@ -517,7 +562,13 @@ function shareResult() {
   ctx.fillStyle = '#FFFFFF';
   ctx.font = 'bold 140px Inter, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(personality.code, 540, 340);
+  
+  // 绘制头像（在代码左边）
+  ctx.font = 'bold 100px Inter, sans-serif';
+  ctx.fillText(avatar, 440, 340);
+  
+  // 绘制人格代码
+  ctx.fillText(personality.code, 640, 340);
   
   // 3. 人格名称
   ctx.fillStyle = '#374151';
