@@ -32,6 +32,14 @@ const i18n = {
     clear_selection: "清除选择",
     view_intersection: "查看交叉解读",
     share_with_mbti: "分享带MBTI的结果",
+    detailed_analysis: "详细解读",
+    detailed_title: "详细人格解读",
+    suitable_careers: "适合职业",
+    celebrity_examples: "名人代表",
+    compatibility: "人格兼容性",
+    growth_tips: "成长建议",
+    good_with: "相处良好",
+    challenge_with: "需要磨合",
     
     // Radar chart
     dimensions: {
@@ -109,6 +117,14 @@ const i18n = {
     clear_selection: "Clear selection",
     view_intersection: "View intersection",
     share_with_mbti: "Share with MBTI",
+    detailed_analysis: "Detailed Analysis",
+    detailed_title: "Detailed Personality Analysis",
+    suitable_careers: "Suitable Careers",
+    celebrity_examples: "Celebrity Examples",
+    compatibility: "Compatibility",
+    growth_tips: "Growth Tips",
+    good_with: "Good with",
+    challenge_with: "Challenge with",
     
     // Radar chart
     dimensions: {

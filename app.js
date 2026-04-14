@@ -482,6 +482,7 @@ function renderResult(personality) {
         
         <div class="flex gap-4 mb-8">
           <button onclick="shareResult()" class="flex-1 py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition">${t('share_btn')}</button>
+          <button onclick="showDetailedAnalysis()" class="flex-1 py-3 border-2 border-green-500 text-green-600 rounded-full font-medium hover:bg-green-50 transition">${t('detailed_analysis') || '详细解读'}</button>
           <button onclick="restartQuiz()" class="flex-1 py-3 border-2 border-purple-300 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${t('restart_btn')}</button>
         </div>
         <a href="privacy.html" class="block text-center text-gray-400 hover:text-purple-500 text-sm mb-4">${t('privacy_link')}</a>
@@ -918,6 +919,226 @@ function shareResultWithMBTI() {
   
   // 调用分享函数（已自动包含MBTI信息）
   shareResult();
+}
+
+// Show detailed personality analysis
+function showDetailedAnalysis() {
+  const personality = currentPersonality || findMatchedPersonality();
+  if (!personality) return;
+  
+  // 获取详细数据（硬编码示例）
+  const details = getPersonalityDetails(personality.code);
+  
+  // 显示模态框
+  const modal = document.createElement('div');
+  modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto';
+  modal.innerHTML = `
+    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-auto">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-6">
+          <div>
+            <h2 class="text-2xl font-bold text-gray-800">${t('detailed_title')}</h2>
+            <div class="flex items-center space-x-3 mt-2">
+              <div class="text-3xl">${getPersonalityAvatar(personality.code)}</div>
+              <div>
+                <h3 class="text-xl font-bold" style="color: ${personality.color}">${personality.code} - ${lang === 'zh' ? personality.name_zh : personality.name_en}</h3>
+                <p class="text-gray-500">${lang === 'zh' ? personality.tagline_zh : personality.tagline_en}</p>
+              </div>
+            </div>
+          </div>
+          <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600 text-2xl">
+            ✕
+          </button>
+        </div>
+        
+        <div class="space-y-6">
+          <!-- 核心描述 -->
+          <div class="bg-gradient-to-r from-cream to-white p-5 rounded-xl border border-purple-100">
+            <h4 class="font-bold text-lg text-gray-800 mb-3">${t('detailed_title')}</h4>
+            <p class="text-gray-700 leading-relaxed">${lang === 'zh' ? personality.desc_zh : personality.desc_en}</p>
+          </div>
+          
+          <!-- 优势/盲点 -->
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="bg-white border border-green-100 rounded-xl p-5">
+              <h4 class="font-bold text-lg text-green-600 mb-3">${t('strengths')}</h4>
+              <ul class="space-y-2">
+                ${(lang === 'zh' ? personality.strengths_zh : personality.strengths_en).map(s => `
+                  <li class="flex items-start">
+                    <span class="text-green-500 mr-2">✓</span>
+                    <span class="text-gray-700">${s}</span>
+                  </li>
+                `).join('')}
+              </ul>
+            </div>
+            <div class="bg-white border border-red-100 rounded-xl p-5">
+              <h4 class="font-bold text-lg text-red-500 mb-3">${t('blind_spots')}</h4>
+              <ul class="space-y-2">
+                ${(lang === 'zh' ? personality.blind_spots_zh : personality.blind_spots_en).map(s => `
+                  <li class="flex items-start">
+                    <span class="text-red-500 mr-2">✗</span>
+                    <span class="text-gray-700">${s}</span>
+                  </li>
+                `).join('')}
+              </ul>
+            </div>
+          </div>
+          
+          <!-- 适合职业 -->
+          <div class="bg-white border border-blue-100 rounded-xl p-5">
+            <h4 class="font-bold text-lg text-blue-600 mb-3">${t('suitable_careers')}</h4>
+            <div class="flex flex-wrap gap-2">
+              ${details.careers.map(career => `
+                <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">${career}</span>
+              `).join('')}
+            </div>
+          </div>
+          
+          <!-- 名人代表 -->
+          <div class="bg-white border border-yellow-100 rounded-xl p-5">
+            <h4 class="font-bold text-lg text-yellow-600 mb-3">${t('celebrity_examples')}</h4>
+            <div class="space-y-3">
+              ${details.celebrities.map(celeb => `
+                <div class="flex items-center space-x-3">
+                  <div class="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600">${celeb.emoji}</div>
+                  <div>
+                    <div class="font-medium text-gray-800">${celeb.name}</div>
+                    <div class="text-sm text-gray-500">${celeb.description}</div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          
+          <!-- 兼容性 -->
+          <div class="bg-white border border-purple-100 rounded-xl p-5">
+            <h4 class="font-bold text-lg text-purple-600 mb-3">${t('compatibility')}</h4>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <div class="text-sm text-gray-500 mb-1">${t('good_with') || '相处良好'}</div>
+                <div class="space-y-1">
+                  ${details.compatibility.good.map(code => {
+                    const p = personalities.find(p => p.code === code);
+                    return p ? `
+                      <div class="flex items-center space-x-2">
+                        <div class="w-6 h-6 rounded-full flex items-center justify-center text-sm" style="background-color: ${p.color}20">${getPersonalityAvatar(code)}</div>
+                        <span class="text-gray-700 text-sm">${p.code}</span>
+                      </div>
+                    ` : '';
+                  }).join('')}
+                </div>
+              </div>
+              <div>
+                <div class="text-sm text-gray-500 mb-1">${t('challenge_with') || '需要磨合'}</div>
+                <div class="space-y-1">
+                  ${details.compatibility.challenge.map(code => {
+                    const p = personalities.find(p => p.code === code);
+                    return p ? `
+                      <div class="flex items-center space-x-2">
+                        <div class="w-6 h-6 rounded-full flex items-center justify-center text-sm" style="background-color: ${p.color}20">${getPersonalityAvatar(code)}</div>
+                        <span class="text-gray-700 text-sm">${p.code}</span>
+                      </div>
+                    ` : '';
+                  }).join('')}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 成长建议 -->
+          <div class="bg-white border border-green-100 rounded-xl p-5">
+            <h4 class="font-bold text-lg text-green-600 mb-3">${t('growth_tips')}</h4>
+            <ul class="space-y-3">
+              ${details.growthTips.map((tip, index) => `
+                <li class="flex items-start">
+                  <div class="w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center mr-3 flex-shrink-0">${index + 1}</div>
+                  <div class="text-gray-700">${tip}</div>
+                </li>
+              `).join('')}
+            </ul>
+          </div>
+          
+          <div class="text-center pt-4">
+            <button onclick="shareResult()" class="px-6 py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition">
+              ${t('share_btn')}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+// Get personality details (hardcoded for now)
+function getPersonalityDetails(code) {
+  // 默认数据模板
+  const defaultDetails = {
+    careers: [
+      lang === 'zh' ? '项目经理' : 'Project Manager',
+      lang === 'zh' ? '团队领导' : 'Team Leader', 
+      lang === 'zh' ? '创业者' : 'Entrepreneur',
+      lang === 'zh' ? '咨询顾问' : 'Consultant',
+      lang === 'zh' ? '教练/导师' : 'Coach/Mentor'
+    ],
+    celebrities: [
+      { emoji: '👑', name: lang === 'zh' ? '史蒂夫·乔布斯' : 'Steve Jobs', description: lang === 'zh' ? '苹果创始人，产品愿景家' : 'Apple founder, product visionary' },
+      { emoji: '🦅', name: lang === 'zh' ? '埃隆·马斯克' : 'Elon Musk', description: lang === 'zh' ? '特斯拉CEO，创新冒险家' : 'Tesla CEO, innovation adventurer' },
+      { emoji: '🛡️', name: lang === 'zh' ? '安格拉·默克尔' : 'Angela Merkel', description: lang === 'zh' ? '德国前总理，稳健领导者' : 'Former German Chancellor, steady leader' }
+    ],
+    compatibility: {
+      good: ['PEACE', 'CARE', 'WORK'],
+      challenge: ['SHIT', 'DRAM', 'WILD']
+    },
+    growthTips: [
+      lang === 'zh' ? '学会适度放手，信任他人' : 'Learn to let go moderately, trust others',
+      lang === 'zh' ? '关注过程而不仅仅是结果' : 'Focus on process, not just results',
+      lang === 'zh' ? '培养倾听能力，避免独断' : 'Develop listening skills, avoid arbitrariness',
+      lang === 'zh' ? '接受自己的不完美' : 'Accept your imperfections',
+      lang === 'zh' ? '平衡工作与生活' : 'Balance work and life'
+    ]
+  };
+  
+  // 根据人格代码微调数据
+  const details = JSON.parse(JSON.stringify(defaultDetails));
+  
+  // 根据不同人格调整
+  switch(code) {
+    case 'CTRL':
+      details.careers = [
+        lang === 'zh' ? '项目经理' : 'Project Manager',
+        lang === 'zh' ? '团队领导' : 'Team Leader',
+        lang === 'zh' ? '创业家' : 'Entrepreneur',
+        lang === 'zh' ? '运营总监' : 'Operations Director',
+        lang === 'zh' ? '战略顾问' : 'Strategic Consultant'
+      ];
+      details.celebrities[0] = { emoji: '👑', name: lang === 'zh' ? '史蒂夫·乔布斯' : 'Steve Jobs', description: lang === 'zh' ? '苹果创始人，完美主义者' : 'Apple founder, perfectionist' };
+      break;
+    case 'PEACE':
+      details.careers = [
+        lang === 'zh' ? '人力资源' : 'Human Resources',
+        lang === 'zh' ? '心理咨询师' : 'Psychologist',
+        lang === 'zh' ? '社工' : 'Social Worker',
+        lang === 'zh' ? '教师' : 'Teacher',
+        lang === 'zh' ? '调解员' : 'Mediator'
+      ];
+      details.celebrities[0] = { emoji: '🕊️', name: lang === 'zh' ? '特蕾莎修女' : 'Mother Teresa', description: lang === 'zh' ? '慈善家，和平使者' : 'Philanthropist, peacemaker' };
+      details.compatibility.good = ['CARE', 'WORK', 'DEEP'];
+      break;
+    case 'SHIT':
+      details.careers = [
+        lang === 'zh' ? '记者' : 'Journalist',
+        lang === 'zh' ? '评论员' : 'Commentator',
+        lang === 'zh' ? '审计师' : 'Auditor',
+        lang === 'zh' ? '律师' : 'Lawyer',
+        lang === 'zh' ? '研究员' : 'Researcher'
+      ];
+      details.celebrities[0] = { emoji: '😒', name: lang === 'zh' ? '乔治·卡林' : 'George Carlin', description: lang === 'zh' ? '喜剧演员，社会批评家' : 'Comedian, social critic' };
+      details.compatibility.good = ['REAL', 'DEEP', 'QUIT'];
+      break;
+  }
+  
+  return details;
 }
 
 // Render (for language toggle)
