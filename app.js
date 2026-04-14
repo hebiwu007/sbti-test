@@ -328,7 +328,7 @@ function showDailyQuiz() {
         
         <div class="text-center">
           <button 
-            onclick="this.closest('.fixed').remove(); ${todayAnswer ? 'showDailyQuiz()' : ''}"
+            onclick="this.closest('.fixed').remove()"
             class="px-6 py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition"
           >
             ${todayAnswer ? t('close') : t('cancel')}
