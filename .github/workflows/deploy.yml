@@ -26,4 +26,4 @@ jobs:
           accountId: e8ae2227899374d7efc0b60bbf39ada9
           projectName: sbti-test
           branch: master
-          cwd: .
+          directory: .
