@@ -260,22 +260,60 @@ function renderLanding(refCode) {
     }
   }
   
+  // Check if user has history for showing history button
+  const hasHistory = JSON.parse(localStorage.getItem('sbti_history') || '[]').length > 0;
+  
   app.innerHTML = `
-    <div class="min-h-screen flex flex-col items-center justify-center px-4 bg-gradient-to-b from-cream to-white">
-      <div class="text-center max-w-md mx-auto">
+    <div class="min-h-screen flex flex-col items-center px-4 bg-gradient-to-b from-cream to-white pb-8">
+      <div class="text-center max-w-md mx-auto w-full pt-8">
         ${refPreview}
-        <h1 class="text-4xl md:text-5xl font-bold text-purple-600 mb-4">${t('app_title')}</h1>
-        <p class="text-xl md:text-2xl text-gray-600 mb-8">${t('app_subtitle')}</p>
-        <button onclick="startQuiz()" class="w-full px-8 py-4 md:px-10 md:py-5 bg-purple-600 text-white rounded-full text-lg md:text-xl font-medium hover:bg-purple-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-1 active:scale-95 mb-4">
+        <h1 class="text-4xl md:text-5xl font-bold text-purple-600 mb-2">${t('app_title')}</h1>
+        <p class="text-lg md:text-xl text-gray-500 mb-6">${t('app_subtitle')}</p>
+        
+        <!-- Hero CTA -->
+        <button onclick="startQuiz()" class="w-full px-8 py-4 md:px-10 md:py-5 bg-purple-600 text-white rounded-full text-lg md:text-xl font-medium hover:bg-purple-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-1 active:scale-95 mb-3">
           ${t('start_btn')}
         </button>
-        <button onclick="showDailyQuiz()" class="w-full px-8 py-4 md:px-10 md:py-5 border-2 border-purple-300 text-purple-600 rounded-full text-lg md:text-xl font-medium hover:bg-purple-50 transition shadow hover:shadow-md active:scale-95 mb-6">
-          ${t('daily_quiz')}
-        </button>
-        <p class="mt-2 text-gray-500 text-sm">
+        <p class="mb-6 text-gray-400 text-sm">
           ${t('test_count_prefix')}<span class="font-bold text-purple-500" id="global-count">${testCount.toLocaleString()}</span>${t('test_count_suffix')}
         </p>
-        <a href="privacy.html" class="mt-4 inline-block text-gray-400 hover:text-purple-500 text-sm">${t('privacy_link')}</a>
+        
+        <!-- Feature Grid -->
+        <div class="grid grid-cols-2 gap-3 mb-6">
+          <button onclick="showDailyQuiz()" class="flex flex-col items-center p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition border border-gray-100">
+            <span class="text-3xl mb-2">🎯</span>
+            <span class="font-medium text-gray-700 text-sm">${t('daily_quiz')}</span>
+            <span class="text-xs text-gray-400 mt-1">${lang === 'zh' ? '每日一题' : 'Daily question'}</span>
+          </button>
+          <button onclick="showLeaderboard()" class="flex flex-col items-center p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition border border-gray-100">
+            <span class="text-3xl mb-2">🏆</span>
+            <span class="font-medium text-gray-700 text-sm">${t('leaderboard')}</span>
+            <span class="text-xs text-gray-400 mt-1">${lang === 'zh' ? '全球排名' : 'Global rank'}</span>
+          </button>
+          <button onclick="showComparison()" class="flex flex-col items-center p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition border border-gray-100">
+            <span class="text-3xl mb-2">👥</span>
+            <span class="font-medium text-gray-700 text-sm">${t('compare')}</span>
+            <span class="text-xs text-gray-400 mt-1">${lang === 'zh' ? '与好友对比' : 'Compare w/ friends'}</span>
+          </button>
+          <button onclick="${hasHistory ? 'showHistoryComparison()' : 'startQuiz()'}" class="flex flex-col items-center p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition border border-gray-100 ${!hasHistory ? 'opacity-60' : ''}">
+            <span class="text-3xl mb-2">📊</span>
+            <span class="font-medium text-gray-700 text-sm">${t('history_compare') || (lang === 'zh' ? '历史对比' : 'History')}</span>
+            <span class="text-xs text-gray-400 mt-1">${hasHistory ? (lang === 'zh' ? '查看变化' : 'View changes') : (lang === 'zh' ? '先测一次' : 'Test first')}</span>
+          </button>
+          <button onclick="showTrendAnalysis()" class="flex flex-col items-center p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition border border-gray-100">
+            <span class="text-3xl mb-2">📈</span>
+            <span class="font-medium text-gray-700 text-sm">${lang === 'zh' ? '趋势分析' : 'Trend'}</span>
+            <span class="text-xs text-gray-400 mt-1">${lang === 'zh' ? '30天数据' : '30-day data'}</span>
+          </button>
+          <button onclick="showMBTIIntersection()" class="flex flex-col items-center p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition border border-gray-100">
+            <span class="text-3xl mb-2">🧠</span>
+            <span class="font-medium text-gray-700 text-sm">${t('mbti_cross')}</span>
+            <span class="text-xs text-gray-400 mt-1">${lang === 'zh' ? 'MBTI×SBTI' : 'Cross analysis'}</span>
+          </button>
+        </div>
+        
+        <!-- Bottom links -->
+        <a href="privacy.html" class="inline-block text-gray-400 hover:text-purple-500 text-sm">${t('privacy_link')}</a>
       </div>
       <button onclick="toggleLang()" class="fixed top-4 right-4 px-3 py-1 border border-purple-300 rounded-full text-purple-500 hover:bg-purple-50 text-sm">
         ${lang === 'zh' ? 'EN' : '中文'}
@@ -1294,6 +1332,57 @@ function restartQuiz() {
 }
 
 // MBTI selection functions
+// Do MBTI cross analysis from home page (no prior test result needed)
+function doMBTICrossFromHome() {
+  const personality = currentPersonality || findMatchedPersonality();
+  const selectedBtn = document.querySelector('.mbti-type-btn[data-selected="1"]');
+  const mbti = selectedBtn ? selectedBtn.dataset.type : null;
+  if (!mbti) {
+    alert(lang === 'zh' ? '请先选择MBTI类型' : 'Please select MBTI type');
+    return;
+  }
+  let sbtiCode;
+  if (personality) {
+    sbtiCode = personality.code;
+  } else {
+    const sel = document.getElementById('mbtiSbtiSelect');
+    sbtiCode = sel ? sel.value : 'CTRL';
+  }
+  const text = generateMBTIIntersection(sbtiCode, mbti);
+  const p = personalities.find(pp => pp.code === sbtiCode);
+  const modal = document.querySelector('.fixed.inset-0');
+  if (modal) modal.remove();
+  const resultModal = document.createElement('div');
+  resultModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto';
+  resultModal.innerHTML = `
+    <div class="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-auto">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-bold text-purple-600">${sbtiCode} × ${mbti}</h2>
+          <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+        </div>
+        <div class="bg-purple-50 rounded-xl p-4 mb-4 text-sm leading-relaxed whitespace-pre-line text-gray-700">${text}</div>
+        ${!personality ? `<button onclick="this.closest('.fixed').remove();startQuiz()" class="w-full py-3 border-2 border-purple-400 text-purple-600 rounded-full font-medium">${lang === 'zh' ? '测测我的SBTI' : 'Take SBTI test'}</button>` : ''}
+      </div>
+    </div>`;
+  document.body.appendChild(resultModal);
+}
+
+// Direct compare — view any personality info without test result
+function doDirectCompare() {
+  const code = (document.getElementById('compareCodeDirect')?.value || '').toUpperCase().trim();
+  const p = personalities.find(pp => pp.code === code && pp.code !== 'DRUNK');
+  if (!p) {
+    alert(lang === 'zh' ? '未找到该人格类型，请检查代码' : 'Personality not found, check the code');
+    return;
+  }
+  const modal = document.querySelector('.fixed.inset-0');
+  if (modal) modal.remove();
+  // Show personality detail
+  currentPersonality = p;
+  showDetailedAnalysis();
+}
+
 function selectMBTI(mbti) {
   setSelectedMBTI(mbti);
   // 重新渲染结果页面以更新选择状态
@@ -1314,50 +1403,57 @@ function clearMBTI() {
 
 function showMBTIIntersection() {
   const mbti = getSelectedMBTI();
-  if (!mbti) {
-    alert(lang === 'zh' ? '请先选择MBTI类型' : 'Please select MBTI type first');
-    return;
-  }
-  
   const personality = currentPersonality || findMatchedPersonality();
-  if (!personality) return;
   
-  // 生成交叉解读
-  const intersectionText = generateMBTIIntersection(personality.code, mbti);
-  
-  // 显示模态框
+  // Show MBTI selector modal from landing page
   const modal = document.createElement('div');
-  modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50';
+  modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto';
+  
+  const mbtiTypes = ['INTJ','INTP','ENTJ','ENTP','INFJ','INFP','ENFJ','ENFP','ISTJ','ISFJ','ESTJ','ESFJ','ISTP','ISFP','ESTP','ESFP'];
+  const mbtiGroups = [
+    { label: 'Analysts', types: ['INTJ','INTP','ENTJ','ENTP'] },
+    { label: 'Diplomats', types: ['INFJ','INFP','ENFJ','ENFP'] },
+    { label: 'Sentinels', types: ['ISTJ','ISFJ','ESTJ','ESFJ'] },
+    { label: 'Explorers', types: ['ISTP','ISFP','ESTP','ESFP'] }
+  ];
+  
   modal.innerHTML = `
-    <div class="bg-white rounded-2xl max-w-md w-full max-h-[80vh] overflow-auto">
+    <div class="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-auto">
       <div class="p-6">
         <div class="flex justify-between items-center mb-4">
-          <h3 class="text-xl font-bold text-gray-800">${personality.code} × ${mbti}</h3>
-          <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
-            ✕
-          </button>
+          <h2 class="text-xl font-bold text-purple-600">${t('mbti_cross')}</h2>
+          <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
         </div>
-        
-        <div class="mb-6">
-          <div class="flex items-center justify-center space-x-4 mb-4">
-            <div class="text-4xl">${getPersonalityAvatar(personality.code)}</div>
-            <div class="text-3xl text-gray-300">×</div>
-            <div class="px-3 py-1 rounded-full text-white text-lg" style="background-color: ${mbtiDescriptions[mbti]?.color || '#8B5CF6'}">
-              ${mbti}
-            </div>
+        ${!personality ? `<p class="text-gray-500 text-sm mb-4">${lang === 'zh' ? '先完成测试获得你的SBTI类型，或直接查看任意组合' : 'Take the test first, or explore any combination'}</p>` : `<p class="text-gray-500 text-sm mb-4">${lang === 'zh' ? '你的SBTI: ' + personality.code + ' — ' + personality.name_zh : 'Your SBTI: ' + personality.code + ' — ' + personality.name_en}</p>`}
+        ${!personality ? `
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">${lang === 'zh' ? '选择SBTI人格' : 'Select SBTI type'}</label>
+          <select id="mbtiSbtiSelect" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none">
+            ${personalities.filter(p => p.code !== 'DRUNK').map(p => `<option value="${p.code}">${p.code} — ${lang === 'zh' ? p.name_zh : p.name_en}</option>`).join('')}
+          </select>
+        </div>` : ''}
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">${lang === 'zh' ? '选择你的MBTI类型' : 'Select your MBTI type'}</label>
+          <div class="space-y-3">
+            ${mbtiGroups.map(g => `
+              <div>
+                <div class="text-xs text-gray-400 mb-1">${g.label}</div>
+                <div class="grid grid-cols-4 gap-2">
+                  ${g.types.map(type => `
+                    <button onclick="document.querySelectorAll('.mbti-type-btn').forEach(b=>b.classList.remove('bg-purple-600','text-white','border-purple-600'));this.classList.add('bg-purple-600','text-white','border-purple-600');this.dataset.selected='1'" data-type="${type}" class="mbti-type-btn px-2 py-2 border-2 border-gray-200 rounded-lg text-sm font-medium hover:border-purple-400 transition ${mbti === type ? 'bg-purple-600 text-white border-purple-600' : ''}">${type}</button>
+                  `).join('')}
+                </div>
+              </div>
+            `).join('')}
           </div>
-          <p class="text-gray-700 leading-relaxed">${intersectionText}</p>
         </div>
-        
-        <div class="text-center">
-          <button onclick="shareResultWithMBTI()" class="px-6 py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition">
-            ${t('share_with_mbti') || '分享带MBTI的结果'}
-          </button>
-        </div>
+        <button onclick="doMBTICrossFromHome()" class="w-full py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition">${lang === 'zh' ? '查看交叉解读' : 'View Intersection'}</button>
+        ${!personality ? `<button onclick="this.closest('.fixed').remove();startQuiz()" class="w-full py-3 mt-2 border-2 border-purple-400 text-purple-600 rounded-full font-medium">${lang === 'zh' ? '先测SBTI' : 'Take SBTI test'}</button>` : ''}
       </div>
     </div>
   `;
   document.body.appendChild(modal);
+  return;
 }
 
 // Generate MBTI × SBTI intersection text (simplified version)
@@ -1976,7 +2072,23 @@ function findMatchedPersonality() {
 // Show personality comparison
 function showComparison() {
   const personality = currentPersonality || findMatchedPersonality();
-  if (!personality) return;
+  if (!personality) {
+    // No test result yet — prompt user to take test or enter code manually
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50';
+    modal.innerHTML = `<div class="bg-white rounded-2xl max-w-md w-full p-6 text-center">
+      <div class="text-4xl mb-4">👥</div>
+      <h2 class="text-xl font-bold text-gray-800 mb-2">${lang === 'zh' ? '好友对比' : 'Compare with Friends'}</h2>
+      <p class="text-gray-500 mb-4">${lang === 'zh' ? '输入朋友的SBTI人格代码进行对比，或先测出自己的结果' : 'Enter a friend\'s SBTI code to compare, or take the test first'}</p>
+      <div class="mb-4">
+        <input id="compareCodeDirect" type="text" maxlength="6" placeholder="${lang === 'zh' ? '输入SBTI代码(如CTRL)' : 'Enter SBTI code (e.g. CTRL)'}" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none text-lg text-center uppercase">
+      </div>
+      <button onclick="doDirectCompare()" class="w-full py-3 bg-blue-500 text-white rounded-full font-medium mb-3">${lang === 'zh' ? '查看对比' : 'Compare'}</button>
+      <button onclick="this.closest('.fixed').remove();startQuiz()" class="w-full py-3 border-2 border-purple-400 text-purple-600 rounded-full font-medium">${lang === 'zh' ? '先测一下' : 'Take test first'}</button>
+    </div>`;
+    document.body.appendChild(modal);
+    return;
+  }
   
   let friendCode = '';
   
