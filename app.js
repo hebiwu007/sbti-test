@@ -432,6 +432,12 @@ async function showDailyQuiz() {
         
         <div class="text-center">
           <button 
+            onclick="showTrendAnalysis(); this.closest('.fixed').remove()"
+            class="px-4 py-2 border border-purple-300 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition mr-2"
+          >
+            ${lang === 'zh' ? '查看趋势' : 'View Trend'}
+          </button>
+          <button 
             onclick="this.closest('.fixed').remove()"
             class="px-6 py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition"
           >
@@ -2423,6 +2429,88 @@ function generateDimensionDiff(currentPattern, previousPattern) {
     }
   }
   return changes.slice(0, 5);
+}
+
+// 显示趋势分析
+function showTrendAnalysis() {
+  try {
+    const dailyAnswers = JSON.parse(localStorage.getItem('sbti_daily_answers') || '{}');
+    const dates = Object.keys(dailyAnswers).sort();
+    
+    if (dates.length < 7) {
+      alert(lang === 'zh' ? 
+        `需要至少7天数据才能查看趋势，当前有${dates.length}天` : 
+        `Need at least 7 days data to view trend, currently have ${dates.length} days`);
+      return;
+    }
+    
+    // 统计每个选项的出现频率趋势
+    const optionCounts = { A: [], B: [], C: [] };
+    dates.forEach(date => {
+      const answer = dailyAnswers[date];
+      if (answer && optionCounts[answer]) {
+        optionCounts[answer].push({ date, count: 1 });
+      }
+    });
+    
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto';
+    
+    // 计算各选项趋势
+    const trendData = {
+      A: dates.filter(d => dailyAnswers[d] === 'A').length,
+      B: dates.filter(d => dailyAnswers[d] === 'B').length,
+      C: dates.filter(d => dailyAnswers[d] === 'C').length
+    };
+    
+    modal.innerHTML = `
+      <div class="bg-white rounded-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-auto">
+        <h2 class="text-xl font-bold text-gray-800 mb-2 text-center">${lang === 'zh' ? '30天趋势分析' : '30-Day Trend Analysis'}</h2>
+        <p class="text-gray-500 text-sm text-center mb-4">${lang === 'zh' ? `数据天数: ${dates.length}天` : `Data days: ${dates.length} days`}</p>
+        
+        <div class="bg-gray-50 rounded-xl p-4 mb-4">
+          <h3 class="font-bold text-gray-700 mb-3">${lang === 'zh' ? '选择分布' : 'Choice Distribution'}</h3>
+          
+          <div class="space-y-3">
+            ${['A', 'B', 'C'].map(opt => `
+              <div>
+                <div class="flex justify-between text-sm mb-1">
+                  <span class="text-gray-600">${opt}</span>
+                  <span class="font-medium">${trendData[opt]} ${lang === 'zh' ? '次' : 'times'} (${Math.round(trendData[opt]/dates.length*100)}%)</span>
+                </div>
+                <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
+                  <div class="h-full ${opt === 'A' ? 'bg-blue-500' : opt === 'B' ? 'bg-green-500' : 'bg-purple-500'}" style="width: ${Math.round(trendData[opt]/dates.length*100)}%"></div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        
+        <div class="bg-gray-50 rounded-xl p-4 mb-4">
+          <h3 class="font-bold text-gray-700 mb-2">${lang === 'zh' ? '最近答题记录' : 'Recent Answer History'}</h3>
+          <div class="flex flex-wrap gap-2">
+            ${dates.slice(-14).map(date => `
+              <div class="text-center">
+                <div class="text-xs text-gray-400">${date.slice(5)}</div>
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${dailyAnswers[date] === 'A' ? 'bg-blue-500' : dailyAnswers[date] === 'B' ? 'bg-green-500' : 'bg-purple-500'}">${dailyAnswers[date]}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        
+        <div class="text-center">
+          <button onclick="this.closest('.fixed').remove()" class="px-6 py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition">
+            ${lang === 'zh' ? '关闭' : 'Close'}
+          </button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+  } catch (e) {
+    console.error('Trend analysis error:', e);
+    alert(lang === 'zh' ? '无法加载趋势数据' : 'Cannot load trend data');
+  }
 }
 
 // Cloudflare Pages native GitHub integration - Tue Apr 14 11:14:35 AM CST 2026
