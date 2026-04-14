@@ -310,6 +310,11 @@ function renderLanding(refCode) {
             <span class="font-medium text-gray-700 text-sm">${t('mbti_cross')}</span>
             <span class="text-xs text-gray-400 mt-1">MBTI × SBTI</span>
           </button>
+          <button onclick="showUserProfile()" class="flex flex-col items-center p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition border border-gray-100">
+            <span class="text-3xl mb-2">👤</span>
+            <span class="font-medium text-gray-700 text-sm">${lang === 'zh' ? '我的' : 'Profile'}</span>
+            <span class="text-xs text-gray-400 mt-1">${lang === 'zh' ? '数据管理' : 'My data'}</span>
+          </button>
         </div>
         
         <!-- Bottom links -->
@@ -763,6 +768,11 @@ function calculateDistance(pattern1, pattern2) {
 
 // Submit result to leaderboard API
 async function submitToLeaderboard(personality) {
+  // 去重：同一测试结果不重复提交
+  const lastSubmitId = localStorage.getItem('sbti_last_submit_id');
+  const currentId = personality.code + '_' + (personality._matchScore || '') + '_' + Math.round(Date.now() / 60000); // 1分钟内去重
+  if (lastSubmitId === currentId) return;
+  localStorage.setItem('sbti_last_submit_id', currentId);
   try {
     const mbti = localStorage.getItem('sbti_mbti') || null;
     const pattern = calculateUserPattern();
@@ -889,9 +899,9 @@ function renderResult(personality) {
           <button onclick="shareNative()" class="py-3 border-2 border-purple-400 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${t('share_native')}</button>
           <button onclick="showDetailedAnalysis()" class="py-3 border-2 border-green-500 text-green-600 rounded-full font-medium hover:bg-green-50 transition">${t('detailed_analysis')}</button>
           <button onclick="showComparison()" class="py-3 border-2 border-blue-500 text-blue-600 rounded-full font-medium hover:bg-blue-50 transition">${t('compare')}</button>
-          <button onclick="showLeaderboard()" class="col-span-2 py-3 border-2 border-orange-500 text-orange-600 rounded-full font-medium hover:bg-orange-50 transition">${t('leaderboard')}</button>
           <button onclick="showRankingSubmit()" class="col-span-2 py-3 border-2 border-amber-500 text-amber-600 rounded-full font-medium hover:bg-amber-50 transition">${t('submit_to_ranking')}</button>
-          <button onclick="showHistoryComparison()" class="col-span-2 py-3 border-2 border-indigo-500 text-indigo-600 rounded-full font-medium hover:bg-indigo-50 transition">${t('history_compare') || '历史对比'}</button>
+          <button onclick="showLeaderboard()" class="py-3 border-2 border-orange-500 text-orange-600 rounded-full font-medium hover:bg-orange-50 transition">${t('leaderboard')}</button>
+          <button onclick="showUserProfile()" class="py-3 border-2 border-gray-400 text-gray-600 rounded-full font-medium hover:bg-gray-50 transition">${lang === 'zh' ? '👤 我的' : '👤 Profile'}</button>
           <button onclick="restartQuiz()" class="col-span-2 py-3 border-2 border-purple-300 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${t('restart_btn')}</button>
         </div>
         <a href="privacy.html" class="block text-center text-gray-400 hover:text-purple-500 text-sm mb-4">${t('privacy_link')}</a>
@@ -1332,8 +1342,21 @@ function fallbackCopy(text) {
 // Restart quiz
 // Go back to home page from any sub-page
 function goHomeFromLeaderboard() {
-  currentPersonality = null;
-  renderLanding();
+  const personality = currentPersonality || findMatchedPersonality();
+  if (personality) {
+    renderResult(personality);
+  } else {
+    renderLanding();
+  }
+}
+
+function backToResult() {
+  const personality = currentPersonality || findMatchedPersonality();
+  if (personality) {
+    renderResult(personality);
+  } else {
+    renderLanding();
+  }
 }
 
 function restartQuiz() {
@@ -1461,6 +1484,9 @@ function showMBTIIntersection() {
           </div>
         </div>
         <button onclick="doMBTICrossFromHome()" class="w-full py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition">${lang === 'zh' ? '查看交叉解读' : 'View Intersection'}</button>
+        <div class="mt-3 text-center">
+          <a href="https://www.16personalities.com/ch" target="_blank" rel="noopener" class="text-sm text-purple-400 hover:text-purple-600 underline">${lang === 'zh' ? '🤔 不知道你的MBTI？点击免费测试 →' : '🤔 Don\'t know your MBTI? Take free test →'}</a>
+        </div>
         ${!personality ? `<button onclick="this.closest('.fixed').remove();startQuiz()" class="w-full py-3 mt-2 border-2 border-purple-400 text-purple-600 rounded-full font-medium">${lang === 'zh' ? '先测SBTI' : 'Take SBTI test'}</button>` : ''}
       </div>
     </div>
@@ -1651,6 +1677,7 @@ async function doSubmitRanking() {
             <p class="text-2xl font-bold text-amber-600"># ${data.rank}</p>
           </div>
           <p class="text-gray-400 text-sm mb-4">${lang === 'zh' ? '请保存临时码，凭此码可查看排名' : 'Save your guest code to check your rank later'}</p>
+          <button onclick="document.getElementById('rankingModal').remove();backToResult()" class="w-full py-3 border-2 border-purple-400 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition mb-2">${lang === 'zh' ? '← 返回结果页' : '← Back to Result'}</button>
           <button onclick="document.getElementById('rankingModal').remove();showTypeRankings('${personality.code}')" class="w-full py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition">${t('view_type_ranking')}</button>
         </div>
       `;
@@ -1687,6 +1714,7 @@ async function showTypeRankings(typeCode) {
         <div id="type-rank-list" class="space-y-3">
           <div class="text-center py-8 text-gray-400">Loading...</div>
         </div>
+        <button onclick="backToResult()" class="w-full mt-6 py-3 border-2 border-purple-400 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${lang === 'zh' ? '← 返回结果页' : '← Back to Result'}</button>
       </div>
       <button onclick="toggleLang()" class="fixed top-4 right-4 px-3 py-1 border border-purple-300 rounded-full text-purple-500 hover:bg-purple-50 text-sm">${lang === 'zh' ? 'EN' : '中文'}</button>
     </div>
@@ -2715,3 +2743,203 @@ function showTrendAnalysis() {
 }
 
 // Cloudflare Pages native GitHub integration - Tue Apr 14 11:14:35 AM CST 2026
+
+// ============ User Profile / Data Management ============
+function showUserProfile() {
+  const personality = currentPersonality || findMatchedPersonality();
+  const mbti = getSelectedMBTI();
+  const guestCode = localStorage.getItem('sbti_guest_code') || '';
+  const nickname = localStorage.getItem('sbti_ranking_nickname') || '';
+  const history = JSON.parse(localStorage.getItem('sbti_history') || '[]');
+  const dailyAnswers = JSON.parse(localStorage.getItem('sbti_daily_answers') || '{}');
+  const dailyStreak = parseInt(localStorage.getItem('sbti_daily_streak') || '0');
+  const dailyCount = Object.keys(dailyAnswers).length;
+
+  const app = document.getElementById('app');
+  const emojiMap = {'CTRL':'🎯','BOSS':'👑','SHIT':'😒','PEACE':'🕊️','CARE':'🤗','LONE':'🐺','FUN':'🎉','DEEP':'🌌','REAL':'💎','GHOST':'👻','WARM':'☀️','EDGE':'🗡️','SAGE':'🧙','WILD':'🐆','COOL':'😎','SOFT':'🍬','SHARP':'⚡','DREAM':'💭','LOGIC':'🤖','SPARK':'✨','FLOW':'🌊','ROOT':'🌳','SKY':'☁️','FREE':'🦋','DARK':'🌑','STAR':'⭐','ECHO':'🔊'};
+
+  // Stats calculation
+  const totalTests = history.length;
+  const personalityCounts = {};
+  history.forEach(h => {
+    personalityCounts[h.code] = (personalityCounts[h.code] || 0) + 1;
+  });
+  const topPersonality = Object.entries(personalityCounts).sort((a,b) => b[1] - a[1])[0];
+
+  app.innerHTML = `
+    <div class="min-h-screen bg-gradient-to-b from-cream to-white overflow-auto">
+      <div class="max-w-md mx-auto px-4 py-8">
+        <div class="flex items-center mb-6">
+          <button onclick="goHomeFromLeaderboard()" class="text-purple-600 mr-3">←</button>
+          <h1 class="text-2xl font-bold text-gray-800">${lang === 'zh' ? '我的数据' : 'My Profile'}</h1>
+        </div>
+
+        <!-- User Card -->
+        <div class="bg-white rounded-2xl p-6 shadow-lg mb-6 text-center">
+          <div class="text-5xl mb-3">${personality ? (emojiMap[personality.code] || '🧩') : '🧑'}</div>
+          ${personality ? `
+            <h2 class="text-2xl font-bold" style="color:${personality.color}">${personality.code}</h2>
+            <p class="text-gray-500">${lang === 'zh' ? personality.name_zh : personality.name_en}</p>
+          ` : `
+            <h2 class="text-xl text-gray-500">${lang === 'zh' ? '尚未测试' : 'Not tested yet'}</h2>
+          `}
+          ${nickname ? `<p class="text-sm text-gray-400 mt-2">${lang === 'zh' ? '昵称' : 'Nickname'}: ${nickname}</p>` : ''}
+          ${guestCode ? `<p class="text-sm text-purple-500 mt-1 font-mono">${lang === 'zh' ? '临时码' : 'Guest Code'}: ${guestCode}</p>` : ''}
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-3 gap-3 mb-6">
+          <div class="bg-white rounded-xl p-4 shadow text-center">
+            <div class="text-2xl font-bold text-purple-600">${totalTests}</div>
+            <div class="text-xs text-gray-500">${lang === 'zh' ? '总测试' : 'Tests'}</div>
+          </div>
+          <div class="bg-white rounded-xl p-4 shadow text-center">
+            <div class="text-2xl font-bold text-green-600">${dailyCount}</div>
+            <div class="text-xs text-gray-500">${lang === 'zh' ? '每日一测' : 'Daily'}</div>
+          </div>
+          <div class="bg-white rounded-xl p-4 shadow text-center">
+            <div class="text-2xl font-bold text-orange-600">${dailyStreak}</div>
+            <div class="text-xs text-gray-500">${lang === 'zh' ? '连续天数' : 'Streak'}</div>
+          </div>
+        </div>
+
+        <!-- MBTI -->
+        ${mbti ? `
+        <div class="bg-white rounded-2xl p-4 shadow-lg mb-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm text-gray-500">${lang === 'zh' ? '我的 MBTI' : 'My MBTI'}</div>
+              <div class="text-lg font-bold text-purple-600">${mbti}</div>
+            </div>
+            <button onclick="showMBTIIntersection()" class="px-3 py-1 border border-purple-300 text-purple-500 rounded-lg text-sm">${lang === 'zh' ? '查看交叉解读' : 'Cross'}</button>
+          </div>
+        </div>
+        ` : `
+        <div class="bg-white rounded-2xl p-4 shadow-lg mb-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm text-gray-500">${lang === 'zh' ? '我的 MBTI' : 'My MBTI'}</div>
+              <div class="text-sm text-gray-400">${lang === 'zh' ? '未设置' : 'Not set'}</div>
+            </div>
+            <a href="https://www.16personalities.com/ch" target="_blank" rel="noopener" class="px-3 py-1 bg-purple-600 text-white rounded-lg text-sm">${lang === 'zh' ? '去测试' : 'Test'}</a>
+          </div>
+        </div>
+        `}
+
+        <!-- History -->
+        ${history.length > 0 ? `
+        <div class="bg-white rounded-2xl p-4 shadow-lg mb-6">
+          <h3 class="font-bold text-gray-800 mb-3">${lang === 'zh' ? '测试历史' : 'Test History'}</h3>
+          <div class="space-y-2 max-h-60 overflow-y-auto">
+            ${history.slice().reverse().slice(0, 10).map(h => {
+              const hp = personalities.find(p => p.code === h.code);
+              const he = emojiMap[h.code] || '🧩';
+              return `
+                <div class="flex items-center gap-3 py-2 border-b border-gray-100 last:border-0">
+                  <span class="text-xl">${he}</span>
+                  <div class="flex-1">
+                    <span class="font-medium" style="color:${hp ? hp.color : '#666'}">${h.code}</span>
+                    <span class="text-xs text-gray-400 ml-2">${h.date || ''}</span>
+                  </div>
+                  ${h.score ? `<span class="text-sm text-gray-500">${h.score}%</span>` : ''}
+                </div>`;
+            }).join('')}
+          </div>
+          ${topPersonality ? `
+          <div class="mt-3 pt-3 border-t border-gray-100 text-sm text-gray-500">
+            ${lang === 'zh' ? `最常获得: <strong>${topPersonality[0]}</strong> (${topPersonality[1]}次)` : `Most frequent: <strong>${topPersonality[0]}</strong> (${topPersonality[1]}x)`}
+          </div>` : ''}
+        </div>
+        ` : `
+        <div class="bg-white rounded-2xl p-6 shadow-lg mb-6 text-center">
+          <p class="text-gray-400">${lang === 'zh' ? '暂无测试历史' : 'No test history'}</p>
+          <button onclick="startQuiz()" class="mt-3 px-6 py-2 bg-purple-600 text-white rounded-full">${lang === 'zh' ? '开始测试' : 'Start Test'}</button>
+        </div>
+        `}
+
+        <!-- Data Management -->
+        <div class="bg-white rounded-2xl p-4 shadow-lg mb-6">
+          <h3 class="font-bold text-gray-800 mb-3">${lang === 'zh' ? '数据管理' : 'Data Management'}</h3>
+          <div class="space-y-3">
+            ${guestCode ? `
+            <button onclick="deleteMyServerData()" class="w-full py-3 border-2 border-red-300 text-red-500 rounded-xl font-medium hover:bg-red-50 transition">
+              ${lang === 'zh' ? '🗑 删除服务器数据' : '🗑 Delete server data'}
+            </button>
+            ` : ''}
+            <button onclick="clearAllLocalData()" class="w-full py-3 border-2 border-red-300 text-red-500 rounded-xl font-medium hover:bg-red-50 transition">
+              ${lang === 'zh' ? '清除本地数据' : 'Clear local data'}
+            </button>
+            <button onclick="exportMyData()" class="w-full py-3 border-2 border-gray-300 text-gray-600 rounded-xl font-medium hover:bg-gray-50 transition">
+              ${lang === 'zh' ? '📦 导出我的数据' : '📦 Export my data'}
+            </button>
+          </div>
+        </div>
+
+        <button onclick="goHomeFromLeaderboard()" class="w-full py-3 border-2 border-purple-400 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${lang === 'zh' ? '← 返回首页' : '← Back to Home'}</button>
+      </div>
+      <button onclick="toggleLang()" class="fixed top-4 right-4 px-3 py-1 border border-purple-300 rounded-full text-purple-500 hover:bg-purple-50 text-sm">${lang === 'zh' ? 'EN' : '中文'}</button>
+    </div>
+  `;
+}
+
+// Delete server-side data
+async function deleteMyServerData() {
+  const guestCode = localStorage.getItem('sbti_guest_code');
+  if (!guestCode) {
+    alert(lang === 'zh' ? '没有找到临时码' : 'No guest code found');
+    return;
+  }
+  const confirmed = confirm(lang === 'zh' ? '确定删除服务器上的所有排行榜数据？此操作不可恢复。' : 'Delete all ranking data from server? This cannot be undone.');
+  if (!confirmed) return;
+  try {
+    const res = await fetch('https://sbti-api.hebiwu007.workers.dev/api/data', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ guest_code: guestCode })
+    });
+    const data = await res.json();
+    if (data.success) {
+      localStorage.removeItem('sbti_guest_code');
+      localStorage.removeItem('sbti_ranking_nickname');
+      alert(lang === 'zh' ? '服务器数据已删除' : 'Server data deleted');
+      showUserProfile();
+    } else {
+      alert(data.error || (lang === 'zh' ? '删除失败' : 'Delete failed'));
+    }
+  } catch (e) {
+    alert(lang === 'zh' ? '网络错误' : 'Network error');
+  }
+}
+
+// Clear all local data
+function clearAllLocalData() {
+  const confirmed = confirm(lang === 'zh' ? '确定清除所有本地数据？包括测试历史、每日一测记录等。' : 'Clear all local data? Including test history, daily answers, etc.');
+  if (!confirmed) return;
+  const keysToKeep = []; // nothing to keep
+  const sbtiKeys = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key.startsWith('sbti_')) sbtiKeys.push(key);
+  }
+  sbtiKeys.forEach(k => localStorage.removeItem(k));
+  alert(lang === 'zh' ? '本地数据已清除' : 'Local data cleared');
+  showUserProfile();
+}
+
+// Export user data as JSON
+function exportMyData() {
+  const data = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key.startsWith('sbti_')) {
+      try { data[key] = JSON.parse(localStorage.getItem(key)); }
+      catch { data[key] = localStorage.getItem(key); }
+    }
+  }
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const link = document.createElement('a');
+  link.download = `sbti-data-${new Date().toISOString().slice(0,10)}.json`;
+  link.href = URL.createObjectURL(blob);
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
