@@ -652,7 +652,30 @@ function calculateResult(isDrunk) {
   currentPersonality = result;
   testCount++;
   localStorage.setItem('sbti_test_count', testCount.toString());
+  
+  // 保存到历史记录
+  saveToHistory(result, calculateUserPattern());
+  
   renderResult(result);
+}
+
+// 保存结果到历史记录
+function saveToHistory(personality, userPattern) {
+  try {
+    const history = JSON.parse(localStorage.getItem('sbti_history') || '[]');
+    const entry = {
+      code: personality.code,
+      pattern: userPattern,
+      matchScore: personality._matchScore || 0,
+      date: new Date().toISOString()
+    };
+    history.unshift(entry);
+    // 保留最近5次
+    if (history.length > 5) history.pop();
+    localStorage.setItem('sbti_history', JSON.stringify(history));
+  } catch (e) {
+    console.error('Failed to save history:', e);
+  }
 }
 
 // Calculate user pattern
@@ -815,6 +838,7 @@ function renderResult(personality) {
           <button onclick="showComparison()" class="py-3 border-2 border-blue-500 text-blue-600 rounded-full font-medium hover:bg-blue-50 transition">${t('compare')}</button>
           <button onclick="showLeaderboard()" class="col-span-2 py-3 border-2 border-orange-500 text-orange-600 rounded-full font-medium hover:bg-orange-50 transition">${t('leaderboard')}</button>
           <button onclick="showRankingSubmit()" class="col-span-2 py-3 border-2 border-amber-500 text-amber-600 rounded-full font-medium hover:bg-amber-50 transition">${t('submit_to_ranking')}</button>
+          <button onclick="showHistoryComparison()" class="col-span-2 py-3 border-2 border-indigo-500 text-indigo-600 rounded-full font-medium hover:bg-indigo-50 transition">${t('history_compare') || '历史对比'}</button>
           <button onclick="restartQuiz()" class="col-span-2 py-3 border-2 border-purple-300 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${t('restart_btn')}</button>
         </div>
         <a href="privacy.html" class="block text-center text-gray-400 hover:text-purple-500 text-sm mb-4">${t('privacy_link')}</a>
@@ -2278,6 +2302,127 @@ function generateComparisonCard(friendCode) {
       link.click();
     }
   });
+}
+
+// 显示历史对比
+function showHistoryComparison() {
+  try {
+    const history = JSON.parse(localStorage.getItem('sbti_history') || '[]');
+    if (history.length < 2) {
+      alert(lang === 'zh' ? '历史记录不足，需要至少2次测试记录' : 'Not enough history, need at least 2 test records');
+      return;
+    }
+    
+    const current = history[0];
+    const previous = history[1];
+    const currentPersona = personalities.find(p => p.code === current.code);
+    const previousPersona = personalities.find(p => p.code === previous.code);
+    
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto';
+    
+    const formatDate = (iso) => {
+      const d = new Date(iso);
+      return d.toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US');
+    };
+    
+    const isSamePersonality = current.code === previous.code;
+    
+    modal.innerHTML = `
+      <div class="bg-white rounded-2xl max-w-md w-full p-6 max-h-[80vh] overflow-auto">
+        <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">${lang === 'zh' ? '历史对比' : 'History Comparison'}</h2>
+        
+        <div class="flex justify-between items-center mb-4">
+          <div class="text-center">
+            <div class="text-sm text-gray-500 mb-1">${lang === 'zh' ? '本次' : 'Current'}</div>
+            <div class="text-3xl font-bold" style="color: ${currentPersona?.color || '#8B5CF6'}">${current.code}</div>
+            <div class="text-sm text-gray-600">${currentPersona ? (lang === 'zh' ? currentPersona.name_zh : currentPersona.name_en) : ''}</div>
+            <div class="text-xs text-gray-400">${formatDate(current.date)}</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl">${isSamePersonality ? '✓' : '→'}</div>
+            <div class="text-sm text-gray-500 mt-2">${isSamePersonality ? (lang === 'zh' ? '稳定的' : 'Stable') : (lang === 'zh' ? '变化了' : 'Changed')}</div>
+          </div>
+          <div class="text-center">
+            <div class="text-sm text-gray-500 mb-1">${lang === 'zh' ? '上次' : 'Previous'}</div>
+            <div class="text-3xl font-bold" style="color: ${previousPersona?.color || '#8B5CF6'}">${previous.code}</div>
+            <div class="text-sm text-gray-600">${previousPersona ? (lang === 'zh' ? previousPersona.name_zh : previousPersona.name_en) : ''}</div>
+            <div class="text-xs text-gray-400">${formatDate(previous.date)}</div>
+          </div>
+        </div>
+        
+        ${!isSamePersonality && currentPersona && previousPersona ? `
+          <div class="bg-gray-50 rounded-xl p-4 mb-4">
+            <h3 class="font-bold text-gray-700 mb-2">${lang === 'zh' ? '维度变化' : 'Dimension Changes'}</h3>
+            ${generateDimensionDiff(current.pattern, previous.pattern).map(dim => `
+              <div class="flex justify-between text-sm py-1">
+                <span class="text-gray-600">${dim.name}</span>
+                <span class="${dim.change > 0 ? 'text-green-600' : dim.change < 0 ? 'text-red-600' : 'text-gray-500'}">
+                  ${dim.change > 0 ? '↑' : dim.change < 0 ? '↓' : '→'} ${dim.from} → ${dim.to}
+                </span>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+        
+        <div class="flex justify-between text-sm text-gray-500 mb-4">
+          <span>${lang === 'zh' ? '本次匹配度' : 'Match Score'}: ${current.matchScore}%</span>
+          <span>${lang === 'zh' ? '上次匹配度' : 'Previous Match Score'}: ${previous.matchScore}%</span>
+        </div>
+        
+        <button onclick="this.closest('.fixed').remove()" class="w-full py-3 bg-purple-600 text-white rounded-full">
+          ${lang === 'zh' ? '关闭' : 'Close'}
+        </button>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+  } catch (e) {
+    console.error('History comparison error:', e);
+    alert(lang === 'zh' ? '无法加载历史记录' : 'Cannot load history');
+  }
+}
+
+// 生成维度差异
+function generateDimensionDiff(currentPattern, previousPattern) {
+  const dims = [
+    ['self_esteem', 'self_clarity', 'core_values'],
+    ['emotional_reg', 'stress_handling', 'conflict_style'],
+    ['social_energy', 'communication', 'relationship_style'],
+    ['adaptability', 'change_acceptance', 'risk_tolerance'],
+    ['goal_orientation', 'motivation', 'work_style'],
+    ['learning_style', 'curiosity', 'knowledge_value'],
+    ['decision_making', 'planning', 'habit_formation'],
+    ['leadership', 'team_role', 'authority'],
+    ['time_preference', 'patience', 'consistency']
+  ];
+  
+  const dimNames = {
+    self_esteem: '自尊水平', self_clarity: '自我认知', core_values: '核心价值观',
+    emotional_reg: '情绪调节', stress_handling: '抗压能力', conflict_style: '冲突处理',
+    social_energy: '社交能量', communication: '沟通风格', relationship_style: '关系模式',
+    adaptability: '适应能力', change_acceptance: '变化接受', risk_tolerance: '风险承受',
+    goal_orientation: '目标导向', motivation: '动机类型', work_style: '工作风格',
+    learning_style: '学习风格', curiosity: '好奇心', knowledge_value: '知识价值',
+    decision_making: '决策方式', planning: '规划能力', habit_formation: '习惯养成',
+    leadership: '领导力', team_role: '团队角色', authority: '权威态度',
+    time_preference: '时间偏好', patience: '耐心', consistency: '一致性'
+  };
+  
+  const changes = [];
+  for (const dimGroup of dims) {
+    for (const dim of dimGroup) {
+      if (currentPattern[dim] !== previousPattern[dim]) {
+        changes.push({
+          name: dimNames[dim] || dim,
+          from: previousPattern[dim],
+          to: currentPattern[dim],
+          change: currentPattern[dim] === 'H' ? 1 : currentPattern[dim] === 'L' ? -1 : 0
+        });
+      }
+    }
+  }
+  return changes.slice(0, 5);
 }
 
 // Cloudflare Pages native GitHub integration - Tue Apr 14 11:14:35 AM CST 2026

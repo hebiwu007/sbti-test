@@ -138,6 +138,7 @@ const i18n = {
     low_similarity: "差异较大",
     generate_compare_card: "生成对比卡片",
     no_comparison: "暂无对比数据",
+    history_compare: "历史对比",
 
     // Ranking submit
     submit_to_ranking: "提交到排行榜",
@@ -291,6 +292,7 @@ const i18n = {
     low_similarity: "Low Similarity",
     generate_compare_card: "Generate Comparison Card",
     no_comparison: "No comparison data",
+    history_compare: "History Comparison",
 
     // Ranking submit
     submit_to_ranking: "Submit to Leaderboard",
