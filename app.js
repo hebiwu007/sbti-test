@@ -893,16 +893,16 @@ function renderResult(personality) {
           </div>
         </div>
         
-        <div class="grid grid-cols-2 gap-4 mb-8">
-          <button onclick="shareResult()" class="col-span-2 py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition">${t('share_card')}</button>
-          <button onclick="copyShareLink()" class="py-3 border-2 border-purple-400 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${t('share_link')}</button>
-          <button onclick="shareNative()" class="py-3 border-2 border-purple-400 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${t('share_native')}</button>
-          <button onclick="showDetailedAnalysis()" class="py-3 border-2 border-green-500 text-green-600 rounded-full font-medium hover:bg-green-50 transition">${t('detailed_analysis')}</button>
-          <button onclick="showComparison()" class="py-3 border-2 border-blue-500 text-blue-600 rounded-full font-medium hover:bg-blue-50 transition">${t('compare')}</button>
-          <button onclick="showRankingSubmit()" class="col-span-2 py-3 border-2 border-amber-500 text-amber-600 rounded-full font-medium hover:bg-amber-50 transition">${t('submit_to_ranking')}</button>
-          <button onclick="showLeaderboard()" class="py-3 border-2 border-orange-500 text-orange-600 rounded-full font-medium hover:bg-orange-50 transition">${t('leaderboard')}</button>
-          <button onclick="showUserProfile()" class="py-3 border-2 border-gray-400 text-gray-600 rounded-full font-medium hover:bg-gray-50 transition">${lang === 'zh' ? '👤 我的' : '👤 Profile'}</button>
-          <button onclick="restartQuiz()" class="col-span-2 py-3 border-2 border-purple-300 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${t('restart_btn')}</button>
+        <div class="space-y-3 mb-8">
+          <button onclick="shareResult()" class="w-full py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition">${t('share_card')}</button>
+          <div class="grid grid-cols-2 gap-3">
+            <button onclick="copyShareLink()" class="py-3 border-2 border-purple-400 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${t('share_link')}</button>
+            <button onclick="shareNative()" class="py-3 border-2 border-purple-400 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${t('share_native')}</button>
+          </div>
+          <button onclick="showDetailedAnalysis()" class="w-full py-3 border-2 border-green-500 text-green-600 rounded-full font-medium hover:bg-green-50 transition">${t('detailed_analysis')}</button>
+          <button onclick="showComparison()" class="w-full py-3 border-2 border-blue-500 text-blue-600 rounded-full font-medium hover:bg-blue-50 transition">${t('compare')}</button>
+          <button onclick="showRankingSubmit()" class="w-full py-3 border-2 border-amber-500 text-amber-600 rounded-full font-medium hover:bg-amber-50 transition">${t('submit_to_ranking')}</button>
+          <button onclick="goHomeFromLeaderboard()" class="w-full py-3 border-2 border-purple-300 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${lang === 'zh' ? '🏠 返回首页' : '🏠 Back to Home'}</button>
         </div>
         <a href="privacy.html" class="block text-center text-gray-400 hover:text-purple-500 text-sm mb-4">${t('privacy_link')}</a>
       </div>
@@ -2754,6 +2754,7 @@ function showUserProfile() {
   const dailyAnswers = JSON.parse(localStorage.getItem('sbti_daily_answers') || '{}');
   const dailyStreak = parseInt(localStorage.getItem('sbti_daily_streak') || '0');
   const dailyCount = Object.keys(dailyAnswers).length;
+  const loggedInUser = JSON.parse(localStorage.getItem('sbti_user') || 'null');
 
   const app = document.getElementById('app');
   const emojiMap = {'CTRL':'🎯','BOSS':'👑','SHIT':'😒','PEACE':'🕊️','CARE':'🤗','LONE':'🐺','FUN':'🎉','DEEP':'🌌','REAL':'💎','GHOST':'👻','WARM':'☀️','EDGE':'🗡️','SAGE':'🧙','WILD':'🐆','COOL':'😎','SOFT':'🍬','SHARP':'⚡','DREAM':'💭','LOGIC':'🤖','SPARK':'✨','FLOW':'🌊','ROOT':'🌳','SKY':'☁️','FREE':'🦋','DARK':'🌑','STAR':'⭐','ECHO':'🔊'};
@@ -2771,21 +2772,33 @@ function showUserProfile() {
       <div class="max-w-md mx-auto px-4 py-8">
         <div class="flex items-center mb-6">
           <button onclick="goHomeFromLeaderboard()" class="text-purple-600 mr-3">←</button>
-          <h1 class="text-2xl font-bold text-gray-800">${lang === 'zh' ? '我的数据' : 'My Profile'}</h1>
+          <h1 class="text-2xl font-bold text-gray-800">${lang === 'zh' ? '我的' : 'Profile'}</h1>
         </div>
 
-        <!-- User Card -->
-        <div class="bg-white rounded-2xl p-6 shadow-lg mb-6 text-center">
-          <div class="text-5xl mb-3">${personality ? (emojiMap[personality.code] || '🧩') : '🧑'}</div>
-          ${personality ? `
-            <h2 class="text-2xl font-bold" style="color:${personality.color}">${personality.code}</h2>
-            <p class="text-gray-500">${lang === 'zh' ? personality.name_zh : personality.name_en}</p>
-          ` : `
-            <h2 class="text-xl text-gray-500">${lang === 'zh' ? '尚未测试' : 'Not tested yet'}</h2>
-          `}
-          ${nickname ? `<p class="text-sm text-gray-400 mt-2">${lang === 'zh' ? '昵称' : 'Nickname'}: ${nickname}</p>` : ''}
-          ${guestCode ? `<p class="text-sm text-purple-500 mt-1 font-mono">${lang === 'zh' ? '临时码' : 'Guest Code'}: ${guestCode}</p>` : ''}
+        <!-- Login / User Card -->
+        ${loggedInUser ? `
+        <div class="bg-white rounded-2xl p-5 shadow-lg mb-6">
+          <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-full bg-purple-100 flex items-center justify-center text-2xl">${loggedInUser.avatar || '👤'}</div>
+            <div class="flex-1">
+              <div class="font-bold text-lg text-gray-800">${loggedInUser.nickname || loggedInUser.username}</div>
+              <div class="text-sm text-gray-400">@${loggedInUser.username}</div>
+            </div>
+            <button onclick="doLogout()" class="text-sm text-red-400 hover:text-red-600">${lang === 'zh' ? '退出' : 'Logout'}</button>
+          </div>
         </div>
+        ` : `
+        <div class="bg-white rounded-2xl p-6 shadow-lg mb-6">
+          <div class="text-center mb-4">
+            <div class="text-5xl mb-2">👤</div>
+            <p class="text-gray-500 text-sm">${lang === 'zh' ? '登录后可跨设备同步数据' : 'Login to sync data across devices'}</p>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <button onclick="showLoginModal()" class="py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition">${lang === 'zh' ? '登录' : 'Login'}</button>
+            <button onclick="showRegisterModal()" class="py-3 border-2 border-purple-400 text-purple-600 rounded-xl font-medium hover:bg-purple-50 transition">${lang === 'zh' ? '注册' : 'Register'}</button>
+          </div>
+        </div>
+        `}
 
         <!-- Stats Grid -->
         <div class="grid grid-cols-3 gap-3 mb-6">
@@ -2942,4 +2955,163 @@ function exportMyData() {
   link.href = URL.createObjectURL(blob);
   link.click();
   URL.revokeObjectURL(link.href);
+}
+
+// ============ Auth UI ============
+function showLoginModal() {
+  const modal = document.createElement('div');
+  modal.id = 'authModal';
+  modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50';
+  modal.innerHTML = `
+    <div class="bg-white rounded-2xl max-w-md w-full p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold text-gray-800">${lang === 'zh' ? '登录' : 'Login'}</h2>
+        <button onclick="document.getElementById('authModal').remove()" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">${lang === 'zh' ? '用户名' : 'Username'}</label>
+          <input id="loginUsername" type="text" maxlength="32" placeholder="${lang === 'zh' ? '输入用户名' : 'Enter username'}" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">${lang === 'zh' ? '密码' : 'Password'}</label>
+          <input id="loginPassword" type="password" maxlength="64" placeholder="${lang === 'zh' ? '输入密码' : 'Enter password'}" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none">
+        </div>
+        <div id="loginError" class="text-red-500 text-sm hidden"></div>
+        <button onclick="doLogin()" class="w-full py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition">${lang === 'zh' ? '登录' : 'Login'}</button>
+        <p class="text-center text-sm text-gray-400">${lang === 'zh' ? '没有账号？' : 'No account?'} <button onclick="document.getElementById('authModal').remove();showRegisterModal()" class="text-purple-500 hover:underline">${lang === 'zh' ? '注册一个' : 'Register'}</button></p>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+function showRegisterModal() {
+  const modal = document.createElement('div');
+  modal.id = 'authModal';
+  modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50';
+  modal.innerHTML = `
+    <div class="bg-white rounded-2xl max-w-md w-full p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold text-gray-800">${lang === 'zh' ? '注册' : 'Register'}</h2>
+        <button onclick="document.getElementById('authModal').remove()" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">${lang === 'zh' ? '用户名' : 'Username'}</label>
+          <input id="regUsername" type="text" maxlength="32" placeholder="${lang === 'zh' ? '2-32个字符' : '2-32 characters'}" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">${lang === 'zh' ? '昵称' : 'Nickname'}</label>
+          <input id="regNickname" type="text" maxlength="16" placeholder="${lang === 'zh' ? '显示名称（可选）' : 'Display name (optional)'}" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">${lang === 'zh' ? '密码' : 'Password'}</label>
+          <input id="regPassword" type="password" maxlength="64" placeholder="${lang === 'zh' ? '至少4位' : 'Min 4 characters'}" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">${lang === 'zh' ? '确认密码' : 'Confirm Password'}</label>
+          <input id="regPassword2" type="password" maxlength="64" placeholder="${lang === 'zh' ? '再次输入密码' : 'Re-enter password'}" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none">
+        </div>
+        <div id="regError" class="text-red-500 text-sm hidden"></div>
+        <button onclick="doRegister()" class="w-full py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition">${lang === 'zh' ? '注册' : 'Register'}</button>
+        <p class="text-center text-sm text-gray-400">${lang === 'zh' ? '已有账号？' : 'Have an account?'} <button onclick="document.getElementById('authModal').remove();showLoginModal()" class="text-purple-500 hover:underline">${lang === 'zh' ? '去登录' : 'Login'}</button></p>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+async function doLogin() {
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  if (!username || !password) {
+    errEl.textContent = lang === 'zh' ? '请输入用户名和密码' : 'Username and password required';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  try {
+    const res = await fetch('https://sbti-api.hebiwu007.workers.dev/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (data.success) {
+      localStorage.setItem('sbti_user', JSON.stringify(data.user));
+      localStorage.setItem('sbti_token', data.token);
+      // Link existing guest code to account
+      const guestCode = localStorage.getItem('sbti_guest_code');
+      if (guestCode) {
+        fetch('https://sbti-api.hebiwu007.workers.dev/api/auth/link-guest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: data.user.id, guest_code: guestCode })
+        }).catch(() => {});
+      }
+      document.getElementById('authModal')?.remove();
+      showToast(lang === 'zh' ? '登录成功！' : 'Logged in!');
+      showUserProfile();
+    } else {
+      errEl.textContent = data.error || 'Error';
+      errEl.classList.remove('hidden');
+    }
+  } catch (e) {
+    errEl.textContent = lang === 'zh' ? '网络错误' : 'Network error';
+    errEl.classList.remove('hidden');
+  }
+}
+
+async function doRegister() {
+  const username = document.getElementById('regUsername').value.trim();
+  const nickname = document.getElementById('regNickname').value.trim();
+  const password = document.getElementById('regPassword').value;
+  const password2 = document.getElementById('regPassword2').value;
+  const errEl = document.getElementById('regError');
+  if (!username || !password) {
+    errEl.textContent = lang === 'zh' ? '请填写用户名和密码' : 'Username and password required';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  if (password !== password2) {
+    errEl.textContent = lang === 'zh' ? '两次密码不一致' : 'Passwords do not match';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  if (password.length < 4) {
+    errEl.textContent = lang === 'zh' ? '密码至少4位' : 'Password min 4 characters';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  try {
+    const res = await fetch('https://sbti-api.hebiwu007.workers.dev/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password, nickname: nickname || username })
+    });
+    const data = await res.json();
+    if (data.success) {
+      localStorage.setItem('sbti_user', JSON.stringify(data.user));
+      localStorage.setItem('sbti_token', data.token);
+      document.getElementById('authModal')?.remove();
+      showToast(lang === 'zh' ? '注册成功！' : 'Registered!');
+      showUserProfile();
+    } else {
+      errEl.textContent = data.error || 'Error';
+      errEl.classList.remove('hidden');
+    }
+  } catch (e) {
+    errEl.textContent = lang === 'zh' ? '网络错误' : 'Network error';
+    errEl.classList.remove('hidden');
+  }
+}
+
+function doLogout() {
+  const confirmed = confirm(lang === 'zh' ? '确定退出登录？' : 'Logout?');
+  if (!confirmed) return;
+  localStorage.removeItem('sbti_user');
+  localStorage.removeItem('sbti_token');
+  showToast(lang === 'zh' ? '已退出' : 'Logged out');
+  showUserProfile();
 }

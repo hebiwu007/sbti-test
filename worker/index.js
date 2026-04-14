@@ -59,7 +59,17 @@ export default {
 
       // Delete user data by guest_code
       if (path === '/api/data' && request.method === 'DELETE')
-        return await handleDataDelete(env, corsHeaders, url);
+        return await handleDataDelete(request, env, corsHeaders);
+
+      // Auth routes
+      if (path === '/api/auth/register' && request.method === 'POST')
+        return await handleRegister(request, env, corsHeaders);
+      if (path === '/api/auth/login' && request.method === 'POST')
+        return await handleLogin(request, env, corsHeaders);
+      if (path === '/api/auth/profile' && (request.method === 'POST' || request.method === 'PUT'))
+        return await handleUserProfile(request, env, corsHeaders);
+      if (path === '/api/auth/link-guest' && request.method === 'POST')
+        return await handleLinkGuest(request, env, corsHeaders);
 
       return new Response(JSON.stringify({ error: 'Not found' }), {
         status: 404,
@@ -362,8 +372,10 @@ async function handleDailyStats(request, env, h) {
 }
 
 // ============ Delete user data ============
-async function handleDataDelete(env, h, url) {
-  const guest_code = url.searchParams.get('guest_code');
+async function handleDataDelete(request, env, h) {
+  const body = await request.json().catch(() => null);
+  const url = new URL(request.url);
+  const guest_code = body?.guest_code || url.searchParams.get('guest_code');
   if (!guest_code || !guest_code.startsWith('SBTI-')) {
     return json({ error: 'Valid guest_code required (SBTI-XXXX)' }, h, 400);
   }
@@ -405,4 +417,118 @@ function generateGuestCode() {
   let code = '';
   for (let i = 0; i < 5; i++) code += chars[Math.floor(Math.random() * chars.length)];
   return code;
+}
+
+// ============ Auth System ============
+
+// Register
+async function handleRegister(request, env, h) {
+  const body = await request.json();
+  const { username, password, nickname } = body;
+  if (!username || !password) return json({ error: 'username and password required' }, h, 400);
+  if (username.length < 2 || username.length > 32) return json({ error: 'username 2-32 chars' }, h, 400);
+  if (password.length < 4) return json({ error: 'password min 4 chars' }, h, 400);
+
+  // Ensure users table exists
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    nickname TEXT,
+    mbti_type TEXT,
+    avatar TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`).run();
+  try { await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)').run(); } catch(e) {}
+
+  // Check if username exists
+  const existing = await env.DB.prepare('SELECT id FROM users WHERE username = ?').bind(username).first();
+  if (existing) return json({ error: lang === 'zh' ? '用户名已存在' : 'Username already exists' }, h, 409);
+
+  // Hash password (simple SHA-256 with salt — sufficient for this app's scale)
+  const salt = crypto.randomUUID().substring(0, 8);
+  const hash = await hashPassword(password, salt);
+  const token = generateToken();
+
+  await env.DB.prepare(
+    'INSERT INTO users (username, password_hash, nickname) VALUES (?, ?, ?)'
+  ).bind(username, `${salt}:${hash}`, nickname || username).run();
+
+  const user = await env.DB.prepare('SELECT id, username, nickname, mbti_type, avatar, created_at FROM users WHERE username = ?').bind(username).first();
+
+  return json({ success: true, token, user }, h);
+}
+
+// Login
+async function handleLogin(request, env, h) {
+  const body = await request.json();
+  const { username, password } = body;
+  if (!username || !password) return json({ error: 'username and password required' }, h, 400);
+
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    nickname TEXT,
+    mbti_type TEXT,
+    avatar TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`).run();
+
+  const row = await env.DB.prepare('SELECT id, username, password_hash, nickname, mbti_type, avatar, created_at FROM users WHERE username = ?').bind(username).first();
+  if (!row) return json({ error: 'user not found' }, h, 404);
+
+  const [salt, storedHash] = row.password_hash.split(':');
+  const hash = await hashPassword(password, salt);
+  if (hash !== storedHash) return json({ error: 'wrong password' }, h, 401);
+
+  const token = generateToken();
+  const user = { id: row.id, username: row.username, nickname: row.nickname, mbti_type: row.mbti_type, avatar: row.avatar, created_at: row.created_at };
+
+  return json({ success: true, token, user }, h);
+}
+
+// Get/Update user profile
+async function handleUserProfile(request, env, h) {
+  const body = await request.json();
+  const { user_id, nickname, mbti_type, avatar } = body;
+  if (!user_id) return json({ error: 'user_id required' }, h, 400);
+
+  if (request.method === 'PUT') {
+    await env.DB.prepare(
+      'UPDATE users SET nickname = ?, mbti_type = ?, avatar = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+    ).bind(nickname || null, mbti_type || null, avatar || null, user_id).run();
+  }
+
+  const user = await env.DB.prepare('SELECT id, username, nickname, mbti_type, avatar, created_at FROM users WHERE id = ?').bind(user_id).first();
+  if (!user) return json({ error: 'user not found' }, h, 404);
+
+  return json({ user }, h);
+}
+
+// Link guest code to user account
+async function handleLinkGuest(request, env, h) {
+  const body = await request.json();
+  const { user_id, guest_code } = body;
+  if (!user_id || !guest_code) return json({ error: 'user_id and guest_code required' }, h, 400);
+
+  // Update rankings to link guest_code to user
+  await env.DB.prepare('CREATE TABLE IF NOT EXISTS user_rankings (user_id INTEGER, guest_code TEXT, linked_at DATETIME DEFAULT CURRENT_TIMESTAMP)').run();
+  await env.DB.prepare('INSERT OR IGNORE INTO user_rankings (user_id, guest_code) VALUES (?, ?)').bind(user_id, guest_code).run();
+
+  return json({ success: true }, h);
+}
+
+// Password helpers
+async function hashPassword(password, salt) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(salt + password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function generateToken() {
+  return 'tk_' + crypto.randomUUID().replace(/-/g, '');
 }
