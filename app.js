@@ -7,70 +7,34 @@ let currentQuestion = 0;
 let answers = {};
 let lang = localStorage.getItem('sbti_lang') || 'zh';
 let testCount = 0;
+let questionOrder = []; // 保存题目顺序
 
 // Dimension mapping (matching questions.json)
 const dimensionOrder = [
-  'self_esteem',      // Q1
-  'self_esteem',      // Q2
-  'self_clarity',     // Q3
-  'self_clarity',     // Q4
-  'core_values',      // Q5
-  'attachment_security', // Q6
-  'emotional_investment', // Q7
-  'boundaries',       // Q8
-  'attachment_security', // Q9
-  'boundaries',       // Q10
-  'worldview',        // Q11
-  'rules_flexibility',// Q12
-  'sense_of_purpose',// Q13
-  'rules_flexibility',// Q14
-  'worldview',        // Q15
-  'motivation',       // Q16
-  'decision_style',   // Q17
-  'execution',        // Q18
-  'execution',        // Q19
-  'decision_style',   // Q20
-  'social_initiative',// Q21
-  'interpersonal_boundaries', // Q22
-  'expression',       // Q23
-  'social_initiative',// Q24
-  'expression'       // Q25
+  'self_esteem', 'self_esteem', 'self_clarity', 'self_clarity', 'core_values',
+  'attachment_security', 'emotional_investment', 'boundaries', 'attachment_security', 'boundaries',
+  'worldview', 'rules_flexibility', 'sense_of_purpose', 'rules_flexibility', 'worldview',
+  'motivation', 'decision_style', 'execution', 'execution', 'decision_style',
+  'social_initiative', 'interpersonal_boundaries', 'expression', 'social_initiative', 'expression'
 ];
-
-// Model mapping
-const modelMap = {
-  self_esteem: 'self',
-  self_clarity: 'self',
-  core_values: 'self',
-  attachment_security: 'emotional',
-  emotional_investment: 'emotional',
-  boundaries: 'emotional',
-  worldview: 'attitude',
-  rules_flexibility: 'attitude',
-  sense_of_purpose: 'attitude',
-  motivation: 'action',
-  decision_style: 'action',
-  execution: 'action',
-  social_initiative: 'social',
-  interpersonal_boundaries: 'social',
-  expression: 'social'
-};
 
 // Model colors
 const modelColors = {
-  self: '#8B5CF6',      // Purple
-  emotional: '#EC4899', // Pink
-  attitude: '#10B981',  // Green
-  action: '#F59E0B',    // Amber
-  social: '#3B82F6'     // Blue
+  self: '#8B5CF6',
+  emotional: '#EC4899',
+  attitude: '#10B981',
+  action: '#F59E0B',
+  social: '#3B82F6'
 };
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
   await loadData();
+  checkSavedProgress();
   initApp();
 });
 
+// Load data
 async function loadData() {
   try {
     const [qRes, pRes] = await Promise.all([
@@ -79,15 +43,51 @@ async function loadData() {
     ]);
     questions = (await qRes.json()).questions;
     personalities = (await pRes.json()).personalities;
-    
-    // Load test count
     testCount = parseInt(localStorage.getItem('sbti_test_count') || '0');
   } catch (e) {
     console.error('Failed to load data:', e);
   }
 }
 
+// Check saved progress
+function checkSavedProgress() {
+  const saved = localStorage.getItem('sbti_progress');
+  if (saved) {
+    try {
+      const data = JSON.parse(saved);
+      if (data.answers && Object.keys(data.answers).length > 0) {
+        answers = data.answers;
+        currentQuestion = data.currentQuestion || 0;
+      }
+    } catch (e) {}
+  }
+}
+
+// Save progress
+function saveProgress() {
+  localStorage.setItem('sbti_progress', JSON.stringify({
+    answers,
+    currentQuestion,
+    timestamp: Date.now()
+  }));
+}
+
+// Clear progress
+function clearProgress() {
+  localStorage.removeItem('sbti_progress');
+}
+
+// Shuffle questions
+function shuffleQuestions() {
+  questionOrder = [...Array(questions.length).keys()];
+  for (let i = questionOrder.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [questionOrder[i], questionOrder[j]] = [questionOrder[j], questionOrder[i]];
+  }
+}
+
 function initApp() {
+  shuffleQuestions();
   renderLanding();
 }
 
@@ -128,25 +128,27 @@ function renderLanding() {
 
 // Start quiz
 function startQuiz() {
-  currentQuestion = 0;
-  answers = {};
+  // 从保存的进度恢复或从0开始
+  if (Object.keys(answers).length === 0) {
+    currentQuestion = 0;
+    answers = {};
+  }
   renderQuiz();
 }
 
 // Render quiz page
 function renderQuiz() {
   const app = document.getElementById('app');
-  const q = questions[currentQuestion];
+  // 使用乱序后的题目
+  const qIndex = questionOrder[currentQuestion];
+  const q = questions[qIndex];
   const progress = ((currentQuestion + 1) / questions.length) * 100;
   
   app.innerHTML = `
     <div class="min-h-screen flex flex-col bg-gradient-to-b from-purple-50 to-white">
-      <!-- Progress bar -->
       <div class="w-full h-1 bg-gray-200">
         <div class="h-full bg-purple-500 transition-all duration-300" style="width: ${progress}%"></div>
       </div>
-      
-      <!-- Question -->
       <div class="flex-1 flex flex-col items-center justify-center px-4 py-8">
         <div class="w-full max-w-md">
           <p class="text-purple-500 font-medium mb-4">
@@ -155,7 +157,6 @@ function renderQuiz() {
           <h2 class="text-2xl font-bold text-gray-800 mb-8 text-center">
             ${lang === 'zh' ? q.text_zh : q.text_en}
           </h2>
-          
           <div class="space-y-3">
             ${q.options.map((opt, i) => `
               <button onclick="selectAnswer(${currentQuestion}, '${opt.value}')" 
@@ -168,8 +169,6 @@ function renderQuiz() {
           </div>
         </div>
       </div>
-      
-      <!-- Navigation -->
       <div class="p-4 flex justify-between max-w-md mx-auto w-full">
         <button onclick="prevQuestion()" ${currentQuestion === 0 ? 'disabled' : ''} 
           class="px-6 py-3 rounded-full border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -180,7 +179,6 @@ function renderQuiz() {
           ${currentQuestion === questions.length - 1 ? t('finish_btn') : t('next_btn')}
         </button>
       </div>
-      
       <button onclick="toggleLang()" class="fixed top-4 right-4 px-3 py-1 border border-purple-300 rounded-full text-purple-500 hover:bg-purple-50 text-sm">
         ${lang === 'zh' ? 'EN' : '中文'}
       </button>
@@ -191,6 +189,7 @@ function renderQuiz() {
 // Select answer
 function selectAnswer(qIndex, value) {
   answers[qIndex] = value;
+  saveProgress();
   renderQuiz();
 }
 
@@ -198,6 +197,7 @@ function selectAnswer(qIndex, value) {
 function prevQuestion() {
   if (currentQuestion > 0) {
     currentQuestion--;
+    saveProgress();
     renderQuiz();
   }
 }
@@ -208,14 +208,14 @@ function nextQuestion() {
   
   if (currentQuestion < questions.length - 1) {
     currentQuestion++;
+    saveProgress();
     renderQuiz();
   } else {
-    // Check hidden question trigger
     showHiddenQuestion();
   }
 }
 
-// Show hidden question (Q26)
+// Show hidden question
 function showHiddenQuestion() {
   const app = document.getElementById('app');
   const hiddenQ = {
@@ -247,14 +247,14 @@ function showHiddenQuestion() {
   `;
 }
 
-// Handle hidden question answer
+// Handle hidden answer
 function handleHiddenAnswer(optionIndex) {
-  // Option C (index 2) triggers DRUNK personality
   if (optionIndex === 2) {
     calculateResult(true);
   } else {
     calculateResult(false);
   }
+  clearProgress();
 }
 
 // Calculate result
@@ -264,61 +264,44 @@ function calculateResult(isDrunk) {
   if (isDrunk) {
     result = personalities.find(p => p.code === 'DRUNK');
   } else {
-    // Calculate user pattern
     const userPattern = calculateUserPattern();
-    
-    // Find closest personality using Manhattan distance
     let minDistance = Infinity;
     let matchedPersonality = null;
     
     for (const p of personalities) {
-      if (p.code === 'DRUNK') continue; // Skip hidden personality
-      
+      if (p.code === 'DRUNK') continue;
       const distance = calculateDistance(userPattern, p.pattern);
       if (distance < minDistance) {
         minDistance = distance;
         matchedPersonality = p;
       }
     }
-    
     result = matchedPersonality;
   }
   
-  // Update test count
   testCount++;
   localStorage.setItem('sbti_test_count', testCount.toString());
-  
-  // Show result
   renderResult(result);
 }
 
-// Calculate user 15-dimension pattern
+// Calculate user pattern
 function calculateUserPattern() {
-  // Count H/M/L for each dimension
   const dimCounts = {};
   
   for (let i = 0; i < 25; i++) {
     const dim = dimensionOrder[i];
     const value = answers[i];
-    
-    if (!dimCounts[dim]) {
-      dimCounts[dim] = { H: 0, M: 0, L: 0 };
-    }
-    if (value) {
-      dimCounts[dim][value]++;
-    }
+    if (!dimCounts[dim]) dimCounts[dim] = { H: 0, M: 0, L: 0 };
+    if (value) dimCounts[dim][value]++;
   }
   
-  // Convert to pattern string
-  const pattern = dimensionOrder.map(dim => {
+  return dimensionOrder.map(dim => {
     const counts = dimCounts[dim];
     if (!counts) return 'M';
     if (counts.H >= counts.M && counts.H >= counts.L) return 'H';
     if (counts.L >= counts.M && counts.L >= counts.H) return 'L';
     return 'M';
-  });
-  
-  return pattern.join('');
+  }).join('');
 }
 
 // Calculate Manhattan distance
@@ -326,7 +309,6 @@ function calculateDistance(pattern1, pattern2) {
   let distance = 0;
   for (let i = 0; i < pattern1.length; i++) {
     if (pattern1[i] !== pattern2[i]) {
-      // H->L or L->H = 2, H->M or L->M = 1
       const v1 = pattern1[i] === 'H' ? 2 : (pattern1[i] === 'L' ? 0 : 1);
       const v2 = pattern2[i] === 'H' ? 2 : (pattern2[i] === 'L' ? 0 : 1);
       distance += Math.abs(v1 - v2);
@@ -335,74 +317,51 @@ function calculateDistance(pattern1, pattern2) {
   return distance;
 }
 
-// Render result page
+// Render result
 function renderResult(personality) {
   const app = document.getElementById('app');
   
   app.innerHTML = `
     <div class="min-h-screen bg-gradient-to-b from-purple-50 to-white overflow-auto">
       <div class="max-w-md mx-auto px-4 py-8">
-        <!-- Header -->
         <div class="text-center mb-8">
           <p class="text-purple-500 font-medium mb-2">${t('your_type')}</p>
           <h1 class="text-5xl font-bold mb-2" style="color: ${personality.color}">${personality.code}</h1>
           <h2 class="text-2xl text-gray-700 mb-2">${lang === 'zh' ? personality.name_zh : personality.name_en}</h2>
           <p class="text-lg text-gray-500">${lang === 'zh' ? personality.tagline_zh : personality.tagline_en}</p>
         </div>
-        
-        <!-- Description -->
         <div class="bg-white rounded-2xl p-6 shadow-lg mb-6">
           <p class="text-gray-700 leading-relaxed text-center">
             ${lang === 'zh' ? personality.desc_zh : personality.desc_en}
           </p>
         </div>
-        
-        <!-- Radar Chart -->
         <div class="bg-white rounded-2xl p-6 shadow-lg mb-6">
           <h3 class="text-lg font-bold text-gray-800 mb-4 text-center">${t('dimension_analysis')}</h3>
           <canvas id="radarChart" class="w-full"></canvas>
         </div>
-        
-        <!-- Strengths & Blind Spots -->
         <div class="grid grid-cols-2 gap-4 mb-6">
           <div class="bg-white rounded-2xl p-4 shadow-lg">
             <h4 class="font-bold text-green-600 mb-3">${t('strengths')}</h4>
             <ul class="space-y-2">
-              ${(lang === 'zh' ? personality.strengths_zh : personality.strengths_en).map(s => `
-                <li class="text-gray-600 text-sm">✓ ${s}</li>
-              `).join('')}
+              ${(lang === 'zh' ? personality.strengths_zh : personality.strengths_en).map(s => `<li class="text-gray-600 text-sm">✓ ${s}</li>`).join('')}
             </ul>
           </div>
           <div class="bg-white rounded-2xl p-4 shadow-lg">
             <h4 class="font-bold text-red-500 mb-3">${t('blind_spots')}</h4>
             <ul class="space-y-2">
-              ${(lang === 'zh' ? personality.blind_spots_zh : personality.blind_spots_en).map(s => `
-                <li class="text-gray-600 text-sm">✗ ${s}</li>
-              `).join('')}
+              ${(lang === 'zh' ? personality.blind_spots_zh : personality.blind_spots_en).map(s => `<li class="text-gray-600 text-sm">✗ ${s}</li>`).join('')}
             </ul>
           </div>
         </div>
-        
-        <!-- Actions -->
         <div class="flex gap-4 mb-8">
-          <button onclick="shareResult()" class="flex-1 py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition">
-            ${t('share_btn')}
-          </button>
-          <button onclick="restartQuiz()" class="flex-1 py-3 border-2 border-purple-300 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">
-            ${t('restart_btn')}
-          </button>
+          <button onclick="shareResult()" class="flex-1 py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition">${t('share_btn')}</button>
+          <button onclick="restartQuiz()" class="flex-1 py-3 border-2 border-purple-300 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${t('restart_btn')}</button>
         </div>
-        
         <a href="privacy.html" class="block text-center text-gray-400 hover:text-purple-500 text-sm mb-4">${t('privacy_link')}</a>
       </div>
-      
-      <button onclick="toggleLang()" class="fixed top-4 right-4 px-3 py-1 border border-purple-300 rounded-full text-purple-500 hover:bg-purple-50 text-sm">
-        ${lang === 'zh' ? 'EN' : '中文'}
-      </button>
+      <button onclick="toggleLang()" class="fixed top-4 right-4 px-3 py-1 border border-purple-300 rounded-full text-purple-500 hover:bg-purple-50 text-sm">${lang === 'zh' ? 'EN' : '中文'}</button>
     </div>
   `;
-  
-  // Draw radar chart
   setTimeout(() => drawRadarChart(personality.pattern), 100);
 }
 
@@ -423,7 +382,6 @@ function drawRadarChart(pattern) {
   const centerY = rect.height / 2;
   const radius = Math.min(centerX, centerY) - 40;
   
-  // Dimensions by model
   const dimensions = [
     ['self_esteem', 'self_clarity', 'core_values'],
     ['attachment_security', 'emotional_investment', 'boundaries'],
@@ -434,18 +392,16 @@ function drawRadarChart(pattern) {
   
   const modelNames = ['self', 'emotional', 'attitude', 'action', 'social'];
   
-  // Draw grid
+  // Grid
   ctx.strokeStyle = '#e5e7eb';
   ctx.lineWidth = 1;
-  
   for (let r = 1; r <= 3; r++) {
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius * r / 3, 0, Math.PI * 2);
     ctx.stroke();
   }
   
-  // Draw axes and labels
-  let angleIndex = 0;
+  // Axes and labels
   ctx.font = '10px Inter, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -460,30 +416,26 @@ function drawRadarChart(pattern) {
       const x = centerX + Math.cos(angle) * radius;
       const y = centerY + Math.sin(angle) * radius;
       
-      // Draw axis line
       ctx.beginPath();
       ctx.moveTo(centerX, centerY);
       ctx.lineTo(x, y);
       ctx.stroke();
       
-      // Draw label
       const labelX = centerX + Math.cos(angle) * (radius + 20);
       const labelY = centerY + Math.sin(angle) * (radius + 20);
       const dimName = i18n[lang].dimensions[modelDims[i]] || modelDims[i];
       ctx.fillStyle = modelColors[modelNames[modelIdx]];
       ctx.fillText(dimName.substring(0, 6), labelX, labelY);
-      
-      angleIndex++;
     }
   }
   
-  // Draw data polygon
+  // Data polygon
   const values = pattern.split('').map(v => v === 'H' ? 3 : (v === 'M' ? 2 : 1));
   
   ctx.beginPath();
-  ctx.strokeStyle = personality.color;
+  ctx.strokeStyle = '#8B5CF6';
   ctx.lineWidth = 2;
-  ctx.fillStyle = personality.color + '40';
+  ctx.fillStyle = '#8B5CF640';
   
   for (let i = 0; i < 15; i++) {
     const angle = (i * 24 - 90) * Math.PI / 180;
@@ -491,17 +443,14 @@ function drawRadarChart(pattern) {
     const x = centerX + Math.cos(angle) * r;
     const y = centerY + Math.sin(angle) * r;
     
-    if (i === 0) {
-      ctx.moveTo(x, y);
-    } else {
-      ctx.lineTo(x, y);
-    }
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
   }
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
   
-  // Draw data points
+  // Points
   for (let i = 0; i < 15; i++) {
     const angle = (i * 24 - 90) * Math.PI / 180;
     const r = (values[i] / 3) * radius;
@@ -510,34 +459,78 @@ function drawRadarChart(pattern) {
     
     ctx.beginPath();
     ctx.arc(x, y, 4, 0, Math.PI * 2);
-    ctx.fillStyle = personality.color;
+    ctx.fillStyle = '#8B5CF6';
     ctx.fill();
   }
 }
 
-// Share result (placeholder)
+// Share result - generate share card image
 function shareResult() {
-  // In a real app, this would generate a shareable image or link
-  alert(lang === 'zh' ? '分享功能开发中...' : 'Share feature coming soon...');
+  // 生成 9:16 分享卡片图片
+  const canvas = document.createElement('canvas');
+  canvas.width = 1080;
+  canvas.height = 1920;
+  const ctx = canvas.getContext('2d');
+  
+  // 背景
+  const gradient = ctx.createLinearGradient(0, 0, 0, 1920);
+  gradient.addColorStop(0, '#f5f3ff');
+  gradient.addColorStop(1, '#ffffff');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 1080, 1920);
+  
+  // 标题
+  ctx.fillStyle = '#8B5CF6';
+  ctx.font = 'bold 80px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('SBTI', 540, 300);
+  
+  // 人格代码
+  ctx.fillStyle = '#8B5CF6';
+  ctx.font = 'bold 200px Inter, sans-serif';
+  ctx.fillText(findMatchedPersonality?.code || 'SBTI', 540, 700);
+  
+  // 描述
+  ctx.fillStyle = '#374151';
+  ctx.font = '48px Inter, sans-serif';
+  const desc = (lang === 'zh' ? findMatchedPersonality?.tagline_zh : findMatchedPersonality?.tagline_en) || 'Discover your personality';
+  ctx.fillText(desc, 540, 900);
+  
+  // 分享文字
+  ctx.fillStyle = '#9CA3AF';
+  ctx.font = '36px Inter, sans-serif';
+  ctx.fillText('sbti-test.pages.dev', 540, 1800);
+  
+  // 复制到剪贴板
+  canvas.toBlob(blob => {
+    navigator.clipboard.write([new ClipboardItem({'image/png': blob})]).then(() => {
+      alert(lang === 'zh' ? '图片已复制到剪贴板' : 'Image copied to clipboard');
+    }).catch(() => {
+      // 降级：复制链接
+      navigator.clipboard.writeText(window.location.href).then(() => {
+        alert(lang === 'zh' ? '链接已复制' : 'Link copied');
+      });
+    });
+  });
 }
 
 // Restart quiz
 function restartQuiz() {
   currentQuestion = 0;
   answers = {};
+  clearProgress();
+  shuffleQuestions();
   renderLanding();
 }
 
-// Main render function (for language toggle)
+// Render (for language toggle)
 function render() {
-  // Re-render current page based on state
   const app = document.getElementById('app');
   if (!app) return;
   
   if (Object.keys(answers).length === 0) {
     renderLanding();
   } else if (document.querySelector('.bg-white.rounded-2xl.p-6.shadow-lg')) {
-    // Result page - find personality
     const matched = findMatchedPersonality();
     if (matched) renderResult(matched);
   } else {
@@ -545,11 +538,8 @@ function render() {
   }
 }
 
-// Find matched personality for re-render
+// Find matched personality
 function findMatchedPersonality() {
-  const isDrunk = answers[25] === 'C';
-  if (isDrunk) return personalities.find(p => p.code === 'DRUNK');
-  
   const userPattern = calculateUserPattern();
   let minDistance = Infinity;
   let matched = null;
@@ -562,6 +552,5 @@ function findMatchedPersonality() {
       matched = p;
     }
   }
-  
   return matched;
 }

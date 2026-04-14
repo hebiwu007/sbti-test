@@ -15,49 +15,83 @@
         extend: {
           colors: {
             purple: {
-              50: '#f5f3ff',
-              100: '#ede9fe',
-              200: '#ddd6fe',
-              300: '#c4b5fd',
-              400: '#a78bfa',
-              500: '#8b5cf6',
-              600: '#7c3aed',
-              700: '#6d28d9',
-              800: '#5b21b6',
-              900: '#4c1d95'
+              50: '#f5f3ff', 100: '#ede9fe', 200: '#ddd6fe', 300: '#c4b5fd',
+              400: '#a78bfa', 500: '#8b5cf6', 600: '#7c3aed', 700: '#6d28d9',
+              800: '#5b21b6', 900: '#4c1d95'
             }
           },
-          fontFamily: {
-            sans: ['Inter', 'Noto Sans SC', 'sans-serif']
-          }
+          fontFamily: { sans: ['Inter', 'Noto Sans SC', 'sans-serif'] }
         }
       }
     }
   </script>
   <style>
-    * {
-      -webkit-tap-highlight-color: transparent;
-    }
+    * { -webkit-tap-highlight-color: transparent; }
     body {
       font-family: 'Inter', 'Noto Sans SC', sans-serif;
       -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
     }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .animate-fadeIn {
-      animation: fadeIn 0.3s ease-out;
-    }
-    button:active {
-      transform: scale(0.98);
-    }
+    button:active { transform: scale(0.98); }
   </style>
 </head>
 <body>
   <div id="app"></div>
+  
+  <!-- Privacy Modal -->
+  <div id="privacyModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 max-h-[80vh] overflow-auto">
+      <h2 class="text-xl font-bold text-gray-800 mb-4" id="pmTitle"></h2>
+      <div class="text-gray-600 text-sm space-y-3" id="pmContent"></div>
+      <button onclick="closePrivacyModal()" class="mt-4 w-full py-3 bg-purple-600 text-white rounded-full" id="pmCloseBtn"></button>
+    </div>
+  </div>
+
   <script src="i18n.js"></script>
   <script src="app.js"></script>
+  <script>
+    // Privacy modal functions
+    function showPrivacyModal() {
+      const m = document.getElementById('privacyModal');
+      const lang = localStorage.getItem('sbti_lang') || 'zh';
+      
+      if (lang === 'zh') {
+        document.getElementById('pmTitle').textContent = '隐私政策';
+        document.getElementById('pmContent').innerHTML = `
+          <p>• 我们仅收集匿名答题数据，仅用于计算测试结果</p>
+          <p>• 数据存储在本地浏览器，不上传服务器</p>
+          <p>• 不使用 Cookie，不追踪用户</p>
+          <p>• 点击下方按钮可删除所有本地数据</p>
+          <button onclick="deleteAllData()" class="mt-2 px-4 py-2 bg-red-500 text-white rounded-full text-sm">删除我的数据</button>
+        `;
+        document.getElementById('pmCloseBtn').textContent = '关闭';
+      } else {
+        document.getElementById('pmTitle').textContent = 'Privacy Policy';
+        document.getElementById('pmContent').innerHTML = `
+          <p>• We only collect anonymous answer data for test results</p>
+          <p>• Data is stored locally in your browser, not uploaded</p>
+          <p>• No cookies or user tracking</p>
+          <p>• Click below to delete all local data</p>
+          <button onclick="deleteAllData()" class="mt-2 px-4 py-2 bg-red-500 text-white rounded-full text-sm">Delete My Data</button>
+        `;
+        document.getElementById('pmCloseBtn').textContent = 'Close';
+      }
+      
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+    
+    function closePrivacyModal() {
+      document.getElementById('privacyModal').classList.add('hidden');
+      document.getElementById('privacyModal').classList.remove('flex');
+    }
+    
+    function deleteAllData() {
+      if (confirm(localStorage.getItem('sbti_lang') === 'zh' ? '确定删除所有数据？' : 'Delete all data?')) {
+        localStorage.clear();
+        alert(localStorage.getItem('sbti_lang') === 'zh' ? '已删除' : 'Deleted');
+        closePrivacyModal();
+      }
+    }
+  </script>
 </body>
 </html>
