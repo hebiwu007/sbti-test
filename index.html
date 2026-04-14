@@ -12,7 +12,12 @@
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sbti-test-53g.pages.dev/">
   
-  <!-- Open Graph -->
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#8B5CF6">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="SBTI">
   <meta property="og:title" content="SBTI 人格测试 — 发现你的隐藏人格">
   <meta property="og:description" content="5大模型 × 15维度 × 27种人格。免费在线测试，5分钟了解真实的自己。">
   <meta property="og:type" content="website">
@@ -52,7 +57,9 @@
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.tailwindcss.com" rel="modulepreload">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -140,6 +147,15 @@
         alert(localStorage.getItem('sbti_lang') === 'zh' ? '已删除' : 'Deleted');
         closePrivacyModal();
       }
+    }
+  </script>
+  
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
     }
   </script>
 </body>
