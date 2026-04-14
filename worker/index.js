@@ -95,11 +95,13 @@ async function handleInit(env, h) {
     mbti_type TEXT,
     signature TEXT,
     guest_code TEXT UNIQUE,
+    timezone TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`).run();
   try { await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_rk_personality ON rankings(personality_code)').run(); } catch(e) {}
   try { await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_rk_score ON rankings(match_score DESC)').run(); } catch(e) {}
   try { await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_rk_guest ON rankings(guest_code)').run(); } catch(e) {}
+  try { await env.DB.prepare('ALTER TABLE rankings ADD COLUMN timezone TEXT').run(); } catch(e) {}
 
   // daily_quiz table
   await env.DB.prepare(`CREATE TABLE IF NOT EXISTS daily_quiz (
@@ -130,7 +132,7 @@ async function handleSubmit(request, env, h) {
 // ============ Submit to leaderboard with nickname ============
 async function handleRankingSubmit(request, env, h) {
   const body = await request.json();
-  const { nickname, personality_code, match_score, mbti_type, signature } = body;
+  const { nickname, personality_code, match_score, mbti_type, signature, timezone } = body;
 
   if (!nickname || !personality_code) {
     return json({ error: 'nickname and personality_code required' }, h, 400);
@@ -150,8 +152,8 @@ async function handleRankingSubmit(request, env, h) {
 
   // Insert ranking
   await env.DB.prepare(
-    'INSERT INTO rankings (rank_id, result_id, nickname, personality_code, match_score, mbti_type, signature, guest_code) VALUES (?,?,?,?,?,?,?,?)'
-  ).bind(rank_id, tr.meta.last_row_id, nickname, personality_code, match_score || null, mbti_type || null, signature || null, guest_code).run();
+    'INSERT INTO rankings (rank_id, result_id, nickname, personality_code, match_score, mbti_type, signature, guest_code, timezone) VALUES (?,?,?,?,?,?,?,?,?)'
+  ).bind(rank_id, tr.meta.last_row_id, nickname, personality_code, match_score || null, mbti_type || null, signature || null, guest_code, timezone || null).run();
 
   // Get user's rank within this personality type
   const rankResult = await env.DB.prepare(
@@ -215,23 +217,54 @@ async function handleMyRanking(env, h, url) {
 async function handleLeaderboard(env, h, url) {
   const limit = parseInt(url.searchParams.get('limit') || '27');
   const period = url.searchParams.get('period') || 'all';
+  const region = url.searchParams.get('region') || '';
 
-  let pf = '';
-  if (period === 'today') pf = "WHERE r.created_at >= date('now')";
-  else if (period === 'week') pf = "WHERE r.created_at >= date('now', '-7 days')";
-  else if (period === 'month') pf = "WHERE r.created_at >= date('now', '-30 days')";
+  // Map region to timezone prefixes
+  const regionMap = {
+    'asia': ['Asia/', 'Indian/', 'Pacific/Auckland', 'Pacific/Fiji'],
+    'europe': ['Europe/', 'Atlantic/', 'Africa/'],
+    'americas': ['America/', 'Pacific/Honolulu'],
+    'oceania': ['Australia/', 'Pacific/Auckland', 'Pacific/Fiji']
+  };
 
-  const results = await env.DB.prepare(
-    `SELECT personality_code, COUNT(*) as count
-     FROM test_results ${pf ? pf.replace('r.','') : ''}
-     GROUP BY personality_code ORDER BY count DESC LIMIT ?`
-  ).bind(limit).all();
+  let conditions = [];
+  let params = [];
 
-  const total = await env.DB.prepare(
-    `SELECT COUNT(*) as total FROM test_results ${pf ? pf.replace('r.','') : ''}`
-  ).first();
+  // Period filter
+  if (period === 'today') conditions.push("created_at >= date('now')");
+  else if (period === 'week') conditions.push("created_at >= date('now', '-7 days')");
+  else if (period === 'month') conditions.push("created_at >= date('now', '-30 days')");
 
-  return json({ leaderboard: results.results, total: total.total, period }, h);
+  // Region filter (applied to rankings table via timezone column)
+  let useRankings = false;
+  if (region && regionMap[region.toLowerCase()]) {
+    useRankings = true;
+    const prefixes = regionMap[region.toLowerCase()];
+    const tzConditions = prefixes.map(p => "timezone LIKE ?").join(' OR ');
+    conditions.push(`(${tzConditions})`);
+    params.push(...prefixes.map(p => `${p}%`));
+  }
+
+  const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
+
+  let results, total;
+  if (useRankings) {
+    results = await env.DB.prepare(
+      `SELECT personality_code, COUNT(*) as count FROM rankings ${whereClause} GROUP BY personality_code ORDER BY count DESC LIMIT ?`
+    ).bind(...params, limit).all();
+    total = await env.DB.prepare(
+      `SELECT COUNT(*) as total FROM rankings ${whereClause}`
+    ).bind(...params).first();
+  } else {
+    results = await env.DB.prepare(
+      `SELECT personality_code, COUNT(*) as count FROM test_results ${whereClause} GROUP BY personality_code ORDER BY count DESC LIMIT ?`
+    ).bind(...params, limit).all();
+    total = await env.DB.prepare(
+      `SELECT COUNT(*) as total FROM test_results ${whereClause}`
+    ).bind(...params).first();
+  }
+
+  return json({ leaderboard: results.results, total: total.total, period, region: region || 'global' }, h);
 }
 
 // ============ Stats ============

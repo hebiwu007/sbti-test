@@ -737,9 +737,11 @@ async function submitToLeaderboard(personality) {
 }
 
 // Fetch leaderboard data
-async function fetchLeaderboard(period = 'all') {
+async function fetchLeaderboard(period = 'all', region = '') {
   try {
-    const res = await fetch(`https://sbti-api.hebiwu007.workers.dev/api/leaderboard?period=${period}&limit=27`);
+    let url = `https://sbti-api.hebiwu007.workers.dev/api/leaderboard?period=${period}&limit=27`;
+    if (region) url += `&region=${region}`;
+    const res = await fetch(url);
     return await res.json();
   } catch (e) { return null; }
 }
@@ -1476,7 +1478,8 @@ async function doSubmitRanking() {
         personality_code: personality.code,
         match_score: personality._matchScore || null,
         mbti_type: mbti,
-        signature: signature || null
+        signature: signature || null,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || null
       })
     });
     const data = await res.json();
@@ -1576,7 +1579,7 @@ async function showTypeRankings(typeCode) {
 }
 
 // Show Leaderboard
-async function showLeaderboard(period = 'all') {
+async function showLeaderboard(period = 'all', region = '') {
   const app = document.getElementById('app');
   const emojiMap = {'CTRL':'🎯','BOSS':'👑','SHIT':'😒','PEACE':'🕊️','CARE':'🤗','LONE':'🐺','FUN':'🎉','DEEP':'🌌','REAL':'💎','GHOST':'👻','WARM':'☀️','EDGE':'🗡️','SAGE':'🧙','WILD':'🐆','COOL':'😎','SOFT':'🍬','SHARP':'⚡','DREAM':'💭','LOGIC':'🤖','SPARK':'✨','FLOW':'🌊','ROOT':'🌳','SKY':'☁️','FREE':'🦋','DARK':'🌑','STAR':'⭐','ECHO':'🔊'};
 
@@ -1601,10 +1604,19 @@ async function showLeaderboard(period = 'all') {
         </div>
 
         <!-- Period tabs -->
-        <div class="flex gap-2 mb-6 overflow-x-auto">
+        <div class="flex gap-2 mb-3 overflow-x-auto">
           ${['all','month','week','today'].map(p => `
-            <button onclick="showLeaderboard('${p}')" class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${p === period ? 'bg-purple-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}">
+            <button onclick="showLeaderboard('${p}', '${region}')" class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${p === period ? 'bg-purple-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}">
               ${t('period_' + p)}
+            </button>
+          `).join('')}
+        </div>
+
+        <!-- Region filter -->
+        <div class="flex gap-2 mb-6 overflow-x-auto">
+          ${[{key:'',label:t('region_all')},{key:'asia',label:t('region_asia')},{key:'europe',label:t('region_europe')},{key:'americas',label:t('region_americas')},{key:'oceania',label:t('region_oceania')}].map(r => `
+            <button onclick="showLeaderboard('${period}', '${r.key}')" class="px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap ${r.key === region ? 'bg-green-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}">
+              ${r.label}
             </button>
           `).join('')}
         </div>
@@ -1621,7 +1633,7 @@ async function showLeaderboard(period = 'all') {
   // Fetch data
   const [stats, lbData] = await Promise.all([
     fetchTestCount(),
-    fetchLeaderboard(period)
+    fetchLeaderboard(period, region)
   ]);
 
   document.getElementById('lb-total').textContent = (stats.total || 0).toLocaleString();
