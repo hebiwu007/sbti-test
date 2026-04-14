@@ -956,7 +956,19 @@ function drawRadarChart(pattern) {
 }
 
 // Share result - generate share card image
-function shareResult() {
+// Lazy-load QRCode.js library on demand
+function loadQRCode() {
+  return new Promise((resolve, reject) => {
+    if (window.QRCode) { resolve(); return; }
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+    script.onload = resolve;
+    script.onerror = () => reject(new Error('Failed to load QRCode.js'));
+    document.head.appendChild(script);
+  });
+}
+
+async function shareResult() {
   // 获取当前人格结果
   const personality = currentPersonality || findMatchedPersonality();
   if (!personality) {
@@ -1110,32 +1122,39 @@ function shareResult() {
   ctx.textAlign = 'center';
   ctx.fillText('sbti-test.pages.dev', 540, 1780);
   
-  // 7.5 二维码区域
-  const qrContainer = document.createElement('div');
-  qrContainer.style.display = 'none';
-  document.body.appendChild(qrContainer);
-  
-  const qrCode = new QRCode(qrContainer, {
-    text: `${window.location.origin}/?ref=${personality.code}`,
-    width: 120,
-    height: 120,
-    colorDark: '#374151',
-    colorLight: '#FFFFFF',
-    correctLevel: QRCode.CorrectLevel.L
-  });
-  
-  // 获取二维码 canvas 并绘制到分享卡片
-  const qrCanvas = qrContainer.querySelector('canvas');
-  if (qrCanvas) {
-    ctx.drawImage(qrCanvas, 480, 1820, 120, 120);
-  } else {
-    // 如果没有 canvas，尝试 img
-    const qrImg = qrContainer.querySelector('img');
-    if (qrImg) {
-      ctx.drawImage(qrImg, 480, 1820, 120, 120);
-    }
+  // 7.5 二维码区域 (lazy-load QRCode.js)
+  try {
+    await loadQRCode();
+  } catch(e) {
+    console.warn('QRCode.js load failed, skipping QR generation');
   }
-  document.body.removeChild(qrContainer);
+  if (window.QRCode) {
+    const qrContainer = document.createElement('div');
+    qrContainer.style.display = 'none';
+    document.body.appendChild(qrContainer);
+    
+    const qrCode = new QRCode(qrContainer, {
+      text: `${window.location.origin}/?ref=${personality.code}`,
+      width: 120,
+      height: 120,
+      colorDark: '#374151',
+      colorLight: '#FFFFFF',
+      correctLevel: QRCode.CorrectLevel.L
+    });
+    
+    // 获取二维码 canvas 并绘制到分享卡片
+    const qrCanvas = qrContainer.querySelector('canvas');
+    if (qrCanvas) {
+      ctx.drawImage(qrCanvas, 480, 1820, 120, 120);
+    } else {
+      // 如果没有 canvas，尝试 img
+      const qrImg = qrContainer.querySelector('img');
+      if (qrImg) {
+        ctx.drawImage(qrImg, 480, 1820, 120, 120);
+      }
+    }
+    document.body.removeChild(qrContainer);
+  }
   
   // 8. 生成图片并复制到剪贴板
   canvas.toBlob(blob => {
@@ -1185,8 +1204,9 @@ function shareResult() {
     if (selectedMBTI) {
       filename += `-${selectedMBTI}`;
     }
-    link.download = `${filename}.png`;
-    link.href = canvas.toDataURL('image/png');
+    // Use JPEG for download (smaller file size) with 0.92 quality
+    link.download = `${filename}.jpg`;
+    link.href = canvas.toDataURL('image/jpeg', 0.92);
     link.click();
     alert(lang === 'zh' ? '图片已下载' : 'Image downloaded');
   }
@@ -2114,7 +2134,7 @@ function showComparison() {
 }
 
 // Generate comparison card
-function generateComparisonCard(friendCode) {
+async function generateComparisonCard(friendCode) {
   const personality = currentPersonality || findMatchedPersonality();
   if (!personality) return;
   
@@ -2272,23 +2292,25 @@ function generateComparisonCard(friendCode) {
   ctx.fillText('sbti-test.pages.dev', 540, 1750);
   ctx.fillText(lang === 'zh' ? `${personality.code} × ${friendPersonality.code} 人格对比` : `${personality.code} × ${friendPersonality.code} Comparison`, 540, 1820);
   
-  // 二维码
-  const qrContainer = document.createElement('div');
-  qrContainer.style.display = 'none';
-  document.body.appendChild(qrContainer);
-  new QRCode(qrContainer, {
-    text: `${window.location.origin}/?ref=${personality.code}`,
-    width: 100,
-    height: 100,
-    colorDark: '#374151',
-    colorLight: '#FFFFFF',
-    correctLevel: QRCode.CorrectLevel.L
-  });
-  const qrCanvas = qrContainer.querySelector('canvas');
-  if (qrCanvas) {
-    ctx.drawImage(qrCanvas, 490, 1860, 100, 100);
+  // 二维码 (lazy-load)
+  if (window.QRCode || (await loadQRCode().catch(() => null), window.QRCode)) {
+    const qrContainer = document.createElement('div');
+    qrContainer.style.display = 'none';
+    document.body.appendChild(qrContainer);
+    new QRCode(qrContainer, {
+      text: `${window.location.origin}/?ref=${personality.code}`,
+      width: 100,
+      height: 100,
+      colorDark: '#374151',
+      colorLight: '#FFFFFF',
+      correctLevel: QRCode.CorrectLevel.L
+    });
+    const qrCanvas = qrContainer.querySelector('canvas');
+    if (qrCanvas) {
+      ctx.drawImage(qrCanvas, 490, 1860, 100, 100);
+    }
+    document.body.removeChild(qrContainer);
   }
-  document.body.removeChild(qrContainer);
   
   // 复制或下载
   canvas.toBlob(blob => {
@@ -2297,14 +2319,14 @@ function generateComparisonCard(friendCode) {
         alert(lang === 'zh' ? '对比卡片已复制到剪贴板' : 'Comparison card copied to clipboard');
       }).catch(() => {
         const link = document.createElement('a');
-        link.download = `SBTI-compare-${personality.code}-${friendPersonality.code}.png`;
-        link.href = canvas.toDataURL('image/png');
+        link.download = `SBTI-compare-${personality.code}-${friendPersonality.code}.jpg`;
+        link.href = canvas.toDataURL('image/jpeg', 0.92);
         link.click();
       });
     } else {
       const link = document.createElement('a');
-      link.download = `SBTI-compare-${personality.code}-${friendPersonality.code}.png`;
-      link.href = canvas.toDataURL('image/png');
+      link.download = `SBTI-compare-${personality.code}-${friendPersonality.code}.jpg`;
+      link.href = canvas.toDataURL('image/jpeg', 0.92);
       link.click();
     }
   });
