@@ -241,7 +241,7 @@ function renderLanding() {
           ${t('daily_quiz')}
         </button>
         <p class="mt-2 text-gray-500 text-sm">
-          ${t('test_count_prefix')}<span class="font-bold text-purple-500">${testCount.toLocaleString()}</span>${t('test_count_suffix')}
+          ${t('test_count_prefix')}<span class="font-bold text-purple-500" id="global-count">${testCount.toLocaleString()}</span>${t('test_count_suffix')}
         </p>
         <a href="privacy.html" class="mt-4 inline-block text-gray-400 hover:text-purple-500 text-sm">${t('privacy_link')}</a>
       </div>
@@ -250,6 +250,11 @@ function renderLanding() {
       </button>
     </div>
   `;
+  // Load global test count
+  fetchTestCount().then(d => {
+    const el = document.getElementById('global-count');
+    if (el && d.total > 0) el.textContent = d.total.toLocaleString();
+  });
 }
 
 // Show daily quiz
@@ -614,8 +619,43 @@ function calculateDistance(pattern1, pattern2) {
   return distance;
 }
 
+// Submit result to leaderboard API
+async function submitToLeaderboard(personality) {
+  try {
+    const mbti = localStorage.getItem('sbti_mbti') || null;
+    await fetch('https://sbti-api.hebiwu007.workers.dev/api/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        personality_code: personality.code,
+        mbti_type: mbti,
+        language: lang,
+        pattern: personality.pattern
+      })
+    });
+  } catch (e) { /* silent fail */ }
+}
+
+// Fetch leaderboard data
+async function fetchLeaderboard(period = 'all') {
+  try {
+    const res = await fetch(`https://sbti-api.hebiwu007.workers.dev/api/leaderboard?period=${period}&limit=27`);
+    return await res.json();
+  } catch (e) { return null; }
+}
+
+// Fetch total test count
+async function fetchTestCount() {
+  try {
+    const res = await fetch('https://sbti-api.hebiwu007.workers.dev/api/count');
+    return await res.json();
+  } catch (e) { return { total: 0, today: 0 }; }
+}
+
 // Render result
 function renderResult(personality) {
+  // Submit to leaderboard (async, non-blocking)
+  submitToLeaderboard(personality);
   const app = document.getElementById('app');
   const avatar = getPersonalityAvatar(personality.code);
   
@@ -699,6 +739,7 @@ function renderResult(personality) {
           <button onclick="shareResult()" class="col-span-2 py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition">${t('share_btn')}</button>
           <button onclick="showDetailedAnalysis()" class="py-3 border-2 border-green-500 text-green-600 rounded-full font-medium hover:bg-green-50 transition">${t('detailed_analysis')}</button>
           <button onclick="showComparison()" class="py-3 border-2 border-blue-500 text-blue-600 rounded-full font-medium hover:bg-blue-50 transition">${t('compare')}</button>
+          <button onclick="showLeaderboard()" class="col-span-2 py-3 border-2 border-orange-500 text-orange-600 rounded-full font-medium hover:bg-orange-50 transition">${t('leaderboard')}</button>
           <button onclick="restartQuiz()" class="col-span-2 py-3 border-2 border-purple-300 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${t('restart_btn')}</button>
         </div>
         <a href="privacy.html" class="block text-center text-gray-400 hover:text-purple-500 text-sm mb-4">${t('privacy_link')}</a>
@@ -1139,6 +1180,98 @@ function shareResultWithMBTI() {
 }
 
 // Show detailed personality analysis
+// Show Leaderboard
+async function showLeaderboard(period = 'all') {
+  const app = document.getElementById('app');
+  const emojiMap = {'CTRL':'🎯','BOSS':'👑','SHIT':'😒','PEACE':'🕊️','CARE':'🤗','LONE':'🐺','FUN':'🎉','DEEP':'🌌','REAL':'💎','GHOST':'👻','WARM':'☀️','EDGE':'🗡️','SAGE':'🧙','WILD':'🐆','COOL':'😎','SOFT':'🍬','SHARP':'⚡','DREAM':'💭','LOGIC':'🤖','SPARK':'✨','FLOW':'🌊','ROOT':'🌳','SKY':'☁️','FREE':'🦋','DARK':'🌑','STAR':'⭐','ECHO':'🔊'};
+
+  app.innerHTML = `
+    <div class="min-h-screen bg-gradient-to-b from-cream to-white overflow-auto">
+      <div class="max-w-md mx-auto px-4 py-8">
+        <div class="flex items-center mb-6">
+          <button onclick="renderResult(currentPersonality || findMatchedPersonality())" class="text-purple-600 mr-3">←</button>
+          <h1 class="text-2xl font-bold text-gray-800">${t('leaderboard_title')}</h1>
+        </div>
+
+        <!-- Stats cards -->
+        <div class="grid grid-cols-2 gap-4 mb-6">
+          <div class="bg-white rounded-xl p-4 shadow text-center">
+            <div class="text-2xl font-bold text-purple-600" id="lb-total">-</div>
+            <div class="text-sm text-gray-500">${t('total_tests')}</div>
+          </div>
+          <div class="bg-white rounded-xl p-4 shadow text-center">
+            <div class="text-2xl font-bold text-green-600" id="lb-today">-</div>
+            <div class="text-sm text-gray-500">${t('tests_today')}</div>
+          </div>
+        </div>
+
+        <!-- Period tabs -->
+        <div class="flex gap-2 mb-6 overflow-x-auto">
+          ${['all','month','week','today'].map(p => `
+            <button onclick="showLeaderboard('${p}')" class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${p === period ? 'bg-purple-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}">
+              ${t('period_' + p)}
+            </button>
+          `).join('')}
+        </div>
+
+        <!-- Leaderboard list -->
+        <div id="lb-list" class="space-y-3">
+          <div class="text-center py-8 text-gray-400">Loading...</div>
+        </div>
+      </div>
+      <button onclick="toggleLang()" class="fixed top-4 right-4 px-3 py-1 border border-purple-300 rounded-full text-purple-500 hover:bg-purple-50 text-sm">${lang === 'zh' ? 'EN' : '中文'}</button>
+    </div>
+  `;
+
+  // Fetch data
+  const [stats, lbData] = await Promise.all([
+    fetchTestCount(),
+    fetchLeaderboard(period)
+  ]);
+
+  document.getElementById('lb-total').textContent = (stats.total || 0).toLocaleString();
+  document.getElementById('lb-today').textContent = (stats.today || 0).toLocaleString();
+
+  const list = document.getElementById('lb-list');
+  if (!lbData || !lbData.leaderboard.length) {
+    list.innerHTML = '<div class="text-center py-8 text-gray-400">No data yet</div>';
+    return;
+  }
+
+  const total = lbData.total || 1;
+  const medals = ['🥇','🥈','🥉'];
+
+  list.innerHTML = lbData.leaderboard.map((item, i) => {
+    const p = personalities.find(p => p.code === item.personality_code);
+    const emoji = emojiMap[item.personality_code] || '💫';
+    const name = p ? (lang === 'zh' ? p.name_zh : p.name_en) : item.personality_code;
+    const color = p ? p.color : '#8B5CF6';
+    const pct = ((item.count / total) * 100).toFixed(1);
+    const medal = i < 3 ? medals[i] : `<span class="text-gray-400">${i + 1}</span>`;
+    const barW = Math.max(5, (item.count / lbData.leaderboard[0].count) * 100);
+
+    return `
+      <div class="bg-white rounded-xl p-4 shadow-sm">
+        <div class="flex items-center gap-3">
+          <div class="text-xl w-8 text-center">${medal}</div>
+          <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg" style="background:${color}20;border:2px solid ${color}">${emoji}</div>
+          <div class="flex-1">
+            <div class="font-bold" style="color:${color}">${item.personality_code}</div>
+            <div class="text-sm text-gray-500">${name}</div>
+          </div>
+          <div class="text-right">
+            <div class="font-bold text-gray-800">${item.count}</div>
+            <div class="text-xs text-gray-400">${pct}%</div>
+          </div>
+        </div>
+        <div class="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div class="h-full rounded-full" style="width:${barW}%;background:${color}"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
 function showDetailedAnalysis() {
   const personality = currentPersonality || findMatchedPersonality();
   if (!personality) return;
