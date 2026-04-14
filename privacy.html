@@ -86,12 +86,24 @@
       render();
     }
     
-    function deleteData() {
-      localStorage.removeItem('sbti_test_count');
-      // Keep language preference
+    async function deleteData() {
+      // Clear local storage
       const savedLang = localStorage.getItem('sbti_lang');
       localStorage.clear();
       if (savedLang) localStorage.setItem('sbti_lang', savedLang);
+      
+      // Also delete server-side data if guest_code exists
+      const guestCode = localStorage.getItem('sbti_guest_code');
+      if (guestCode && guestCode.startsWith('SBTI-')) {
+        try {
+          await fetch(`https://sbti-api.hebiwu007.workers.dev/api/data?guest_code=${encodeURIComponent(guestCode)}`, {
+            method: 'DELETE'
+          });
+          localStorage.removeItem('sbti_guest_code');
+        } catch(e) {
+          console.warn('Server delete failed:', e);
+        }
+      }
       
       document.getElementById('deleteMsg').classList.remove('hidden');
       setTimeout(() => {

@@ -57,6 +57,10 @@ export default {
       if (path === '/api/daily/stats' && request.method === 'GET')
         return await handleDailyStats(request, env, corsHeaders);
 
+      // Delete user data by guest_code
+      if (path === '/api/data' && request.method === 'DELETE')
+        return await handleDataDelete(env, corsHeaders, url);
+
       return new Response(JSON.stringify({ error: 'Not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -364,6 +368,38 @@ async function handleDailyStats(request, env, h) {
   ).bind(date).first();
 
   return json({ date, total: total.total, distribution: stats.results }, h);
+}
+
+// ============ Delete user data ============
+async function handleDataDelete(env, h, url) {
+  const guest_code = url.searchParams.get('guest_code');
+  if (!guest_code || !guest_code.startsWith('SBTI-')) {
+    return json({ error: 'Valid guest_code required (SBTI-XXXX)' }, h, 400);
+  }
+
+  let deleted = { rankings: 0, daily_quiz: 0 };
+
+  // Delete from rankings (also deletes linked test_results via result_id)
+  const ranking = await env.DB.prepare(
+    'SELECT rank_id, result_id FROM rankings WHERE guest_code = ?'
+  ).bind(guest_code).first();
+
+  if (ranking) {
+    // Delete test_result linked to this ranking
+    if (ranking.result_id) {
+      await env.DB.prepare('DELETE FROM test_results WHERE rowid = ?').bind(ranking.result_id).run();
+    }
+    await env.DB.prepare('DELETE FROM rankings WHERE guest_code = ?').bind(guest_code).run();
+    deleted.rankings = 1;
+  }
+
+  // Delete daily quiz records
+  const dr = await env.DB.prepare(
+    'DELETE FROM daily_quiz WHERE guest_code = ?'
+  ).bind(guest_code).run();
+  deleted.daily_quiz = dr.meta.changes || 0;
+
+  return json({ success: true, message: 'User data deleted', deleted }, h);
 }
 
 // ============ Helpers ============
