@@ -204,13 +204,13 @@ async function handleLeaderboard(env, h, url) {
   else if (period === 'month') pf = "WHERE r.created_at >= date('now', '-30 days')";
 
   const results = await env.DB.prepare(
-    `SELECT r.personality_code, COUNT(*) as count, COUNT(DISTINCT rk.rank_id) as ranking_count
-     FROM test_results r ${pf}
-     GROUP BY r.personality_code ORDER BY count DESC LIMIT ?`
+    `SELECT personality_code, COUNT(*) as count
+     FROM test_results ${pf ? pf.replace('r.','') : ''}
+     GROUP BY personality_code ORDER BY count DESC LIMIT ?`
   ).bind(limit).all();
 
   const total = await env.DB.prepare(
-    `SELECT COUNT(*) as total FROM test_results r ${pf}`
+    `SELECT COUNT(*) as total FROM test_results ${pf ? pf.replace('r.','') : ''}`
   ).first();
 
   return json({ leaderboard: results.results, total: total.total, period }, h);
