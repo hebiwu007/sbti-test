@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://sbti-test-53g.pages.dev/sitemap.xml

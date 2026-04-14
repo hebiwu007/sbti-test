@@ -1,0 +1,11 @@
+name = "sbti-api"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+ENVIRONMENT = "production"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "sbti-db"
+database_id = "0ba8d202-def4-4ab7-ad0e-5f13101cc3f2"
