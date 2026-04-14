@@ -653,10 +653,11 @@ function renderResult(personality) {
           </div>
         </div>
         
-        <div class="flex gap-4 mb-8">
-          <button onclick="shareResult()" class="flex-1 py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition">${t('share_btn')}</button>
-          <button onclick="showDetailedAnalysis()" class="flex-1 py-3 border-2 border-green-500 text-green-600 rounded-full font-medium hover:bg-green-50 transition">${t('detailed_analysis') || '详细解读'}</button>
-          <button onclick="restartQuiz()" class="flex-1 py-3 border-2 border-purple-300 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${t('restart_btn')}</button>
+        <div class="grid grid-cols-2 gap-4 mb-8">
+          <button onclick="shareResult()" class="col-span-2 py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition">${t('share_btn')}</button>
+          <button onclick="showDetailedAnalysis()" class="py-3 border-2 border-green-500 text-green-600 rounded-full font-medium hover:bg-green-50 transition">${t('detailed_analysis')}</button>
+          <button onclick="showComparison()" class="py-3 border-2 border-blue-500 text-blue-600 rounded-full font-medium hover:bg-blue-50 transition">${t('compare')}</button>
+          <button onclick="restartQuiz()" class="col-span-2 py-3 border-2 border-purple-300 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${t('restart_btn')}</button>
         </div>
         <a href="privacy.html" class="block text-center text-gray-400 hover:text-purple-500 text-sm mb-4">${t('privacy_link')}</a>
       </div>
@@ -1344,4 +1345,204 @@ function findMatchedPersonality() {
     }
   }
   return matched;
-}// Cloudflare Pages native GitHub integration - Tue Apr 14 11:14:35 AM CST 2026
+}
+
+// Show personality comparison
+function showComparison() {
+  const personality = currentPersonality || findMatchedPersonality();
+  if (!personality) return;
+  
+  let friendCode = '';
+  
+  const modal = document.createElement('div');
+  modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto';
+  
+  const renderModal = () => {
+    const friendPersonality = personalities.find(p => p.code === friendCode.toUpperCase());
+    const isValidCode = friendPersonality && friendPersonality.code !== 'DRUNK';
+    
+    modal.innerHTML = `
+      <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-auto">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-blue-600">${t('compare_title')}</h2>
+            <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600 text-2xl">
+              ✕
+            </button>
+          </div>
+          
+          <div class="space-y-6">
+            <!-- 输入框 -->
+            <div>
+              <label class="block text-gray-700 mb-2">${t('enter_friend_code')}</label>
+              <div class="flex space-x-2">
+                <input 
+                  type="text" 
+                  value="${friendCode}"
+                  oninput="this.value = this.value.toUpperCase(); friendCode = this.value; renderModal();"
+                  class="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
+                  placeholder="例如: PEACE, BOSS, SHIT"
+                  maxlength="4"
+                />
+                <button 
+                  onclick="if (friendCode) { const friendPersonality = personalities.find(p => p.code === friendCode.toUpperCase()); if (friendPersonality && friendPersonality.code !== 'DRUNK') { renderModal(); } else { alert('${lang === 'zh' ? '请输入有效的SBTI代码（27种人格之一）' : 'Please enter a valid SBTI code (one of 27 personalities)'}'); } }"
+                  class="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition"
+                >
+                  ${t('compare_btn')}
+                </button>
+              </div>
+            </div>
+            
+            ${!isValidCode ? `
+              <div class="text-center py-8">
+                <div class="text-gray-400 text-4xl mb-4">🔍</div>
+                <p class="text-gray-500">${t('no_comparison')}</p>
+              </div>
+            ` : `
+              <!-- 对比结果 -->
+              <div class="space-y-6">
+                <!-- 人格信息 -->
+                <div class="grid grid-cols-2 gap-4">
+                  <div class="text-center p-4 border border-purple-200 rounded-xl">
+                    <div class="text-3xl mb-2">${getPersonalityAvatar(personality.code)}</div>
+                    <div class="font-bold text-lg" style="color: ${personality.color}">${personality.code}</div>
+                    <div class="text-gray-600 text-sm">${t('your_pattern')}</div>
+                  </div>
+                  <div class="text-center p-4 border border-blue-200 rounded-xl">
+                    <div class="text-3xl mb-2">${getPersonalityAvatar(friendPersonality.code)}</div>
+                    <div class="font-bold text-lg" style="color: ${friendPersonality.color}">${friendPersonality.code}</div>
+                    <div class="text-gray-600 text-sm">${t('friend_pattern')}</div>
+                  </div>
+                </div>
+                
+                <!-- 相似度分析 -->
+                <div class="bg-gray-50 rounded-xl p-5">
+                  <h3 class="font-bold text-gray-800 mb-4">${t('dimension_differences')}</h3>
+                  
+                  <div class="space-y-4">
+                    ${(() => {
+                      const yourPattern = personality.pattern;
+                      const friendPattern = friendPersonality.pattern;
+                      let sameCount = 0;
+                      let diffCount = 0;
+                      
+                      for (let i = 0; i < yourPattern.length; i++) {
+                        if (yourPattern[i] === friendPattern[i]) sameCount++;
+                        else diffCount++;
+                      }
+                      
+                      const similarity = Math.round((sameCount / yourPattern.length) * 100);
+                      let similarityLevel = '';
+                      let similarityColor = '';
+                      
+                      if (similarity >= 80) {
+                        similarityLevel = t('high_similarity');
+                        similarityColor = 'text-green-600';
+                      } else if (similarity >= 60) {
+                        similarityLevel = t('medium_similarity');
+                        similarityColor = 'text-yellow-600';
+                      } else {
+                        similarityLevel = t('low_similarity');
+                        similarityColor = 'text-red-600';
+                      }
+                      
+                      return `
+                        <div class="text-center mb-4">
+                          <div class="text-4xl font-bold ${similarityColor} mb-2">${similarity}%</div>
+                          <div class="text-gray-600">${similarityLevel}</div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4 text-center">
+                          <div class="p-3 bg-green-50 rounded-lg">
+                            <div class="text-2xl font-bold text-green-600">${sameCount}</div>
+                            <div class="text-sm text-green-700">相同维度</div>
+                          </div>
+                          <div class="p-3 bg-red-50 rounded-lg">
+                            <div class="text-2xl font-bold text-red-600">${diffCount}</div>
+                            <div class="text-sm text-red-700">不同维度</div>
+                          </div>
+                        </div>
+                      `;
+                    })()}
+                  </div>
+                </div>
+                
+                <!-- 维度对比详情 -->
+                <div class="bg-white border border-gray-200 rounded-xl p-5">
+                  <h3 class="font-bold text-gray-800 mb-4">${t('dimension_differences')} (15维度)</h3>
+                  
+                  <div class="space-y-2 max-h-60 overflow-y-auto pr-2">
+                    ${(() => {
+                      const dimensionNames = i18n[lang].dimensions || {};
+                      const yourPattern = personality.pattern;
+                      const friendPattern = friendPersonality.pattern;
+                      const dimensions = dimensionOrder.slice(0, 15);
+                      
+                      return dimensions.map((dim, index) => {
+                        const yourValue = yourPattern[index];
+                        const friendValue = friendPattern[index];
+                        const isSame = yourValue === friendValue;
+                        const dimName = dimensionNames[dim] || dim;
+                        
+                        const valueLabels = { 'H': '高', 'M': '中', 'L': '低' };
+                        const valueLabelsEn = { 'H': 'High', 'M': 'Medium', 'L': 'Low' };
+                        const valueMap = lang === 'zh' ? valueLabels : valueLabelsEn;
+                        
+                        return `
+                          <div class="flex items-center justify-between p-2 ${isSame ? 'bg-green-50' : 'bg-red-50'} rounded">
+                            <div class="flex-1">
+                              <div class="text-sm text-gray-600">${dimName}</div>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                              <div class="text-sm font-medium ${isSame ? 'text-green-700' : 'text-red-700'}">
+                                ${valueMap[yourValue] || yourValue}
+                              </div>
+                              <div class="text-gray-400">→</div>
+                              <div class="text-sm font-medium ${isSame ? 'text-green-700' : 'text-red-700'}">
+                                ${valueMap[friendValue] || friendValue}
+                              </div>
+                            </div>
+                          </div>
+                        `;
+                      }).join('');
+                    })()}
+                  </div>
+                </div>
+                
+                <div class="text-center">
+                  <button 
+                    onclick="generateComparisonCard('${friendPersonality.code}')"
+                    class="px-6 py-3 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700 transition"
+                  >
+                    ${t('generate_compare_card')}
+                  </button>
+                </div>
+              </div>
+            `}
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // 重新绑定事件
+    setTimeout(() => {
+      const input = modal.querySelector('input');
+      if (input) {
+        input.addEventListener('input', (e) => {
+          friendCode = e.target.value.toUpperCase();
+          renderModal();
+        });
+      }
+    }, 0);
+  };
+  
+  renderModal();
+  document.body.appendChild(modal);
+}
+
+// Generate comparison card
+function generateComparisonCard(friendCode) {
+  alert(lang === 'zh' ? '对比卡片生成功能开发中...' : 'Comparison card generation in development...');
+}
+
+// Cloudflare Pages native GitHub integration - Tue Apr 14 11:14:35 AM CST 2026

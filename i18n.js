@@ -95,7 +95,22 @@ const i18n = {
     people_answered: "人已参与",
     view_your_answer: "查看我的答案",
     streak_days: "连续参与天数",
-    total_participants: "总参与人数"
+    total_participants: "总参与人数",
+    
+    // Comparison
+    compare: "对比",
+    compare_title: "人格对比",
+    compare_with_friend: "与朋友对比",
+    enter_friend_code: "输入朋友的SBTI代码",
+    compare_btn: "开始对比",
+    your_pattern: "你的模式",
+    friend_pattern: "朋友模式",
+    dimension_differences: "维度差异",
+    high_similarity: "高度相似",
+    medium_similarity: "中度相似",
+    low_similarity: "差异较大",
+    generate_compare_card: "生成对比卡片",
+    no_comparison: "暂无对比数据"
   },
   
   en: {
@@ -193,7 +208,22 @@ const i18n = {
     people_answered: "people answered",
     view_your_answer: "View My Answer",
     streak_days: "Streak Days",
-    total_participants: "Total Participants"
+    total_participants: "Total Participants",
+    
+    // Comparison
+    compare: "Compare",
+    compare_title: "Personality Comparison",
+    compare_with_friend: "Compare with Friend",
+    enter_friend_code: "Enter friend's SBTI code",
+    compare_btn: "Compare Now",
+    your_pattern: "Your Pattern",
+    friend_pattern: "Friend's Pattern",
+    dimension_differences: "Dimension Differences",
+    high_similarity: "High Similarity",
+    medium_similarity: "Medium Similarity",
+    low_similarity: "Low Similarity",
+    generate_compare_card: "Generate Comparison Card",
+    no_comparison: "No comparison data"
   }
 };
 
