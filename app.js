@@ -1080,6 +1080,33 @@ function shareResult() {
   ctx.textAlign = 'center';
   ctx.fillText('sbti-test.pages.dev', 540, 1780);
   
+  // 7.5 二维码区域
+  const qrContainer = document.createElement('div');
+  qrContainer.style.display = 'none';
+  document.body.appendChild(qrContainer);
+  
+  const qrCode = new QRCode(qrContainer, {
+    text: `${window.location.origin}/?ref=${personality.code}`,
+    width: 120,
+    height: 120,
+    colorDark: '#374151',
+    colorLight: '#FFFFFF',
+    correctLevel: QRCode.CorrectLevel.L
+  });
+  
+  // 获取二维码 canvas 并绘制到分享卡片
+  const qrCanvas = qrContainer.querySelector('canvas');
+  if (qrCanvas) {
+    ctx.drawImage(qrCanvas, 480, 1820, 120, 120);
+  } else {
+    // 如果没有 canvas，尝试 img
+    const qrImg = qrContainer.querySelector('img');
+    if (qrImg) {
+      ctx.drawImage(qrImg, 480, 1820, 120, 120);
+    }
+  }
+  document.body.removeChild(qrContainer);
+  
   // 8. 生成图片并复制到剪贴板
   canvas.toBlob(blob => {
     if (navigator.clipboard && window.ClipboardItem) {
