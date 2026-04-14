@@ -1361,30 +1361,72 @@ function showMBTIIntersection() {
 }
 
 // Generate MBTI × SBTI intersection text (simplified version)
+// MBTI cognitive functions for deeper analysis
+const mbtiFunctions = {
+  'INTJ': { dominant: 'Ni', auxiliary: 'Te', tertiary: 'Fi', inferior: 'Se', focus: '战略远见', focusEn: 'strategic vision' },
+  'INTP': { dominant: 'Ti', auxiliary: 'Ne', tertiary: 'Si', inferior: 'Fe', focus: '逻辑探索', focusEn: 'logical exploration' },
+  'ENTJ': { dominant: 'Te', auxiliary: 'Ni', tertiary: 'Se', inferior: 'Fi', focus: '效率执行', focusEn: 'efficient execution' },
+  'ENTP': { dominant: 'Ne', auxiliary: 'Ti', tertiary: 'Fe', inferior: 'Si', focus: '创新开拓', focusEn: 'innovative exploration' },
+  'INFJ': { dominant: 'Ni', auxiliary: 'Fe', tertiary: 'Ti', inferior: 'Se', focus: '深度洞察', focusEn: 'deep insight' },
+  'INFP': { dominant: 'Fi', auxiliary: 'Ne', tertiary: 'Si', inferior: 'Te', focus: '价值驱动', focusEn: 'value-driven creativity' },
+  'ENFJ': { dominant: 'Fe', auxiliary: 'Ni', tertiary: 'Se', inferior: 'Ti', focus: '感染引导', focusEn: 'inspiring leadership' },
+  'ENFP': { dominant: 'Ne', auxiliary: 'Fi', tertiary: 'Te', inferior: 'Si', focus: '热情创造', focusEn: 'passionate creation' },
+  'ISTJ': { dominant: 'Si', auxiliary: 'Te', tertiary: 'Fi', inferior: 'Ne', focus: '踏实可靠', focusEn: 'reliable steadiness' },
+  'ISFJ': { dominant: 'Si', auxiliary: 'Fe', tertiary: 'Ti', inferior: 'Ne', focus: '温暖守护', focusEn: 'warm protection' },
+  'ESTJ': { dominant: 'Te', auxiliary: 'Si', tertiary: 'Ne', inferior: 'Fi', focus: '组织管理', focusEn: 'organized management' },
+  'ESFJ': { dominant: 'Fe', auxiliary: 'Si', tertiary: 'Ne', inferior: 'Ti', focus: '和谐关怀', focusEn: 'harmonious care' },
+  'ISTP': { dominant: 'Ti', auxiliary: 'Se', tertiary: 'Ni', inferior: 'Fe', focus: '精准实操', focusEn: 'precise action' },
+  'ISFP': { dominant: 'Fi', auxiliary: 'Se', tertiary: 'Ni', inferior: 'Te', focus: '感官审美', focusEn: 'sensory aesthetics' },
+  'ESTP': { dominant: 'Se', auxiliary: 'Ti', tertiary: 'Fe', inferior: 'Ni', focus: '即时行动', focusEn: 'immediate action' },
+  'ESFP': { dominant: 'Se', auxiliary: 'Fi', tertiary: 'Te', inferior: 'Ni', focus: '活力表现', focusEn: 'vibrant expression' }
+};
+
 function generateMBTIIntersection(sbtiCode, mbtiType) {
-  // 简化版本：使用模板生成
   const personality = personalities.find(p => p.code === sbtiCode);
   const mbtiDesc = mbtiDescriptions[mbtiType];
+  const mbtiFunc = mbtiFunctions[mbtiType];
   
-  if (!personality || !mbtiDesc) {
+  if (!personality || !mbtiDesc || !mbtiFunc) {
     return lang === 'zh' ? '无法生成交叉解读' : 'Cannot generate intersection analysis';
   }
   
   const sbtiName = lang === 'zh' ? personality.name_zh : personality.name_en;
   const mbtiName = lang === 'zh' ? mbtiDesc.zh : mbtiDesc.en;
+  const dominantFn = mbtiFunc.dominant;
+  const auxiliaryFn = mbtiFunc.auxiliary;
   
   if (lang === 'zh') {
-    return `你的 ${sbtiName} 人格与 ${mbtiName} (${mbtiType}) 的组合展现出独特特质：\n\n` +
-           `作为 ${sbtiName}，你 ${personality.desc_zh.substring(0, 80)}... \n\n` +
-           `当 ${sbtiName} 的特质与 ${mbtiName} 的思维方式相遇，你既能 ${personality.strengths_zh[0]?.toLowerCase() || '展现优势'}，` +
-           `又需要留意 ${personality.blind_spots_zh[0]?.toLowerCase() || '潜在盲点'}。这种组合让你在保持 ${sbtiName} 本质的同时，` +
-           `融入了 ${mbtiName} 的独特视角。`;
+    return `你的 ${sbtiName} × ${mbtiName} (${mbtiType}) 交叉解读：\n\n` +
+           `🧠 认知功能核心：${dominantFn}（主导）+ ${auxiliaryFn}（辅助）\n` +
+           `这意味着你的底层思维模式以「${mbtiFunc.focus}」为核心驱动力。\n\n` +
+           `🔍 与 SBTI 的共鸣：\n` +
+           `作为 ${sbtiName}，你 ${personality.desc_zh.substring(0, 60)}... \n` +
+           `${dominantFn === 'Ni' || dominantFn === 'Ne' ? '你的直觉功能让你在行为模式上具有前瞻性和创造性，与' + sbtiName + '的特质高度共鸣。' : ''}` +
+           `${dominantFn === 'Ti' || dominantFn === 'Te' ? '你的思维功能让你在决策时注重逻辑和效率，这强化了' + sbtiName + '的核心优势。' : ''}` +
+           `${dominantFn === 'Fi' || dominantFn === 'Fe' ? '你的情感功能让你在人际关系中具有深度的同理心，丰富了' + sbtiName + '的表达方式。' : ''}` +
+           `${dominantFn === 'Si' || dominantFn === 'Se' ? '你的感知功能让你脚踏实地，为' + sbtiName + '的特质提供了稳定的现实基础。' : ''}\n\n` +
+           `⚡ 独特优势：\n` +
+           `${sbtiName} 的「${personality.strengths_zh[0] || '核心优势'}」与 ${mbtiName} 的「${mbtiFunc.focus}」相结合，\n` +
+           `创造出一种既注重深层行为动机、又具备${mbtiFunc.focus}能力的独特人格。\n\n` +
+           `💡 成长建议：\n` +
+           `留意 ${mbtiName} 的盲点（${mbtiFunc.inferior} 功能较弱）对 ${sbtiName} 模式的影响。\n` +
+           `${personality.blind_spots_zh[0] ? '同时关注：「' + personality.blind_spots_zh[0] + '」这一潜在盲区。' : '保持自我觉察，在优势与盲点之间找到平衡。'}`;
   } else {
-    return `Your ${sbtiName} personality combined with ${mbtiName} (${mbtiType}) shows unique traits:\n\n` +
-           `As a ${sbtiName}, you ${personality.desc_en.substring(0, 80)}... \n\n` +
-           `When ${sbtiName} traits meet ${mbtiName} thinking style, you can ${personality.strengths_en[0]?.toLowerCase() || 'show strengths'} ` +
-           `while being mindful of ${personality.blind_spots_en[0]?.toLowerCase() || 'potential blind spots'}. This combination allows you to maintain ` +
-           `your ${sbtiName} essence while incorporating the unique perspective of ${mbtiName}.`;
+    return `Your ${sbtiName} × ${mbtiName} (${mbtiType}) Intersection Analysis:\n\n` +
+           `🧠 Cognitive Core: ${dominantFn} (dominant) + ${auxiliaryFn} (auxiliary)\n` +
+           `Your underlying thinking pattern is driven by "${mbtiFunc.focusEn}".\n\n` +
+           `🔍 Resonance with SBTI:\n` +
+           `As a ${sbtiName}, you ${personality.desc_en.substring(0, 60)}... \n` +
+           `${dominantFn === 'Ni' || dominantFn === 'Ne' ? 'Your intuitive function gives you foresight and creativity in behavioral patterns, highly resonating with ' + sbtiName + ' traits.' : ''}` +
+           `${dominantFn === 'Ti' || dominantFn === 'Te' ? 'Your thinking function emphasizes logic and efficiency in decisions, reinforcing ' + sbtiName + '\'s core strengths.' : ''}` +
+           `${dominantFn === 'Fi' || dominantFn === 'Fe' ? 'Your feeling function provides deep empathy in relationships, enriching ' + sbtiName + '\'s expression.' : ''}` +
+           `${dominantFn === 'Si' || dominantFn === 'Se' ? 'Your sensing function keeps you grounded, providing a stable foundation for ' + sbtiName + ' traits.' : ''}\n\n` +
+           `⚡ Unique Strength:\n` +
+           `${sbtiName}'s "${personality.strengths_en[0] || 'core strength'}" combined with ${mbtiName}'s "${mbtiFunc.focusEn}"\n` +
+           `creates a unique personality that values both deep behavioral motives and ${mbtiFunc.focusEn} capabilities.\n\n` +
+           `💡 Growth Tips:\n` +
+           `Be mindful of ${mbtiName}'s blind spots (weaker ${mbtiFunc.inferior} function) and their impact on your ${sbtiName} pattern.\n` +
+           `${personality.blind_spots_en[0] ? 'Also watch out for: "' + personality.blind_spots_en[0] + '" as a potential blind spot.' : 'Maintain self-awareness and balance between strengths and blind spots.'}`;
   }
 }
 
