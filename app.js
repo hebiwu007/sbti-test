@@ -8,6 +8,7 @@ let answers = {};
 let lang = localStorage.getItem('sbti_lang') || 'zh';
 let testCount = 0;
 let questionOrder = []; // 保存题目顺序
+let currentPersonality = null; // 当前匹配的人格结果
 
 // Dimension mapping (matching questions.json)
 const dimensionOrder = [
@@ -279,6 +280,7 @@ function calculateResult(isDrunk) {
     result = matchedPersonality;
   }
   
+  currentPersonality = result;
   testCount++;
   localStorage.setItem('sbti_test_count', testCount.toString());
   renderResult(result);
@@ -466,52 +468,182 @@ function drawRadarChart(pattern) {
 
 // Share result - generate share card image
 function shareResult() {
-  // 生成 9:16 分享卡片图片
+  // 获取当前人格结果
+  const personality = currentPersonality || findMatchedPersonality();
+  if (!personality) {
+    alert(lang === 'zh' ? '暂无测试结果' : 'No test result yet');
+    return;
+  }
+  
+  // 生成 9:16 分享卡片图片 (1080x1920)
   const canvas = document.createElement('canvas');
   canvas.width = 1080;
   canvas.height = 1920;
   const ctx = canvas.getContext('2d');
   
-  // 背景
+  // 添加 roundRect 方法支持
+  if (!ctx.roundRect) {
+    ctx.roundRect = function(x, y, width, height, radius) {
+      if (radius === 0) {
+        this.rect(x, y, width, height);
+      } else {
+        this.moveTo(x + radius, y);
+        this.lineTo(x + width - radius, y);
+        this.quadraticCurveTo(x + width, y, x + width, y + radius);
+        this.lineTo(x + width, y + height - radius);
+        this.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+        this.lineTo(x + radius, y + height);
+        this.quadraticCurveTo(x, y + height, x, y + height - radius);
+        this.lineTo(x, y + radius);
+        this.quadraticCurveTo(x, y, x + radius, y);
+      }
+    };
+  }
+  
+  // 1. 背景 - 奶油白渐变
   const gradient = ctx.createLinearGradient(0, 0, 0, 1920);
-  gradient.addColorStop(0, '#f5f3ff');
-  gradient.addColorStop(1, '#ffffff');
+  gradient.addColorStop(0, '#FFF8F0'); // 奶油白
+  gradient.addColorStop(1, '#FFFFFF'); // 纯白
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, 1080, 1920);
   
-  // 标题
-  ctx.fillStyle = '#8B5CF6';
-  ctx.font = 'bold 80px Inter, sans-serif';
+  // 2. 顶部装饰元素
+  ctx.fillStyle = personality.color || '#8B5CF6';
+  ctx.beginPath();
+  ctx.arc(540, 300, 120, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // 人格代码（大字体）
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 140px Inter, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('SBTI', 540, 300);
+  ctx.fillText(personality.code, 540, 340);
   
-  // 人格代码
-  ctx.fillStyle = '#8B5CF6';
-  ctx.font = 'bold 200px Inter, sans-serif';
-  ctx.fillText(findMatchedPersonality?.code || 'SBTI', 540, 700);
-  
-  // 描述
+  // 3. 人格名称
   ctx.fillStyle = '#374151';
-  ctx.font = '48px Inter, sans-serif';
-  const desc = (lang === 'zh' ? findMatchedPersonality?.tagline_zh : findMatchedPersonality?.tagline_en) || 'Discover your personality';
-  ctx.fillText(desc, 540, 900);
+  ctx.font = 'bold 72px Inter, sans-serif';
+  ctx.fillText(lang === 'zh' ? personality.name_zh : personality.name_en, 540, 550);
   
-  // 分享文字
+  // 4. 标签线
+  ctx.fillStyle = '#6B7280';
+  ctx.font = '48px Inter, sans-serif';
+  const tagline = lang === 'zh' ? personality.tagline_zh : personality.tagline_en;
+  ctx.fillText(tagline, 540, 650);
+  
+  // 5. 描述卡片
+  ctx.fillStyle = '#FFFFFF';
+  ctx.shadowColor = 'rgba(0,0,0,0.08)';
+  ctx.shadowBlur = 40;
+  ctx.shadowOffsetY = 10;
+  ctx.beginPath();
+  ctx.roundRect(100, 750, 880, 500, 40);
+  ctx.fill();
+  
+  // 重置阴影
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+  
+  // 描述文本
+  ctx.fillStyle = '#4B5563';
+  ctx.font = '40px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  const desc = lang === 'zh' ? personality.desc_zh : personality.desc_en;
+  wrapText(ctx, desc, 150, 850, 780, 52);
+  
+  // 6. 优势/盲点区域
+  ctx.fillStyle = '#F9FAFB';
+  ctx.beginPath();
+  ctx.roundRect(100, 1300, 420, 300, 30);
+  ctx.fill();
+  
+  ctx.fillStyle = '#F9FAFB';
+  ctx.beginPath();
+  ctx.roundRect(560, 1300, 420, 300, 30);
+  ctx.fill();
+  
+  // 优势标题
+  ctx.fillStyle = '#10B981';
+  ctx.font = 'bold 40px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(lang === 'zh' ? '优势' : 'Strengths', 310, 1380);
+  
+  // 盲点标题
+  ctx.fillStyle = '#EF4444';
+  ctx.font = 'bold 40px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(lang === 'zh' ? '盲点' : 'Blind Spots', 770, 1380);
+  
+  // 优势列表
+  ctx.fillStyle = '#374151';
+  ctx.font = '36px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  const strengths = lang === 'zh' ? personality.strengths_zh : personality.strengths_en;
+  strengths.slice(0, 3).forEach((s, i) => {
+    ctx.fillText(`✓ ${s}`, 140, 1450 + i * 50);
+  });
+  
+  // 盲点列表
+  const blindSpots = lang === 'zh' ? personality.blind_spots_zh : personality.blind_spots_en;
+  blindSpots.slice(0, 3).forEach((s, i) => {
+    ctx.fillText(`✗ ${s}`, 600, 1450 + i * 50);
+  });
+  
+  // 7. 底部信息
   ctx.fillStyle = '#9CA3AF';
   ctx.font = '36px Inter, sans-serif';
-  ctx.fillText('sbti-test.pages.dev', 540, 1800);
+  ctx.textAlign = 'center';
+  ctx.fillText('sbti-test.pages.dev', 540, 1780);
   
-  // 复制到剪贴板
+  // 8. 生成图片并复制到剪贴板
   canvas.toBlob(blob => {
-    navigator.clipboard.write([new ClipboardItem({'image/png': blob})]).then(() => {
-      alert(lang === 'zh' ? '图片已复制到剪贴板' : 'Image copied to clipboard');
-    }).catch(() => {
-      // 降级：复制链接
-      navigator.clipboard.writeText(window.location.href).then(() => {
-        alert(lang === 'zh' ? '链接已复制' : 'Link copied');
+    if (navigator.clipboard && window.ClipboardItem) {
+      navigator.clipboard.write([new ClipboardItem({'image/png': blob})]).then(() => {
+        alert(lang === 'zh' ? '分享图片已复制到剪贴板' : 'Share image copied to clipboard');
+      }).catch(() => {
+        downloadImage(canvas);
       });
-    });
+    } else {
+      downloadImage(canvas);
+    }
   });
+  
+  // 文本换行辅助函数（支持中英文）
+  function wrapText(context, text, x, y, maxWidth, lineHeight) {
+    // 中文按字符分割，英文按单词分割
+    const isChinese = /[\u4e00-\u9fff]/g.test(text);
+    const segments = isChinese ? text.split('') : text.split(' ');
+    let line = '';
+    let lineCount = 0;
+    
+    for (let i = 0; i < segments.length; i++) {
+      const segment = segments[i];
+      const testLine = line + segment + (isChinese ? '' : ' ');
+      const metrics = context.measureText(testLine);
+      
+      if (metrics.width > maxWidth && line !== '') {
+        context.fillText(line, x, y + (lineCount * lineHeight));
+        line = segment;
+        lineCount++;
+        if (lineCount > 6) break; // 最多6行
+      } else {
+        line = testLine;
+      }
+    }
+    
+    if (line.trim() !== '' && lineCount <= 6) {
+      context.fillText(line, x, y + (lineCount * lineHeight));
+    }
+  }
+  
+  // 下载图片备用方案
+  function downloadImage(canvas) {
+    const link = document.createElement('a');
+    link.download = `SBTI-${personality.code}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    alert(lang === 'zh' ? '图片已下载' : 'Image downloaded');
+  }
 }
 
 // Restart quiz
