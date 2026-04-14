@@ -252,10 +252,10 @@ async function handleLeaderboard(env, h, url) {
   const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
 
   // Always query test_results for personality popularity ranking
-  results = await env.DB.prepare(
+  const results = await env.DB.prepare(
     `SELECT personality_code, COUNT(*) as count FROM test_results ${whereClause} GROUP BY personality_code ORDER BY count DESC LIMIT ?`
   ).bind(...params, limit).all();
-  total = await env.DB.prepare(
+  const total = await env.DB.prepare(
     `SELECT COUNT(*) as total FROM test_results ${whereClause}`
   ).bind(...params).first();
 
