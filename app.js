@@ -1377,15 +1377,15 @@ function showComparison() {
               <label class="block text-gray-700 mb-2">${t('enter_friend_code')}</label>
               <div class="flex space-x-2">
                 <input 
+                  id="compareInput"
                   type="text" 
                   value="${friendCode}"
-                  oninput="this.value = this.value.toUpperCase(); friendCode = this.value; renderModal();"
                   class="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
                   placeholder="例如: PEACE, BOSS, SHIT"
-                  maxlength="4"
+                  maxlength="5"
                 />
                 <button 
-                  onclick="if (friendCode) { const friendPersonality = personalities.find(p => p.code === friendCode.toUpperCase()); if (friendPersonality && friendPersonality.code !== 'DRUNK') { renderModal(); } else { alert('${lang === 'zh' ? '请输入有效的SBTI代码（27种人格之一）' : 'Please enter a valid SBTI code (one of 27 personalities)'}'); } }"
+                  id="compareBtn"
                   class="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition"
                 >
                   ${t('compare_btn')}
@@ -1524,13 +1524,25 @@ function showComparison() {
       </div>
     `;
     
-    // 重新绑定事件
+    // 绑定事件
     setTimeout(() => {
-      const input = modal.querySelector('input');
+      const input = document.getElementById('compareInput');
+      const btn = document.getElementById('compareBtn');
       if (input) {
         input.addEventListener('input', (e) => {
-          friendCode = e.target.value.toUpperCase();
+          e.target.value = e.target.value.toUpperCase();
+          friendCode = e.target.value;
           renderModal();
+        });
+      }
+      if (btn) {
+        btn.addEventListener('click', () => {
+          if (friendCode) {
+            const fp = personalities.find(p => p.code === friendCode.toUpperCase());
+            if (!fp || fp.code === 'DRUNK') {
+              alert(lang === 'zh' ? '请输入有效的SBTI代码（27种人格之一）' : 'Please enter a valid SBTI code (one of 27 personalities)');
+            }
+          }
         });
       }
     }, 0);
@@ -1542,7 +1554,175 @@ function showComparison() {
 
 // Generate comparison card
 function generateComparisonCard(friendCode) {
-  alert(lang === 'zh' ? '对比卡片生成功能开发中...' : 'Comparison card generation in development...');
+  const personality = currentPersonality || findMatchedPersonality();
+  if (!personality) return;
+  
+  const friendPersonality = personalities.find(p => p.code === friendCode.toUpperCase());
+  if (!friendPersonality) return;
+  
+  // 关闭对比模态框
+  const existingModal = document.querySelector('.fixed.inset-0.bg-black');
+  if (existingModal) existingModal.remove();
+  
+  const canvas = document.createElement('canvas');
+  canvas.width = 1080;
+  canvas.height = 1920;
+  const ctx = canvas.getContext('2d');
+  
+  if (!ctx.roundRect) {
+    ctx.roundRect = function(x, y, width, height, radius) {
+      if (radius === 0) { this.rect(x, y, width, height); }
+      else {
+        this.moveTo(x + radius, y);
+        this.lineTo(x + width - radius, y);
+        this.quadraticCurveTo(x + width, y, x + width, y + radius);
+        this.lineTo(x + width, y + height - radius);
+        this.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+        this.lineTo(x + radius, y + height);
+        this.quadraticCurveTo(x, y + height, x, y + height - radius);
+        this.lineTo(x, y + radius);
+        this.quadraticCurveTo(x, y, x + radius, y);
+      }
+    };
+  }
+  
+  // 计算相似度
+  let sameCount = 0;
+  for (let i = 0; i < personality.pattern.length; i++) {
+    if (personality.pattern[i] === friendPersonality.pattern[i]) sameCount++;
+  }
+  const similarity = Math.round((sameCount / personality.pattern.length) * 100);
+  let simColor = similarity >= 80 ? '#10B981' : (similarity >= 60 ? '#F59E0B' : '#EF4444');
+  
+  // 背景
+  const gradient = ctx.createLinearGradient(0, 0, 0, 1920);
+  gradient.addColorStop(0, '#FFF8F0');
+  gradient.addColorStop(1, '#FFFFFF');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 1080, 1920);
+  
+  // 标题
+  ctx.fillStyle = '#8B5CF6';
+  ctx.font = 'bold 60px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(lang === 'zh' ? 'SBTI 人格对比' : 'SBTI Comparison', 540, 120);
+  
+  // 左侧人格
+  ctx.fillStyle = personality.color || '#8B5CF6';
+  ctx.beginPath();
+  ctx.arc(270, 350, 100, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 80px Inter, sans-serif';
+  ctx.fillText(personality.code, 270, 380);
+  ctx.fillStyle = '#374151';
+  ctx.font = '40px Inter, sans-serif';
+  ctx.fillText(lang === 'zh' ? personality.name_zh : personality.name_en, 270, 500);
+  
+  // VS
+  ctx.fillStyle = '#8B5CF6';
+  ctx.font = 'bold 72px Inter, sans-serif';
+  ctx.fillText('VS', 540, 380);
+  
+  // 右侧人格
+  ctx.fillStyle = friendPersonality.color || '#3B82F6';
+  ctx.beginPath();
+  ctx.arc(810, 350, 100, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 80px Inter, sans-serif';
+  ctx.fillText(friendPersonality.code, 810, 380);
+  ctx.fillStyle = '#374151';
+  ctx.font = '40px Inter, sans-serif';
+  ctx.fillText(lang === 'zh' ? friendPersonality.name_zh : friendPersonality.name_en, 810, 500);
+  
+  // 相似度圆环
+  ctx.strokeStyle = '#E5E7EB';
+  ctx.lineWidth = 20;
+  ctx.beginPath();
+  ctx.arc(540, 720, 120, 0, Math.PI * 2);
+  ctx.stroke();
+  
+  ctx.strokeStyle = simColor;
+  ctx.lineWidth = 20;
+  ctx.beginPath();
+  ctx.arc(540, 720, 120, -Math.PI / 2, -Math.PI / 2 + (similarity / 100) * Math.PI * 2);
+  ctx.stroke();
+  
+  ctx.fillStyle = simColor;
+  ctx.font = 'bold 72px Inter, sans-serif';
+  ctx.fillText(similarity + '%', 540, 740);
+  ctx.fillStyle = '#6B7280';
+  ctx.font = '32px Inter, sans-serif';
+  ctx.fillText(lang === 'zh' ? '相似度' : 'Similarity', 540, 790);
+  
+  // 维度对比条
+  ctx.fillStyle = '#374151';
+  ctx.font = 'bold 40px Inter, sans-serif';
+  ctx.fillText(lang === 'zh' ? '维度对比' : 'Dimension Comparison', 540, 900);
+  
+  const dimensionNames = i18n[lang].dimensions || {};
+  const dimensions = dimensionOrder.slice(0, 15);
+  
+  dimensions.slice(0, 10).forEach((dim, index) => {
+    const y = 960 + index * 60;
+    const yourVal = personality.pattern[index];
+    const friendVal = friendPersonality.pattern[index];
+    const isSame = yourVal === friendVal;
+    const dimName = (dimensionNames[dim] || dim).substring(0, 6);
+    
+    // 维度名称
+    ctx.fillStyle = '#6B7280';
+    ctx.font = '28px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(dimName, 100, y);
+    
+    // 你的值
+    ctx.fillStyle = isSame ? '#10B981' : personality.color || '#8B5CF6';
+    ctx.font = 'bold 28px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(yourVal, 440, y);
+    
+    // 分隔
+    ctx.fillStyle = '#D1D5DB';
+    ctx.fillText('|', 540, y);
+    
+    // 朋友值
+    ctx.fillStyle = isSame ? '#10B981' : friendPersonality.color || '#3B82F6';
+    ctx.fillText(friendVal, 640, y);
+    
+    // 状态图标
+    ctx.fillStyle = isSame ? '#10B981' : '#EF4444';
+    ctx.textAlign = 'left';
+    ctx.font = '28px Inter, sans-serif';
+    ctx.fillText(isSame ? '✓' : '✗', 750, y);
+  });
+  
+  // 底部
+  ctx.fillStyle = '#9CA3AF';
+  ctx.font = '36px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('sbti-test.pages.dev', 540, 1780);
+  ctx.fillText(lang === 'zh' ? `${personality.code} × ${friendPersonality.code} 人格对比` : `${personality.code} × ${friendPersonality.code} Comparison`, 540, 1850);
+  
+  // 复制或下载
+  canvas.toBlob(blob => {
+    if (navigator.clipboard && window.ClipboardItem) {
+      navigator.clipboard.write([new ClipboardItem({'image/png': blob})]).then(() => {
+        alert(lang === 'zh' ? '对比卡片已复制到剪贴板' : 'Comparison card copied to clipboard');
+      }).catch(() => {
+        const link = document.createElement('a');
+        link.download = `SBTI-compare-${personality.code}-${friendPersonality.code}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      });
+    } else {
+      const link = document.createElement('a');
+      link.download = `SBTI-compare-${personality.code}-${friendPersonality.code}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+  });
 }
 
 // Cloudflare Pages native GitHub integration - Tue Apr 14 11:14:35 AM CST 2026
