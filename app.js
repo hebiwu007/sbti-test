@@ -1453,7 +1453,7 @@ function showMBTIIntersection() {
                 <div class="text-xs text-gray-400 mb-1">${g.label}</div>
                 <div class="grid grid-cols-4 gap-2">
                   ${g.types.map(type => `
-                    <button onclick="document.querySelectorAll('.mbti-type-btn').forEach(b=>{b.classList.remove('bg-purple-600','text-white','border-purple-600');b.dataset.selected='';});this.classList.add('bg-purple-600','text-white','border-purple-600');this.dataset.selected='1'" data-type="${type}" class="mbti-type-btn px-2 py-2 border-2 border-gray-200 rounded-lg text-sm font-medium hover:border-purple-400 transition ${mbti === type ? 'bg-purple-600 text-white border-purple-600' : ''}">${type}</button>
+                    <button onclick="document.querySelectorAll('.mbti-type-btn').forEach(b=>{b.classList.remove('bg-purple-600','text-white','border-purple-600');b.dataset.selected='';});this.classList.add('bg-purple-600','text-white','border-purple-600');this.dataset.selected='1'" data-type="${type}" class="mbti-type-btn px-2 py-2 border-2 border-gray-200 rounded-lg text-sm font-medium hover:border-purple-400 transition ${mbti === type ? 'bg-purple-600 text-white border-purple-600' : ''}" ${mbti === type ? 'data-selected="1"' : ''}>${type}</button>
                   `).join('')}
                 </div>
               </div>
