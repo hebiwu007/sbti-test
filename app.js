@@ -28,37 +28,79 @@ const modelColors = {
   social: '#3B82F6'
 };
 
+// Radar dimension mapping (25-dimension pattern to 15-radar dimensions)
+const radarDimensionMapping = [
+  [0, 1],   // self_esteem (positions 0,1)
+  [2, 3],   // self_clarity (positions 2,3)
+  [4],      // core_values (position 4)
+  [5, 8],   // attachment_security (positions 5,8)
+  [6],      // emotional_investment (position 6)
+  [7, 9],   // boundaries (positions 7,9)
+  [10, 14], // worldview (positions 10,14)
+  [11, 13], // rules_flexibility (positions 11,13)
+  [12],     // sense_of_purpose (position 12)
+  [15],     // motivation (position 15)
+  [16, 19], // decision_style (positions 16,19)
+  [17, 18], // execution (positions 17,18)
+  [20, 23], // social_initiative (positions 20,23)
+  [21],     // interpersonal_boundaries (position 21)
+  [22, 24]  // expression (positions 22,24)
+];
+
+const radarDimensions = [
+  'self_esteem', 'self_clarity', 'core_values',
+  'attachment_security', 'emotional_investment', 'boundaries',
+  'worldview', 'rules_flexibility', 'sense_of_purpose',
+  'motivation', 'decision_style', 'execution',
+  'social_initiative', 'interpersonal_boundaries', 'expression'
+];
+
+// Convert 25-dimension pattern to 15-radar dimension values
+function patternToRadarValues(pattern) {
+  const patternValues = pattern.split('').map(v => v === 'H' ? 3 : (v === 'M' ? 2 : 1));
+  return radarDimensionMapping.map(indices => {
+    const sum = indices.reduce((total, idx) => total + patternValues[idx], 0);
+    return sum / indices.length;
+  });
+}
+
+// Convert radar value back to H/M/L for display
+function radarValueToLabel(value) {
+  if (value >= 2.5) return 'H';
+  if (value <= 1.5) return 'L';
+  return 'M';
+}
+
 // Personality avatars (abstract emoji representation)
 const personalityAvatars = {
-  'CTRL': '🎯',   // The Controller
-  'BOSS': '👑',   // The Boss
-  'SHIT': '😒',   // The Cynic
-  'PEACE': '🕊️',  // The Peacemaker
-  'HHHH': '🔥',   // Gigilord
-  'COMF': '🛋️',   // Comfort Seeker
-  'BORN': '🌟',   // Natural Born Star
-  'FREE': '🕊️',   // The Free Spirit
-  'WORK': '💼',   // The Worker
-  'DEEP': '🌌',   // The Deep Thinker
-  'LOVE': '❤️',   // The Lover
-  'CARE': '🤗',   // The Caretaker
-  'DRAM': '🎭',   // The Drama Queen/King
-  'WILD': '🐆',   // The Wild Child
-  'SHY': '🌱',    // The Shy One
-  'HERO': '🦸',   // The Hero
-  'SAFE': '🛡️',   // The Safety Guard
-  'MESS': '🌀',   // The Messy One
-  'QUIT': '⏸️',   // The Quitter
-  'LAZY': '🦥',   // The Lazy One
-  'OVER': '⚡',   // Overachiever
-  'PERF': '✨',   // The Perfectionist
-  'FAKE': '🎭',   // The Fake One
-  'REAL': '💎',   // The Real Deal
-  'SMUG': '😏',   // The Smug One
-  'MOOD': '🌧️',   // Mood Swinger
-  'CHAD': '💪',   // The Chad
-  'DADA': '🎨',   // The Dadaist
-  'DRUNK': '🍺',  // The Drunk One
+  'CTRL': '🎯',   // 拿捏者 The Controller
+  'BOSS': '👑',   // 领导者 The Boss
+  'SHIT': '😒',   // 愤世者 The Cynic
+  'PEACE': '🕊️',  // 和平主义者 The Peacemaker
+  'CARE': '🤗',   // 照顾者 The Caregiver
+  'LONE': '🐺',   // 独行侠 The Lone Wolf
+  'FUN': '🎉',    // 开心果 The Fun Maker
+  'DEEP': '🌌',   // 深思者 The Deep Thinker
+  'REAL': '💎',   // 真实者 The Realist
+  'GHOST': '👻',  // 隐形人 The Ghost
+  'WARM': '☀️',   // 温暖者 The Warmer
+  'EDGE': '🗡️',   // 边缘人 The Edgewalker
+  'SAGE': '🧙',   // 智者 The Sage
+  'WILD': '🐆',   // 野马 The Wild Horse
+  'COOL': '😎',   // 酷盖 The Cool Kid
+  'SOFT': '🍬',   // 软糖 The Softie
+  'SHARP': '⚡',   // 锐利者 The Sharp One
+  'DREAM': '💭',  // 梦想家 The Dreamer
+  'LOGIC': '🤖',  // 逻辑怪 The Logic Bot
+  'SPARK': '✨',   // 火花 The Spark
+  'FLOW': '🌊',   // 流水 The Flow
+  'ROOT': '🌳',   // 扎根者 The Rooted
+  'SKY': '☁️',    // 天空 The Sky
+  'FREE': '🦋',   // 自由人 The Free Spirit
+  'DARK': '🌑',   // 暗夜 The Dark Knight
+  'STAR': '⭐',   // 星星 The Star
+  'ECHO': '🔊',   // 回声 The Echo
+  'DRUNK': '🍺',  // 酒鬼 The Drunkard
 };
 
 // Get avatar for personality code
@@ -731,9 +773,10 @@ function drawRadarChart(pattern) {
     }
   }
   
-  // Data polygon
-  const values = pattern.split('').map(v => v === 'H' ? 3 : (v === 'M' ? 2 : 1));
+  // Convert 25-dimension pattern to 15-radar dimension values
+  const radarValues = patternToRadarValues(pattern);
   
+  // Data polygon
   ctx.beginPath();
   ctx.strokeStyle = '#8B5CF6';
   ctx.lineWidth = 2;
@@ -741,7 +784,7 @@ function drawRadarChart(pattern) {
   
   for (let i = 0; i < 15; i++) {
     const angle = (i * 24 - 90) * Math.PI / 180;
-    const r = (values[i] / 3) * radius;
+    const r = (radarValues[i] / 3) * radius;
     const x = centerX + Math.cos(angle) * r;
     const y = centerY + Math.sin(angle) * r;
     
@@ -755,7 +798,7 @@ function drawRadarChart(pattern) {
   // Points
   for (let i = 0; i < 15; i++) {
     const angle = (i * 24 - 90) * Math.PI / 180;
-    const r = (values[i] / 3) * radius;
+    const r = (radarValues[i] / 3) * radius;
     const x = centerX + Math.cos(angle) * r;
     const y = centerY + Math.sin(angle) * r;
     
@@ -814,46 +857,46 @@ function shareResult() {
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, 1080, 1920);
   
-  // 2. 顶部装饰元素
+  // 2. 顶部装饰元素 - 头像圆形背景
   ctx.fillStyle = personality.color || '#8B5CF6';
   ctx.beginPath();
-  ctx.arc(540, 300, 120, 0, Math.PI * 2);
+  ctx.arc(540, 260, 90, 0, Math.PI * 2);
   ctx.fill();
   
-  // 人格代码（大字体）
+  // 绘制头像 emoji
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 140px Inter, sans-serif';
+  ctx.font = '80px serif';
   ctx.textAlign = 'center';
+  ctx.fillText(avatar, 540, 285);
   
-  // 绘制头像（在代码左边）
-  ctx.font = 'bold 100px Inter, sans-serif';
-  ctx.fillText(avatar, 440, 340);
-  
-  // 绘制人格代码
-  ctx.fillText(personality.code, 640, 340);
+  // 人格代码（大字体）
+  ctx.fillStyle = personality.color || '#8B5CF6';
+  ctx.font = 'bold 120px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(personality.code, 540, 430);
   
   // 3. 人格名称
   ctx.fillStyle = '#374151';
-  ctx.font = 'bold 72px Inter, sans-serif';
-  ctx.fillText(lang === 'zh' ? personality.name_zh : personality.name_en, 540, 550);
+  ctx.font = 'bold 64px Inter, sans-serif';
+  ctx.fillText(lang === 'zh' ? personality.name_zh : personality.name_en, 540, 520);
   
   // 4. 标签线
   ctx.fillStyle = '#6B7280';
-  ctx.font = '48px Inter, sans-serif';
+  ctx.font = '44px Inter, sans-serif';
   const tagline = lang === 'zh' ? personality.tagline_zh : personality.tagline_en;
-  ctx.fillText(tagline, 540, 650);
+  ctx.fillText(tagline, 540, 590);
   
   // 4.5 MBTI信息（如果有）
   if (selectedMBTI && mbtiDesc) {
     ctx.fillStyle = mbtiDesc.color || '#8B5CF6';
-    ctx.font = 'bold 56px Inter, sans-serif';
+    ctx.font = 'bold 52px Inter, sans-serif';
     const mbtiText = `${selectedMBTI} × ${personality.code}`;
-    ctx.fillText(mbtiText, 540, 720);
+    ctx.fillText(mbtiText, 540, 660);
     
     ctx.fillStyle = '#9CA3AF';
-    ctx.font = '36px Inter, sans-serif';
+    ctx.font = '34px Inter, sans-serif';
     const mbtiDescText = lang === 'zh' ? mbtiDesc.zh : mbtiDesc.en;
-    ctx.fillText(mbtiDescText, 540, 780);
+    ctx.fillText(mbtiDescText, 540, 710);
   }
   
   // 5. 描述卡片
@@ -1423,15 +1466,22 @@ function showComparison() {
                     ${(() => {
                       const yourPattern = personality.pattern;
                       const friendPattern = friendPersonality.pattern;
+                      
+                      // 计算雷达维度相似度
+                      const yourRadarValues = patternToRadarValues(yourPattern);
+                      const friendRadarValues = patternToRadarValues(friendPattern);
+                      
                       let sameCount = 0;
                       let diffCount = 0;
                       
-                      for (let i = 0; i < yourPattern.length; i++) {
-                        if (yourPattern[i] === friendPattern[i]) sameCount++;
+                      for (let i = 0; i < yourRadarValues.length; i++) {
+                        const yourLabel = radarValueToLabel(yourRadarValues[i]);
+                        const friendLabel = radarValueToLabel(friendRadarValues[i]);
+                        if (yourLabel === friendLabel) sameCount++;
                         else diffCount++;
                       }
                       
-                      const similarity = Math.round((sameCount / yourPattern.length) * 100);
+                      const similarity = Math.round((sameCount / yourRadarValues.length) * 100);
                       let similarityLevel = '';
                       let similarityColor = '';
                       
@@ -1476,11 +1526,13 @@ function showComparison() {
                       const dimensionNames = i18n[lang].dimensions || {};
                       const yourPattern = personality.pattern;
                       const friendPattern = friendPersonality.pattern;
-                      const dimensions = dimensionOrder.slice(0, 15);
+                      // Use radar dimensions and values
+                      const yourRadarValues = patternToRadarValues(yourPattern);
+                      const friendRadarValues = patternToRadarValues(friendPattern);
                       
-                      return dimensions.map((dim, index) => {
-                        const yourValue = yourPattern[index];
-                        const friendValue = friendPattern[index];
+                      return radarDimensions.map((dim, index) => {
+                        const yourValue = radarValueToLabel(yourRadarValues[index]);
+                        const friendValue = radarValueToLabel(friendRadarValues[index]);
                         const isSame = yourValue === friendValue;
                         const dimName = dimensionNames[dim] || dim;
                         
@@ -1586,12 +1638,17 @@ function generateComparisonCard(friendCode) {
     };
   }
   
-  // 计算相似度
+  // 计算相似度（基于雷达维度）
+  const yourRadarValues = patternToRadarValues(personality.pattern);
+  const friendRadarValues = patternToRadarValues(friendPersonality.pattern);
+  
   let sameCount = 0;
-  for (let i = 0; i < personality.pattern.length; i++) {
-    if (personality.pattern[i] === friendPersonality.pattern[i]) sameCount++;
+  for (let i = 0; i < yourRadarValues.length; i++) {
+    const yourLabel = radarValueToLabel(yourRadarValues[i]);
+    const friendLabel = radarValueToLabel(friendRadarValues[i]);
+    if (yourLabel === friendLabel) sameCount++;
   }
-  const similarity = Math.round((sameCount / personality.pattern.length) * 100);
+  const similarity = Math.round((sameCount / yourRadarValues.length) * 100);
   let simColor = similarity >= 80 ? '#10B981' : (similarity >= 60 ? '#F59E0B' : '#EF4444');
   
   // 背景
@@ -1662,12 +1719,13 @@ function generateComparisonCard(friendCode) {
   ctx.fillText(lang === 'zh' ? '维度对比' : 'Dimension Comparison', 540, 900);
   
   const dimensionNames = i18n[lang].dimensions || {};
-  const dimensions = dimensionOrder.slice(0, 15);
   
-  dimensions.slice(0, 10).forEach((dim, index) => {
+  // yourRadarValues and friendRadarValues are already declared above
+  
+  radarDimensions.slice(0, 10).forEach((dim, index) => {
     const y = 960 + index * 60;
-    const yourVal = personality.pattern[index];
-    const friendVal = friendPersonality.pattern[index];
+    const yourVal = radarValueToLabel(yourRadarValues[index]);
+    const friendVal = radarValueToLabel(friendRadarValues[index]);
     const isSame = yourVal === friendVal;
     const dimName = (dimensionNames[dim] || dim).substring(0, 6);
     
