@@ -107,7 +107,7 @@ function t(key) {
 function renderLanding() {
   const app = document.getElementById('app');
   app.innerHTML = `
-    <div class="min-h-screen flex flex-col items-center justify-center px-4 bg-gradient-to-b from-purple-50 to-white">
+    <div class="min-h-screen flex flex-col items-center justify-center px-4 bg-gradient-to-b from-cream to-white">
       <div class="text-center max-w-md mx-auto">
         <h1 class="text-4xl font-bold text-purple-600 mb-4">${t('app_title')}</h1>
         <p class="text-xl text-gray-600 mb-8">${t('app_subtitle')}</p>
@@ -145,7 +145,7 @@ function renderQuiz() {
   const progress = ((currentQuestion + 1) / questions.length) * 100;
   
   app.innerHTML = `
-    <div class="min-h-screen flex flex-col bg-gradient-to-b from-purple-50 to-white">
+    <div class="min-h-screen flex flex-col bg-gradient-to-b from-cream to-white">
       <div class="w-full h-1 bg-gray-200">
         <div class="h-full bg-purple-500 transition-all duration-300" style="width: ${progress}%"></div>
       </div>
@@ -229,7 +229,7 @@ function showHiddenQuestion() {
   };
   
   app.innerHTML = `
-    <div class="min-h-screen flex flex-col items-center justify-center px-4 bg-gradient-to-b from-purple-50 to-white">
+    <div class="min-h-screen flex flex-col items-center justify-center px-4 bg-gradient-to-b from-cream to-white">
       <div class="w-full max-w-md">
         <h2 class="text-xl font-bold text-gray-800 mb-8 text-center">
           ${lang === 'zh' ? hiddenQ.text_zh : hiddenQ.text_en}
@@ -322,7 +322,7 @@ function renderResult(personality) {
   const app = document.getElementById('app');
   
   app.innerHTML = `
-    <div class="min-h-screen bg-gradient-to-b from-purple-50 to-white overflow-auto">
+    <div class="min-h-screen bg-gradient-to-b from-cream to-white overflow-auto">
       <div class="max-w-md mx-auto px-4 py-8">
         <div class="text-center mb-8">
           <p class="text-purple-500 font-medium mb-2">${t('your_type')}</p>
