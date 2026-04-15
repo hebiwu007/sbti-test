@@ -10,6 +10,118 @@ let testCount = 0;
 let questionOrder = []; // 保存题目顺序
 let currentPersonality = null; // 当前匹配的人格结果
 
+// ============ API Layer (数据库迁移) ============
+const API_BASE = 'https://sbti-api.hebiwu007.workers.dev';
+
+// 获取或创建 guest_code（唯一保留在本地的标识）
+function getGuestCode() {
+  let code = localStorage.getItem('sbti_guest_code');
+  if (!code) {
+    code = 'SBTI-' + generateLocalGuestCode();
+    localStorage.setItem('sbti_guest_code', code);
+  }
+  return code;
+}
+
+function generateLocalGuestCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 5; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+// API 缓存
+let _userDataCache = null;
+let _userDataCacheTime = 0;
+const CACHE_TTL = 30000; // 30秒缓存
+
+// 获取用户所有数据（带缓存）
+async function fetchUserData(forceRefresh = false) {
+  const now = Date.now();
+  if (!forceRefresh && _userDataCache && (now - _userDataCacheTime) < CACHE_TTL) {
+    return _userDataCache;
+  }
+  try {
+    const res = await fetch(`${API_BASE}/api/user/data?guest_code=${encodeURIComponent(getGuestCode())}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    _userDataCache = data;
+    _userDataCacheTime = now;
+    return data;
+  } catch (e) {
+    console.error('fetchUserData error:', e);
+    return _userDataCache || { user_data: { test_count: 0 }, history: [], daily: { answers: {}, streak: 0, last_date: null } };
+  }
+}
+
+function clearUserDataCache() {
+  _userDataCache = null;
+  _userDataCacheTime = 0;
+}
+
+// 更新用户设置
+async function updateUserData(fields) {
+  try {
+    const res = await fetch(`${API_BASE}/api/user/data`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ guest_code: getGuestCode(), ...fields })
+    });
+    clearUserDataCache();
+    return await res.json();
+  } catch (e) {
+    console.error('updateUserData error:', e);
+    return { success: false };
+  }
+}
+
+// 保存测试历史
+async function saveTestHistory(personalityCode, pattern, matchScore, mbtiType, answersData) {
+  try {
+    const res = await fetch(`${API_BASE}/api/history`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        guest_code: getGuestCode(),
+        personality_code: personalityCode,
+        pattern: pattern,
+        match_score: matchScore,
+        mbti_type: mbtiType || null,
+        answers: answersData || null
+      })
+    });
+    clearUserDataCache();
+    return await res.json();
+  } catch (e) {
+    console.error('saveTestHistory error:', e);
+    return { success: false };
+  }
+}
+
+// 获取每日测试数据
+async function fetchDailyMy() {
+  try {
+    const res = await fetch(`${API_BASE}/api/daily/my?guest_code=${encodeURIComponent(getGuestCode())}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (e) {
+    console.error('fetchDailyMy error:', e);
+    return { answers: {}, streak: 0, last_date: null };
+  }
+}
+
+// 获取历史记录
+async function fetchHistory() {
+  const data = await fetchUserData(true);
+  return data.history || [];
+}
+
+// 获取测试次数
+async function fetchTestCount() {
+  const data = await fetchUserData(true);
+  return data.user_data?.test_count || 0;
+}
+
 // Dimension mapping (matching questions.json)
 const dimensionOrder = [
   'self_esteem', 'self_esteem', 'self_clarity', 'self_clarity', 'core_values',
@@ -159,18 +271,21 @@ const mbtiDescriptions = {
   'ESFP': { zh: '表演者', en: 'Entertainer', color: '#93C5FD' }
 };
 
-// Get current MBTI selection
+// Get current MBTI selection (from cache or local fallback)
 function getSelectedMBTI() {
+  if (_userDataCache?.user_data?.mbti_type) return _userDataCache.user_data.mbti_type;
   return localStorage.getItem('sbti_mbti') || null;
 }
 
 // Set MBTI selection
 function setSelectedMBTI(mbti) {
   if (mbti) {
-    localStorage.setItem('sbti_mbti', mbti);
+    localStorage.setItem('sbti_mbti', mbti); // 本地缓存
   } else {
     localStorage.removeItem('sbti_mbti');
   }
+  // 异步同步到数据库
+  updateUserData({ mbti_type: mbti || null });
 }
 
 // Initialize
@@ -190,6 +305,17 @@ async function loadData() {
     questions = (await qRes.json()).questions;
     personalities = (await pRes.json()).personalities;
     testCount = parseInt(localStorage.getItem('sbti_test_count') || '0');
+    // 异步从数据库加载真实数据
+    fetchUserData().then(data => {
+      if (data.user_data?.test_count) {
+        testCount = data.user_data.test_count;
+        localStorage.setItem('sbti_test_count', testCount.toString());
+      }
+      // 同步 MBTI
+      if (data.user_data?.mbti_type) {
+        localStorage.setItem('sbti_mbti', data.user_data.mbti_type);
+      }
+    }).catch(() => {});
   } catch (e) {
     console.error('Failed to load data:', e);
   }
@@ -284,7 +410,8 @@ function renderLanding(refCode) {
   }
   
   // Check if user has history for showing history button
-  const hasHistory = JSON.parse(localStorage.getItem('sbti_history') || '[]').length > 0;
+  const localHistory = JSON.parse(localStorage.getItem('sbti_history') || '[]');
+  const hasHistory = localHistory.length > 0 || (_userDataCache?.history?.length > 0);
   
   app.innerHTML = `
     <div class="min-h-screen flex flex-col items-center px-4 bg-gradient-to-b from-cream to-white pb-8">
@@ -380,7 +507,21 @@ async function showDailyQuiz() {
     const dailyQuestion = questions[todaySeed];
     
     // 获取用户今日答案
-    const dailyAnswers = JSON.parse(localStorage.getItem('sbti_daily_answers') || '{}');
+    let dailyAnswers = JSON.parse(localStorage.getItem('sbti_daily_answers') || '{}');
+    let localStreak = parseInt(localStorage.getItem('sbti_daily_streak') || '0');
+    
+    // 异步从数据库获取最新每日数据（不阻塞渲染）
+    fetchDailyMy().then(dailyData => {
+      if (dailyData.answers && Object.keys(dailyData.answers).length > 0) {
+        localStorage.setItem('sbti_daily_answers', JSON.stringify(dailyData.answers));
+        dailyAnswers = dailyData.answers;
+      }
+      if (dailyData.streak) {
+        localStorage.setItem('sbti_daily_streak', dailyData.streak.toString());
+        localStreak = dailyData.streak;
+      }
+    }).catch(() => {});
+    
     const todayAnswer = dailyAnswers[today];
     
     // 获取真实统计数据（带 fallback 和超时）
@@ -401,7 +542,7 @@ async function showDailyQuiz() {
           distribution: data.distribution.map(d => ({
             option: d.answer, count: d.count, percent: 0
           })),
-          streak: parseInt(localStorage.getItem('sbti_daily_streak') || '0')
+          streak: localStreak
         };
       } else {
         stats = {
@@ -411,7 +552,7 @@ async function showDailyQuiz() {
             { option: 'B', count: 0, percent: 0 },
             { option: 'C', count: 0, percent: 0 }
           ],
-          streak: parseInt(localStorage.getItem('sbti_daily_streak') || '0')
+          streak: localStreak
         };
       }
     } catch (e) {
@@ -423,7 +564,7 @@ async function showDailyQuiz() {
           { option: 'B', count: 0, percent: 0 },
           { option: 'C', count: 0, percent: 0 }
         ],
-        streak: parseInt(localStorage.getItem('sbti_daily_streak') || '0')
+        streak: localStreak
       };
     }
     
@@ -615,14 +756,14 @@ async function submitDailyAnswer(date, answer) {
   
   localStorage.setItem('sbti_daily_last_date', today);
 
-  // 提交到 API
+  // 提交到 API（streak由服务端计算）
   try {
-    const guestCode = localStorage.getItem('sbti_guest_code') || null;
     await fetch('https://sbti-api.hebiwu007.workers.dev/api/daily/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ quiz_date: date, answer, guest_code: guestCode })
+      body: JSON.stringify({ quiz_date: date, answer, guest_code: getGuestCode() })
     });
+    clearUserDataCache(); // 刷新缓存
   } catch (e) { /* silent */ }
   
   // 关闭模态框并重新打开
@@ -821,6 +962,7 @@ function calculateResult(isDrunk) {
 // 保存结果到历史记录
 function saveToHistory(personality, userPattern) {
   try {
+    // 先保存到本地（即时）
     const history = JSON.parse(localStorage.getItem('sbti_history') || '[]');
     const entry = {
       code: personality.code,
@@ -829,9 +971,17 @@ function saveToHistory(personality, userPattern) {
       date: new Date().toISOString()
     };
     history.unshift(entry);
-    // 保留最近5次
     if (history.length > 5) history.pop();
     localStorage.setItem('sbti_history', JSON.stringify(history));
+    
+    // 异步同步到数据库
+    saveTestHistory(
+      personality.code,
+      userPattern,
+      personality._matchScore || 0,
+      getSelectedMBTI(),
+      null
+    ).catch(e => console.error('saveTestHistory error:', e));
   } catch (e) {
     console.error('Failed to save history:', e);
   }
@@ -1675,7 +1825,7 @@ function showRankingSubmit() {
   if (!personality) return;
   const avatar = getPersonalityAvatar(personality.code);
   const existingNickname = localStorage.getItem('sbti_ranking_nickname') || '';
-  const existingGuestCode = localStorage.getItem('sbti_guest_code') || '';
+  const existingGuestCode = getGuestCode();
 
   const modal = document.createElement('div');
   modal.id = 'rankingModal';
@@ -1750,7 +1900,13 @@ async function doSubmitRanking() {
     const data = await res.json();
     if (data.success) {
       localStorage.setItem('sbti_ranking_nickname', nickname);
-      localStorage.setItem('sbti_guest_code', data.guest_code);
+      // guest_code已由getGuestCode()生成，API可能返回新的（排行榜的guest_code），保持一致
+      if (data.guest_code) {
+        localStorage.setItem('sbti_guest_code', data.guest_code);
+      }
+      // 同步昵称到数据库
+      updateUserData({ nickname }).catch(() => {});
+      clearUserDataCache();
       const modal = document.getElementById('rankingModal');
       if (modal) modal.querySelector('.bg-white').innerHTML = `
         <div class="p-6 text-center">
@@ -2753,14 +2909,25 @@ function generateDimensionDiff(currentPattern, previousPattern) {
 // Cloudflare Pages native GitHub integration - Tue Apr 14 11:14:35 AM CST 2026
 
 // ============ User Profile / Data Management ============
-function showUserProfile() {
+async function showUserProfile() {
   const personality = currentPersonality || findMatchedPersonality();
   const mbti = getSelectedMBTI();
-  const guestCode = localStorage.getItem('sbti_guest_code') || '';
+  const guestCode = getGuestCode();
   const nickname = localStorage.getItem('sbti_ranking_nickname') || '';
-  const history = JSON.parse(localStorage.getItem('sbti_history') || '[]');
-  const dailyAnswers = JSON.parse(localStorage.getItem('sbti_daily_answers') || '{}');
-  const dailyStreak = parseInt(localStorage.getItem('sbti_daily_streak') || '0');
+  
+  // 从数据库获取用户数据
+  let userData;
+  try {
+    userData = await fetchUserData(true);
+  } catch (e) {
+    userData = { user_data: {}, history: [], daily: { answers: {}, streak: 0, last_date: null } };
+  }
+  
+  const history = userData.history.length > 0
+    ? userData.history.map(h => ({ code: h.personality_code, pattern: h.pattern, matchScore: h.match_score, date: h.created_at }))
+    : JSON.parse(localStorage.getItem('sbti_history') || '[]');
+  const dailyAnswers = userData.daily.answers || JSON.parse(localStorage.getItem('sbti_daily_answers') || '{}');
+  const dailyStreak = userData.daily.streak || parseInt(localStorage.getItem('sbti_daily_streak') || '0');
   const dailyCount = Object.keys(dailyAnswers).length;
   const loggedInUser = JSON.parse(localStorage.getItem('sbti_user') || 'null');
 
@@ -2908,12 +3075,8 @@ function showUserProfile() {
 
 // Delete server-side data
 async function deleteMyServerData() {
-  const guestCode = localStorage.getItem('sbti_guest_code');
-  if (!guestCode) {
-    alert(lang === 'zh' ? '没有找到临时码' : 'No guest code found');
-    return;
-  }
-  const confirmed = confirm(lang === 'zh' ? '确定删除服务器上的所有排行榜数据？此操作不可恢复。' : 'Delete all ranking data from server? This cannot be undone.');
+  const guestCode = getGuestCode();
+  const confirmed = confirm(lang === 'zh' ? '确定删除服务器上的所有数据？此操作不可恢复。' : 'Delete all data from server? This cannot be undone.');
   if (!confirmed) return;
   try {
     const res = await fetch('https://sbti-api.hebiwu007.workers.dev/api/data', {
@@ -2925,7 +3088,9 @@ async function deleteMyServerData() {
     if (data.success) {
       localStorage.removeItem('sbti_guest_code');
       localStorage.removeItem('sbti_ranking_nickname');
-      alert(lang === 'zh' ? '服务器数据已删除' : 'Server data deleted');
+      clearUserDataCache();
+      const d = data.deleted || {};
+      alert(lang === 'zh' ? `服务器数据已删除\n排行榜: ${d.rankings || 0}条\n每日一测: ${d.daily_quiz || 0}条\n历史: ${d.history || 0}条` : `Server data deleted\nRankings: ${d.rankings || 0}\nDaily: ${d.daily_quiz || 0}\nHistory: ${d.history || 0}`);
       showUserProfile();
     } else {
       alert(data.error || (lang === 'zh' ? '删除失败' : 'Delete failed'));

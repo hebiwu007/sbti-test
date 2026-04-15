@@ -61,6 +61,22 @@ export default {
       if (path === '/api/data' && request.method === 'DELETE')
         return await handleDataDelete(request, env, corsHeaders);
 
+      // User data (history, settings, daily) - all-in-one
+      if (path === '/api/user/data' && request.method === 'GET')
+        return await handleGetUserData(env, corsHeaders, url);
+      if (path === '/api/user/data' && request.method === 'PUT')
+        return await handleUpdateUserData(request, env, corsHeaders);
+
+      // Test history
+      if (path === '/api/history' && request.method === 'GET')
+        return await handleGetHistory(env, corsHeaders, url);
+      if (path === '/api/history' && request.method === 'POST')
+        return await handleSaveHistory(request, env, corsHeaders);
+
+      // Daily my answers
+      if (path === '/api/daily/my' && request.method === 'GET')
+        return await handleDailyMy(env, corsHeaders, url);
+
       // Auth routes
       if (path === '/api/auth/register' && request.method === 'POST')
         return await handleRegister(request, env, corsHeaders);
@@ -129,7 +145,38 @@ async function handleInit(env, h) {
   )`).run();
   try { await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_dq_date ON daily_quiz(quiz_date)').run(); } catch(e) {}
 
-  return json({ success: true, message: 'Database v2 initialized' }, h);
+  // user_data table (unified user settings)
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS user_data (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    guest_code TEXT UNIQUE NOT NULL,
+    user_id INTEGER,
+    nickname TEXT,
+    mbti_type TEXT,
+    test_count INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`).run();
+  try { await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_ud_guest ON user_data(guest_code)').run(); } catch(e) {}
+  try { await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_ud_user ON user_data(user_id)').run(); } catch(e) {}
+
+  // test_history table (per-test records)
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS test_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    guest_code TEXT NOT NULL,
+    personality_code TEXT NOT NULL,
+    pattern TEXT,
+    match_score REAL,
+    mbti_type TEXT,
+    answers TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`).run();
+  try { await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_th_guest ON test_history(guest_code)').run(); } catch(e) {}
+  try { await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_th_date ON test_history(created_at)').run(); } catch(e) {}
+
+  // daily_quiz: add streak column if not exists
+  try { await env.DB.prepare('ALTER TABLE daily_quiz ADD COLUMN streak INTEGER DEFAULT 0').run(); } catch(e) {}
+
+  return json({ success: true, message: 'Database v3 initialized' }, h);
 }
 
 // ============ Submit anonymous result ============
@@ -344,9 +391,16 @@ async function handleDailySubmit(request, env, h) {
 
   if (existing) return json({ error: 'already answered', already: true }, h);
 
+  // Compute streak
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  const yesterdayRecord = await env.DB.prepare(
+    'SELECT streak FROM daily_quiz WHERE guest_code = ? AND quiz_date = ?'
+  ).bind(guest_code || '__none__', yesterday).first();
+  const streak = yesterdayRecord ? (yesterdayRecord.streak || 0) + 1 : 1;
+
   await env.DB.prepare(
-    'INSERT INTO daily_quiz (guest_code, quiz_date, answer) VALUES (?, ?, ?)'
-  ).bind(guest_code || null, quiz_date, answer).run();
+    'INSERT INTO daily_quiz (guest_code, quiz_date, answer, streak) VALUES (?, ?, ?, ?)'
+  ).bind(guest_code || null, quiz_date, answer, streak).run();
 
   // Get distribution
   const stats = await env.DB.prepare(
@@ -380,7 +434,7 @@ async function handleDataDelete(request, env, h) {
     return json({ error: 'Valid guest_code required (SBTI-XXXX)' }, h, 400);
   }
 
-  let deleted = { rankings: 0, daily_quiz: 0 };
+  let deleted = { rankings: 0, daily_quiz: 0, history: 0, user_data: 0 };
 
   // Delete from rankings (also deletes linked test_results via result_id)
   const ranking = await env.DB.prepare(
@@ -388,7 +442,6 @@ async function handleDataDelete(request, env, h) {
   ).bind(guest_code).first();
 
   if (ranking) {
-    // Delete test_result linked to this ranking
     if (ranking.result_id) {
       await env.DB.prepare('DELETE FROM test_results WHERE rowid = ?').bind(ranking.result_id).run();
     }
@@ -401,6 +454,18 @@ async function handleDataDelete(request, env, h) {
     'DELETE FROM daily_quiz WHERE guest_code = ?'
   ).bind(guest_code).run();
   deleted.daily_quiz = dr.meta.changes || 0;
+
+  // Delete test history
+  const hr = await env.DB.prepare(
+    'DELETE FROM test_history WHERE guest_code = ?'
+  ).bind(guest_code).run();
+  deleted.history = hr.meta.changes || 0;
+
+  // Delete user data
+  const udr = await env.DB.prepare(
+    'DELETE FROM user_data WHERE guest_code = ?'
+  ).bind(guest_code).run();
+  deleted.user_data = udr.meta.changes || 0;
 
   return json({ success: true, message: 'User data deleted', deleted }, h);
 }
@@ -417,6 +482,160 @@ function generateGuestCode() {
   let code = '';
   for (let i = 0; i < 5; i++) code += chars[Math.floor(Math.random() * chars.length)];
   return code;
+}
+
+// ============ User Data (all-in-one) ============
+async function handleGetUserData(env, h, url) {
+  const guestCode = url.searchParams.get('guest_code');
+  if (!guestCode) return json({ error: 'guest_code required' }, h, 400);
+
+  // Ensure user_data row exists
+  await ensureUserData(env, guestCode);
+
+  // Get user settings
+  const userData = await env.DB.prepare(
+    'SELECT guest_code, nickname, mbti_type, test_count FROM user_data WHERE guest_code = ?'
+  ).bind(guestCode).first();
+
+  // Get test history (latest 20)
+  const history = await env.DB.prepare(
+    'SELECT personality_code, pattern, match_score, mbti_type, answers, created_at FROM test_history WHERE guest_code = ? ORDER BY created_at DESC LIMIT 20'
+  ).bind(guestCode).all();
+
+  // Get daily answers
+  const dailyAnswers = await env.DB.prepare(
+    'SELECT quiz_date, answer, streak FROM daily_quiz WHERE guest_code = ? ORDER BY quiz_date DESC LIMIT 30'
+  ).bind(guestCode).all();
+
+  // Compute streak
+  let streak = 0;
+  let lastDate = null;
+  if (dailyAnswers.results.length > 0) {
+    const today = getLocalDate();
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    lastDate = dailyAnswers.results[0].quiz_date;
+    if (lastDate === today || lastDate === yesterday) {
+      streak = dailyAnswers.results[0].streak || 0;
+    }
+  }
+
+  return json({
+    user_data: userData,
+    history: history.results,
+    daily: {
+      answers: dailyAnswers.results.reduce((acc, r) => { acc[r.quiz_date] = r.answer; return acc; }, {}),
+      streak,
+      last_date: lastDate
+    }
+  }, h);
+}
+
+async function handleUpdateUserData(request, env, h) {
+  const body = await request.json();
+  const { guest_code, nickname, mbti_type } = body;
+  if (!guest_code) return json({ error: 'guest_code required' }, h, 400);
+
+  await ensureUserData(env, guest_code);
+
+  const updates = [];
+  const params = [];
+  if (nickname !== undefined) { updates.push('nickname = ?'); params.push(nickname); }
+  if (mbti_type !== undefined) { updates.push('mbti_type = ?'); params.push(mbti_type); }
+
+  if (updates.length > 0) {
+    updates.push('updated_at = CURRENT_TIMESTAMP');
+    params.push(guest_code);
+    await env.DB.prepare(
+      `UPDATE user_data SET ${updates.join(', ')} WHERE guest_code = ?`
+    ).bind(...params).run();
+  }
+
+  const userData = await env.DB.prepare(
+    'SELECT guest_code, nickname, mbti_type, test_count FROM user_data WHERE guest_code = ?'
+  ).bind(guest_code).first();
+
+  return json({ success: true, user_data: userData }, h);
+}
+
+// ============ Test History ============
+async function handleGetHistory(env, h, url) {
+  const guestCode = url.searchParams.get('guest_code');
+  if (!guestCode) return json({ error: 'guest_code required' }, h, 400);
+
+  const history = await env.DB.prepare(
+    'SELECT personality_code, pattern, match_score, mbti_type, answers, created_at FROM test_history WHERE guest_code = ? ORDER BY created_at DESC LIMIT 20'
+  ).bind(guestCode).all();
+
+  return json({ history: history.results }, h);
+}
+
+async function handleSaveHistory(request, env, h) {
+  const body = await request.json();
+  const { guest_code, personality_code, pattern, match_score, mbti_type, answers } = body;
+  if (!guest_code || !personality_code) return json({ error: 'guest_code and personality_code required' }, h, 400);
+
+  await ensureUserData(env, guest_code);
+
+  // Insert test history
+  await env.DB.prepare(
+    'INSERT INTO test_history (guest_code, personality_code, pattern, match_score, mbti_type, answers) VALUES (?, ?, ?, ?, ?, ?)'
+  ).bind(guest_code, personality_code, pattern || null, match_score || null, mbti_type || null, answers ? JSON.stringify(answers) : null).run();
+
+  // Increment test_count
+  await env.DB.prepare(
+    'UPDATE user_data SET test_count = test_count + 1, updated_at = CURRENT_TIMESTAMP WHERE guest_code = ?'
+  ).bind(guest_code).run();
+
+  const count = await env.DB.prepare(
+    'SELECT test_count FROM user_data WHERE guest_code = ?'
+  ).bind(guest_code).first();
+
+  return json({ success: true, test_count: count.test_count }, h);
+}
+
+// ============ Daily My Answers ============
+async function handleDailyMy(env, h, url) {
+  const guestCode = url.searchParams.get('guest_code');
+  if (!guestCode) return json({ error: 'guest_code required' }, h, 400);
+
+  const answers = await env.DB.prepare(
+    'SELECT quiz_date, answer, streak FROM daily_quiz WHERE guest_code = ? ORDER BY quiz_date DESC LIMIT 30'
+  ).bind(guestCode).all();
+
+  // Compute streak
+  let streak = 0;
+  let lastDate = null;
+  if (answers.results.length > 0) {
+    const today = getLocalDate();
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    lastDate = answers.results[0].quiz_date;
+    if (lastDate === today || lastDate === yesterday) {
+      streak = answers.results[0].streak || 0;
+    }
+  }
+
+  return json({
+    answers: answers.results.reduce((acc, r) => { acc[r.quiz_date] = r.answer; return acc; }, {}),
+    streak,
+    last_date: lastDate
+  }, h);
+}
+
+// ============ Helper: ensure user_data row ============
+async function ensureUserData(env, guestCode) {
+  const existing = await env.DB.prepare(
+    'SELECT id FROM user_data WHERE guest_code = ?'
+  ).bind(guestCode).first();
+
+  if (!existing) {
+    await env.DB.prepare(
+      'INSERT OR IGNORE INTO user_data (guest_code) VALUES (?)'
+    ).bind(guestCode).run();
+  }
+}
+
+function getLocalDate() {
+  return new Date().toISOString().split('T')[0];
 }
 
 // ============ Auth System ============
