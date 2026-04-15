@@ -361,31 +361,63 @@ function getLocalDate() {
 
 // Show daily quiz
 async function showDailyQuiz() {
-  // 获取今日题目ID（基于本地日期）
-  const today = getLocalDate();
-  const todaySeed = parseInt(today.replace(/-/g, '')) % questions.length;
-  const dailyQuestion = questions[todaySeed];
-  
-  // 获取用户今日答案
-  const dailyAnswers = JSON.parse(localStorage.getItem('sbti_daily_answers') || '{}');
-  const todayAnswer = dailyAnswers[today];
-  
-  // 获取真实统计数据（带 fallback）
-  let stats;
+  // 显示加载模态框
+  const loadingModal = document.createElement('div');
+  loadingModal.id = 'dailyQuizLoading';
+  loadingModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50';
+  loadingModal.innerHTML = `
+    <div class="bg-white rounded-2xl p-8 text-center">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+      <p class="text-gray-600">${lang === 'zh' ? '加载中...' : 'Loading...'}</p>
+    </div>
+  `;
+  document.body.appendChild(loadingModal);
+
   try {
-    const res = await fetch(`https://sbti-api.hebiwu007.workers.dev/api/daily/stats?date=${today}`);
-    const data = await res.json();
-    if (data.distribution && data.distribution.length > 0) {
+    // 获取今日题目ID（基于本地日期）
+    const today = getLocalDate();
+    const todaySeed = parseInt(today.replace(/-/g, '')) % questions.length;
+    const dailyQuestion = questions[todaySeed];
+    
+    // 获取用户今日答案
+    const dailyAnswers = JSON.parse(localStorage.getItem('sbti_daily_answers') || '{}');
+    const todayAnswer = dailyAnswers[today];
+    
+    // 获取真实统计数据（带 fallback 和超时）
+    let stats;
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
+      
+      const res = await fetch(`https://sbti-api.hebiwu007.workers.dev/api/daily/stats?date=${today}`, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
+      const data = await res.json();
+      if (data.distribution && data.distribution.length > 0) {
+        stats = {
+          total: data.total || 0,
+          distribution: data.distribution.map(d => ({
+            option: d.answer, count: d.count, percent: 0
+          })),
+          streak: parseInt(localStorage.getItem('sbti_daily_streak') || '0')
+        };
+      } else {
+        stats = {
+          total: data.total || 0,
+          distribution: [
+            { option: 'A', count: 0, percent: 0 },
+            { option: 'B', count: 0, percent: 0 },
+            { option: 'C', count: 0, percent: 0 }
+          ],
+          streak: parseInt(localStorage.getItem('sbti_daily_streak') || '0')
+        };
+      }
+    } catch (e) {
+      // 使用本地缓存或空数据
       stats = {
-        total: data.total || 0,
-        distribution: data.distribution.map(d => ({
-          option: d.answer, count: d.count, percent: 0
-        })),
-        streak: parseInt(localStorage.getItem('sbti_daily_streak') || '0')
-      };
-    } else {
-      stats = {
-        total: data.total || 0,
+        total: 0,
         distribution: [
           { option: 'A', count: 0, percent: 0 },
           { option: 'B', count: 0, percent: 0 },
@@ -394,27 +426,20 @@ async function showDailyQuiz() {
         streak: parseInt(localStorage.getItem('sbti_daily_streak') || '0')
       };
     }
-  } catch (e) {
-    stats = {
-      total: 0,
-      distribution: [
-        { option: 'A', count: 0, percent: 0 },
-        { option: 'B', count: 0, percent: 0 },
-        { option: 'C', count: 0, percent: 0 }
-      ],
-      streak: parseInt(localStorage.getItem('sbti_daily_streak') || '0')
-    };
-  }
-  
-  // 计算百分比
-  const totalCount = stats.distribution.reduce((sum, d) => sum + d.count, 0);
-  stats.distribution.forEach(d => {
-    d.percent = Math.round((d.count / totalCount) * 100);
-  });
-  
-  const modal = document.createElement('div');
-  modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto';
-  modal.innerHTML = `
+    
+    // 计算百分比
+    const totalCount = stats.distribution.reduce((sum, d) => sum + d.count, 0);
+    stats.distribution.forEach(d => {
+      d.percent = Math.round((d.count / totalCount) * 100);
+    });
+    
+    // 移除加载模态框
+    const loadingEl = document.getElementById('dailyQuizLoading');
+    if (loadingEl) loadingEl.remove();
+    
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto';
+    modal.innerHTML = `
     <div class="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-auto">
       <div class="p-6">
         <div class="flex justify-between items-center mb-6">
@@ -518,6 +543,26 @@ async function showDailyQuiz() {
     </div>
   `;
   document.body.appendChild(modal);
+  } catch (e) {
+    // 移除加载模态框
+    const loadingEl = document.getElementById('dailyQuizLoading');
+    if (loadingEl) loadingEl.remove();
+    
+    console.error('Daily quiz error:', e);
+    
+    // 显示错误提示
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50';
+    modal.innerHTML = `
+      <div class="bg-white rounded-2xl max-w-md w-full p-6 text-center">
+        <div class="text-4xl mb-4">⚠️</div>
+        <h2 class="text-xl font-bold text-gray-800 mb-2">${lang === 'zh' ? '加载失败' : 'Loading Failed'}</h2>
+        <p class="text-gray-500 mb-6">${lang === 'zh' ? '每日一测加载失败，请稍后重试' : 'Failed to load daily quiz, please try again later'}</p>
+        <button onclick="this.closest('.fixed').remove()" class="w-full py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition">${lang === 'zh' ? '关闭' : 'Close'}</button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
 }
 
 // Submit daily answer
@@ -1467,6 +1512,23 @@ function showMBTIIntersection() {
   const mbti = getSelectedMBTI();
   const personality = currentPersonality || findMatchedPersonality();
   
+  // 如果没有SBTI结果，提示用户先测试
+  if (!personality) {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50';
+    modal.innerHTML = `
+      <div class="bg-white rounded-2xl max-w-md w-full p-6 text-center">
+        <div class="text-4xl mb-4">📝</div>
+        <h2 class="text-xl font-bold text-gray-800 mb-2">${lang === 'zh' ? '需要先完成测试' : 'Test Required'}</h2>
+        <p class="text-gray-500 mb-6">${lang === 'zh' ? 'MBTI × SBTI 交叉解读需要你先完成SBTI测试获得自己的人格类型' : 'MBTI × SBTI intersection analysis requires you to complete the SBTI test first'}</p>
+        <button onclick="this.closest('.fixed').remove();startQuiz()" class="w-full py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition mb-3">${lang === 'zh' ? '开始测试' : 'Start Test'}</button>
+        <button onclick="this.closest('.fixed').remove()" class="w-full py-3 border-2 border-gray-200 text-gray-600 rounded-full font-medium">${lang === 'zh' ? '稍后再说' : 'Later'}</button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    return;
+  }
+  
   // Show MBTI selector modal from landing page
   const modal = document.createElement('div');
   modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto';
@@ -1826,9 +1888,12 @@ async function showLeaderboard(period = 'all', region = '') {
           `).join('')}
         </div>
 
-        <!-- Leaderboard list -->
+  <!-- Leaderboard list -->
         <div id="lb-list" class="space-y-3">
-          <div class="text-center py-8 text-gray-400">Loading...</div>
+          <div class="text-center py-12">
+            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600 mx-auto mb-3"></div>
+            <p class="text-gray-400">${lang === 'zh' ? '加载中...' : 'Loading...'}</p>
+          </div>
         </div>
       </div>
       <button onclick="toggleLang()" class="fixed top-4 right-4 px-3 py-1 border border-purple-300 rounded-full text-purple-500 hover:bg-purple-50 text-sm">${lang === 'zh' ? 'EN' : '中文'}</button>
@@ -3063,7 +3128,8 @@ async function doLogin() {
       errEl.classList.remove('hidden');
     }
   } catch (e) {
-    errEl.textContent = lang === 'zh' ? '网络错误' : 'Network error';
+    console.error('Login error:', e);
+    errEl.textContent = lang === 'zh' ? '网络错误，请检查网络连接后重试' : 'Network error, please check connection and retry';
     errEl.classList.remove('hidden');
   }
 }
@@ -3108,7 +3174,7 @@ async function doRegister() {
     }
   } catch (e) {
     console.error('Register error:', e);
-    errEl.textContent = lang === 'zh' ? '网络错误，请稍后重试' : 'Network error, please try again';
+    errEl.textContent = lang === 'zh' ? '网络错误，请检查网络连接后重试' : 'Network error, please check connection and retry';
     errEl.classList.remove('hidden');
   }
 }
