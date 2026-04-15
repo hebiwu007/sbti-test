@@ -36,6 +36,15 @@
 </head>
 <body class="bg-cream">
   <div class="max-w-2xl mx-auto px-4 py-8">
+    <!-- Top right buttons -->
+    <div class="fixed top-4 right-4 flex gap-2 items-center z-50">
+      <button onclick="goToProfile()" class="px-3 py-1 border border-purple-300 rounded-full text-purple-500 hover:bg-purple-50 text-sm flex items-center gap-1" id="userBtn">
+        <span>👤</span>
+      </button>
+      <button onclick="toggleLang()" class="px-3 py-1 border border-purple-300 rounded-full text-purple-500 hover:bg-purple-50 text-sm" id="langBtn">
+        EN
+      </button>
+    </div>
     <div class="bg-white rounded-2xl p-6 shadow-lg mb-6">
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold text-gray-800">隐私政策</h1>
@@ -80,6 +89,26 @@
   
   <script>
     let lang = 'zh';
+    
+    // Update user button display
+    function updateUserButton() {
+      const userStr = localStorage.getItem('sbti_user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      const btn = document.getElementById('userBtn');
+      
+      if (user && btn) {
+        const displayName = user.nickname || user.username;
+        btn.innerHTML = `<span>👤</span><span class="max-w-[80px] truncate">${displayName}</span>`;
+      }
+    }
+    
+    // Go to profile/main page
+    function goToProfile() {
+      window.location.href = 'index.html';
+    }
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', updateUserButton);
     
     function toggleLang() {
       lang = lang === 'zh' ? 'en' : 'zh';
