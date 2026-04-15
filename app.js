@@ -601,7 +601,7 @@ function renderQuiz() {
       <div class="flex-1 flex flex-col items-center justify-center px-4 py-8">
         <div class="w-full max-w-md">
           <p class="text-purple-500 font-medium mb-4 text-base md:text-lg">
-            ${t('question_prefix')}${currentQuestion + 1}${t('question_suffix')}
+            ${t('question_prefix')}${currentQuestion + 1}/${questions.length}
           </p>
           <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-8 text-center">
             ${lang === 'zh' ? q.text_zh : q.text_en}
@@ -639,7 +639,17 @@ function renderQuiz() {
 function selectAnswer(qIndex, value) {
   answers[qIndex] = value;
   saveProgress();
-  renderQuiz();
+  // 如果不是最后一题，自动跳转下一题
+  if (currentQuestion < questions.length - 1) {
+    setTimeout(() => {
+      currentQuestion++;
+      saveProgress();
+      renderQuiz();
+    }, 300);
+  } else {
+    // 最后一题：刷新当前状态显示选中效果
+    renderQuiz();
+  }
 }
 
 // Previous question
@@ -879,44 +889,11 @@ function renderResult(personality) {
           </div>
         </div>
         
-        <!-- MBTI 交叉解读 -->
-        <div class="bg-white rounded-2xl p-6 shadow-lg mb-6">
-          <h3 class="text-lg font-bold text-gray-800 mb-4 text-center">${t('mbti_cross') || 'MBTI × SBTI 交叉解读'}</h3>
-          <p class="text-gray-600 text-sm mb-4 text-center">选择你的MBTI类型，获取专属解读（可选）</p>
-          
-          <div class="mb-4">
-            <div class="text-sm text-gray-500 mb-2">当前选择：</div>
-            <div id="selectedMbti" class="text-lg font-medium">
-              ${getSelectedMBTI() ? `<span class="px-3 py-1 rounded-full text-white" style="background-color: ${mbtiDescriptions[getSelectedMBTI()]?.color || '#8B5CF6'}">
-                ${getSelectedMBTI()} - ${lang === 'zh' ? mbtiDescriptions[getSelectedMBTI()]?.zh : mbtiDescriptions[getSelectedMBTI()]?.en}
-              </span>` : t('not_selected') || '未选择'}
-            </div>
-          </div>
-          
-          <div class="grid grid-cols-4 gap-2 mb-4">
-            ${mbtiTypes.map(mbti => {
-              const desc = mbtiDescriptions[mbti];
-              const isSelected = getSelectedMBTI() === mbti;
-              return `
-                <button 
-                  onclick="selectMBTI('${mbti}')"
-                  class="px-2 py-2 rounded-lg text-sm font-medium transition-all ${isSelected ? 'ring-2 ring-offset-1' : 'hover:bg-gray-100'}"
-                  style="${isSelected ? `background-color: ${desc.color}20; color: ${desc.color}; border-color: ${desc.color}` : 'background-color: #F9FAFB; color: #4B5563;'}"
-                >
-                  ${mbti}
-                </button>
-              `;
-            }).join('')}
-          </div>
-          
-          <div class="text-center">
-            <button onclick="clearMBTI()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 text-sm">
-              ${t('clear_selection') || '清除选择'}
-            </button>
-            <button onclick="showMBTIIntersection()" class="ml-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm" ${getSelectedMBTI() ? '' : 'disabled style="opacity: 0.5; cursor: not-allowed"'}>
-              ${t('view_intersection') || '查看交叉解读'}
-            </button>
-          </div>
+        <!-- MBTI × SBTI 交叉解读入口 -->
+        <div class="bg-white rounded-2xl p-4 shadow-lg mb-6 text-center">
+          <button onclick="showMBTIIntersection()" class="w-full py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition text-lg">
+            ${t('mbti_cross') || 'MBTI × SBTI 交叉解读'}
+          </button>
         </div>
         
         <div class="space-y-3 mb-8">
@@ -926,9 +903,9 @@ function renderResult(personality) {
             <button onclick="shareNative()" class="py-3 border-2 border-purple-400 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${t('share_native')}</button>
           </div>
           <button onclick="showDetailedAnalysis()" class="w-full py-3 border-2 border-green-500 text-green-600 rounded-full font-medium hover:bg-green-50 transition">${t('detailed_analysis')}</button>
-          <button onclick="showComparison()" class="w-full py-3 border-2 border-blue-500 text-blue-600 rounded-full font-medium hover:bg-blue-50 transition">${t('compare')}</button>
+          <button onclick="showComparison()" class="w-full py-3 border-2 border-blue-500 text-blue-600 rounded-full font-medium hover:bg-blue-50 transition">${lang === 'zh' ? '👥 人格对比' : '👥 Compare'}</button>
           <button onclick="showRankingSubmit()" class="w-full py-3 border-2 border-amber-500 text-amber-600 rounded-full font-medium hover:bg-amber-50 transition">${t('submit_to_ranking')}</button>
-          <button onclick="goHomeFromLeaderboard()" class="w-full py-3 border-2 border-purple-300 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${lang === 'zh' ? '🏠 返回首页' : '🏠 Back to Home'}</button>
+          <button onclick="renderLanding()" class="w-full py-3 border-2 border-purple-300 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${lang === 'zh' ? '🏠 返回首页' : '🏠 Back to Home'}</button>
         </div>
         <a href="privacy.html" class="block text-center text-gray-400 hover:text-purple-500 text-sm mb-4">${t('privacy_link')}</a>
       </div>
@@ -2842,27 +2819,30 @@ function showUserProfile() {
         </div>
 
         <!-- MBTI -->
-        ${mbti ? `
         <div class="bg-white rounded-2xl p-4 shadow-lg mb-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <div class="text-sm text-gray-500">${lang === 'zh' ? '我的 MBTI' : 'My MBTI'}</div>
-              <div class="text-lg font-bold text-purple-600">${mbti}</div>
+          <h3 class="font-bold text-gray-800 mb-3">${lang === 'zh' ? '我的 MBTI' : 'My MBTI'}</h3>
+          <div class="mb-3">
+            ${mbti ? `
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-lg font-bold text-purple-600">${mbti} - ${lang === 'zh' ? (mbtiDescriptions[mbti]?.zh || '') : (mbtiDescriptions[mbti]?.en || '')}</span>
+              <button onclick="clearMBTI();showUserProfile()" class="text-sm text-gray-400 hover:text-red-400">✕</button>
             </div>
-            <button onclick="showMBTIIntersection()" class="px-3 py-1 border border-purple-300 text-purple-500 rounded-lg text-sm">${lang === 'zh' ? '查看交叉解读' : 'Cross'}</button>
+            ` : `
+            <p class="text-sm text-gray-400 mb-3">${lang === 'zh' ? '选择你的MBTI类型（可选）' : 'Select your MBTI type (optional)'}</p>
+            `}
+            <div class="grid grid-cols-4 gap-1.5 mb-3">
+              ${mbtiTypes.map(type => {
+                const selected = mbti === type;
+                const desc = mbtiDescriptions[type];
+                return `<button onclick="setSelectedMBTI('${type}');showUserProfile()" class="py-1.5 rounded-lg text-xs font-medium transition-all ${selected ? 'ring-2 ring-offset-1' : 'hover:bg-gray-100'}" style="${selected ? `background-color: ${desc?.color || '#8B5CF6'}20; color: ${desc?.color || '#8B5CF6'}; border-color: ${desc?.color || '#8B5CF6'}` : 'background-color: #F9FAFB; color: #4B5563;'}">${type}</button>`;
+              }).join('')}
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <a href="https://www.16personalities.com/ch" target="_blank" rel="noopener" class="flex-1 py-2 text-center border border-purple-300 text-purple-500 rounded-lg text-sm hover:bg-purple-50">${lang === 'zh' ? '🔗 去测试MBTI' : '🔗 Take MBTI test'}</a>
+            <button onclick="showMBTIIntersection()" class="flex-1 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700" ${mbti ? '' : 'disabled style="opacity: 0.5"'}>${lang === 'zh' ? '查看交叉解读' : 'Cross Analysis'}</button>
           </div>
         </div>
-        ` : `
-        <div class="bg-white rounded-2xl p-4 shadow-lg mb-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <div class="text-sm text-gray-500">${lang === 'zh' ? '我的 MBTI' : 'My MBTI'}</div>
-              <div class="text-sm text-gray-400">${lang === 'zh' ? '未设置' : 'Not set'}</div>
-            </div>
-            <a href="https://www.16personalities.com/ch" target="_blank" rel="noopener" class="px-3 py-1 bg-purple-600 text-white rounded-lg text-sm">${lang === 'zh' ? '去测试' : 'Test'}</a>
-          </div>
-        </div>
-        `}
 
         <!-- History -->
         ${history.length > 0 ? `
@@ -2964,19 +2944,78 @@ function clearAllLocalData() {
   showUserProfile();
 }
 
-// Export user data as JSON
+// Export user data as TXT
 function exportMyData() {
-  const data = {};
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key.startsWith('sbti_')) {
-      try { data[key] = JSON.parse(localStorage.getItem(key)); }
-      catch { data[key] = localStorage.getItem(key); }
-    }
+  const lines = [];
+  lines.push('=== SBTI 用户数据导出 ===');
+  lines.push('导出时间: ' + new Date().toLocaleString());
+  lines.push('');
+  
+  // 基本信息
+  const user = JSON.parse(localStorage.getItem('sbti_user') || 'null');
+  if (user) {
+    lines.push('【账号信息】');
+    lines.push('用户名: ' + (user.username || ''));
+    lines.push('昵称: ' + (user.nickname || ''));
+    lines.push('');
   }
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  
+  // SBTI 结果
+  const personality = currentPersonality || findMatchedPersonality();
+  if (personality) {
+    lines.push('【当前SBTI结果】');
+    lines.push('类型: ' + personality.code);
+    lines.push('名称: ' + (lang === 'zh' ? personality.name_zh : personality.name_en));
+    if (personality._matchScore) lines.push('匹配度: ' + personality._matchScore + '%');
+    lines.push('');
+  }
+  
+  // MBTI
+  const mbti = getSelectedMBTI();
+  if (mbti) {
+    lines.push('【MBTI类型】');
+    lines.push(mbti);
+    lines.push('');
+  }
+  
+  // 统计
+  const history = JSON.parse(localStorage.getItem('sbti_history') || '[]');
+  const dailyAnswers = JSON.parse(localStorage.getItem('sbti_daily_answers') || '{}');
+  const dailyStreak = localStorage.getItem('sbti_daily_streak') || '0';
+  lines.push('【统计数据】');
+  lines.push('总测试次数: ' + history.length);
+  lines.push('每日一测参与: ' + Object.keys(dailyAnswers).length);
+  lines.push('连续天数: ' + dailyStreak);
+  const guestCode = localStorage.getItem('sbti_guest_code');
+  if (guestCode) lines.push('临时码: ' + guestCode);
+  const nickname = localStorage.getItem('sbti_ranking_nickname');
+  if (nickname) lines.push('排行榜昵称: ' + nickname);
+  lines.push('');
+  
+  // 测试历史
+  if (history.length > 0) {
+    lines.push('【测试历史】');
+    history.slice().reverse().forEach((h, i) => {
+      lines.push((i+1) + '. ' + h.code + (h.date ? ' (' + h.date + ')' : '') + (h.score ? ' 匹配度:' + h.score + '%' : ''));
+    });
+    lines.push('');
+  }
+  
+  // 每日一测记录
+  const dailyKeys = Object.keys(dailyAnswers);
+  if (dailyKeys.length > 0) {
+    lines.push('【每日一测记录】');
+    dailyKeys.sort().reverse().forEach(k => {
+      lines.push(k + ': ' + JSON.stringify(dailyAnswers[k]));
+    });
+    lines.push('');
+  }
+  
+  lines.push('--- Generated by SBTI Test ---');
+  
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
   const link = document.createElement('a');
-  link.download = `sbti-data-${new Date().toISOString().slice(0,10)}.json`;
+  link.download = `sbti-data-${new Date().toISOString().slice(0,10)}.txt`;
   link.href = URL.createObjectURL(blob);
   link.click();
   URL.revokeObjectURL(link.href);
