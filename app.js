@@ -45,7 +45,7 @@ async function fetchUserData(forceRefresh = false) {
     const res = await fetchWithTimeout(
       `${API_BASE}/api/user/data?guest_code=${encodeURIComponent(getGuestCode())}`,
       {},
-      8000 // 8秒超时
+      15000 // 15秒超时（增加超时时间）
     );
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
@@ -56,7 +56,7 @@ async function fetchUserData(forceRefresh = false) {
     console.error('fetchUserData error:', e);
     // 如果有缓存，返回缓存数据
     if (_userDataCache) return _userDataCache;
-    // 否则返回默认值
+    // 否则返回默认值，不阻塞页面
     return { user_data: { test_count: 0 }, history: [], daily: { answers: {}, streak: 0, last_date: null } };
   }
 }
