@@ -108,6 +108,29 @@ function getPersonalityAvatar(code) {
   return personalityAvatars[code] || '🧩';
 }
 
+// Format personality display: emoji + code + name
+function fmtPersonality(code, opts = {}) {
+  const p = personalities.find(pp => pp.code === code);
+  const emoji = personalityAvatars[code] || '🧩';
+  const name = p ? (lang === 'zh' ? p.name_zh : p.name_en) : code;
+  if (opts.short) return `${emoji} ${code}`;
+  if (opts.nameOnly) return name;
+  return `${emoji} ${code} ${name}`;
+}
+
+// Format personality as HTML badge
+function fmtPersonalityHTML(code, extraClass = '') {
+  const p = personalities.find(pp => pp.code === code);
+  const emoji = personalityAvatars[code] || '🧩';
+  const name = p ? (lang === 'zh' ? p.name_zh : p.name_en) : code;
+  const color = p ? p.color : '#8B5CF6';
+  return `<span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg ${extraClass}" style="background:${color}15;color:${color}">
+    <span class="text-lg">${emoji}</span>
+    <span class="font-bold text-sm">${code}</span>
+    <span class="text-xs opacity-80">${name}</span>
+  </span>`;
+}
+
 // MBTI types
 const mbtiTypes = [
   'INTJ', 'INTP', 'ENTJ', 'ENTP', // NT
@@ -320,9 +343,12 @@ function renderLanding(refCode) {
         <!-- Bottom links -->
         <a href="privacy.html" class="inline-block text-gray-400 hover:text-purple-500 text-sm">${t('privacy_link')}</a>
       </div>
-      <button onclick="toggleLang()" class="fixed top-4 right-4 px-3 py-1 border border-purple-300 rounded-full text-purple-500 hover:bg-purple-50 text-sm">
-        ${lang === 'zh' ? 'EN' : '中文'}
-      </button>
+      <div class="fixed top-4 right-4 flex gap-2">
+        <button onclick="showUserProfile()" class="px-3 py-1 border border-purple-300 rounded-full text-purple-500 hover:bg-purple-50 text-sm">👤</button>
+        <button onclick="toggleLang()" class="px-3 py-1 border border-purple-300 rounded-full text-purple-500 hover:bg-purple-50 text-sm">
+          ${lang === 'zh' ? 'EN' : '中文'}
+        </button>
+      </div>
     </div>
   `;
   // Load global test count
@@ -824,7 +850,7 @@ function renderResult(personality) {
             ${avatar}
           </div>
           <p class="text-purple-500 font-medium mb-2">${t('your_type')}</p>
-          <h1 class="text-5xl font-bold mb-2" style="color: ${personality.color}">${personality.code}</h1>
+          <h1 class="text-5xl font-bold mb-2" style="color: ${personality.color}">${getPersonalityAvatar(personality.code)} ${personality.code}</h1>
           <h2 class="text-2xl text-gray-700 mb-2">${lang === 'zh' ? personality.name_zh : personality.name_en}</h2>
           <p class="text-lg text-gray-500">${lang === 'zh' ? personality.tagline_zh : personality.tagline_en}</p>
           ${personality._matchScore ? `<p class=\"mt-2 text-sm font-medium text-purple-500\">${t('match_score')}: ${personality._matchScore}%</p>` : ''}
@@ -1708,7 +1734,7 @@ async function showTypeRankings(typeCode) {
           <button onclick="showLeaderboard()" class="text-purple-600 mr-3">←</button>
           <div class="flex items-center gap-2">
             <div class="w-8 h-8 rounded-full flex items-center justify-center" style="background:${color}20;border:2px solid ${color}">${emoji}</div>
-            <h1 class="text-xl font-bold" style="color:${color}">${typeCode} — ${name}</h1>
+            <h1 class="text-xl font-bold" style="color:${color}">${emoji} ${typeCode} — ${name}</h1>
           </div>
         </div>
         <div id="type-rank-list" class="space-y-3">
@@ -1741,7 +1767,7 @@ async function showTypeRankings(typeCode) {
             <div class="text-xl w-8 text-center">${medal}</div>
             <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg" style="background:${color}20;border:2px solid ${color}">${emoji}</div>
             <div class="flex-1">
-              <div class="font-bold ${isMe ? 'text-purple-600' : 'text-gray-800'}">${r.nickname}${isMe ? ' (You)' : ''}</div>
+              <div class="font-bold ${isMe ? 'text-purple-600' : 'text-gray-800'}">${emoji} ${r.nickname}${isMe ? ' (You)' : ''}</div>
               <div class="text-sm text-gray-500">${r.signature || (r.mbti_type || '')}</div>
             </div>
             <div class="text-right">
@@ -1842,8 +1868,7 @@ async function showLeaderboard(period = 'all', region = '') {
           <div class="text-xl w-8 text-center">${medal}</div>
           <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg" style="background:${color}20;border:2px solid ${color}">${emoji}</div>
           <div class="flex-1">
-            <div class="font-bold" style="color:${color}">${item.personality_code}</div>
-            <div class="text-sm text-gray-500">${name}</div>
+            <div class="font-bold" style="color:${color}">${emoji} ${item.personality_code} <span class="text-sm font-normal opacity-80">${name}</span></div>
           </div>
           <div class="text-right">
             <div class="font-bold text-gray-800">${item.count}</div>
@@ -2184,12 +2209,12 @@ function showComparison() {
                 <div class="grid grid-cols-2 gap-4">
                   <div class="text-center p-4 border border-purple-200 rounded-xl">
                     <div class="text-3xl mb-2">${getPersonalityAvatar(personality.code)}</div>
-                    <div class="font-bold text-lg" style="color: ${personality.color}">${personality.code}</div>
+                    <div class="font-bold text-lg" style="color: ${personality.color}">${personality.code} <span class="text-sm font-normal">${lang === 'zh' ? personality.name_zh : personality.name_en}</span></div>
                     <div class="text-gray-600 text-sm">${t('your_pattern')}</div>
                   </div>
                   <div class="text-center p-4 border border-blue-200 rounded-xl">
                     <div class="text-3xl mb-2">${getPersonalityAvatar(friendPersonality.code)}</div>
-                    <div class="font-bold text-lg" style="color: ${friendPersonality.color}">${friendPersonality.code}</div>
+                    <div class="font-bold text-lg" style="color: ${friendPersonality.color}">${friendPersonality.code} <span class="text-sm font-normal">${lang === 'zh' ? friendPersonality.name_zh : friendPersonality.name_en}</span></div>
                     <div class="text-gray-600 text-sm">${t('friend_pattern')}</div>
                   </div>
                 </div>
@@ -2771,7 +2796,7 @@ function showUserProfile() {
     <div class="min-h-screen bg-gradient-to-b from-cream to-white overflow-auto">
       <div class="max-w-md mx-auto px-4 py-8">
         <div class="flex items-center mb-6">
-          <button onclick="goHomeFromLeaderboard()" class="text-purple-600 mr-3">←</button>
+          <button onclick="backToResult()" class="text-purple-600 mr-3">←</button>
           <h1 class="text-2xl font-bold text-gray-800">${lang === 'zh' ? '我的' : 'Profile'}</h1>
         </div>
 
@@ -2888,7 +2913,7 @@ function showUserProfile() {
           </div>
         </div>
 
-        <button onclick="goHomeFromLeaderboard()" class="w-full py-3 border-2 border-purple-400 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${lang === 'zh' ? '← 返回首页' : '← Back to Home'}</button>
+        <button onclick="backToResult()" class="w-full py-3 border-2 border-purple-400 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${currentPersonality ? (lang === 'zh' ? '← 返回结果页' : '← Back to Result') : (lang === 'zh' ? '← 返回首页' : '← Back to Home')}</button>
       </div>
       <button onclick="toggleLang()" class="fixed top-4 right-4 px-3 py-1 border border-purple-300 rounded-full text-purple-500 hover:bg-purple-50 text-sm">${lang === 'zh' ? 'EN' : '中文'}</button>
     </div>
