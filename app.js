@@ -3297,7 +3297,20 @@ async function doLogin() {
     btn.disabled = true;
     btn.textContent = lang === 'zh' ? '登录中...' : 'Logging in...';
   }
+  
+  // 检查网络连接
+  if (!navigator.onLine) {
+    errEl.textContent = lang === 'zh' ? '无网络连接，请检查网络' : 'No network connection';
+    errEl.classList.remove('hidden');
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+    return;
+  }
+  
   try {
+    console.log('Logging in user:', username);
     const res = await fetchWithTimeout(
       'https://sbti-api.hebiwu007.workers.dev/api/auth/login',
       {
@@ -3307,7 +3320,9 @@ async function doLogin() {
       },
       15000 // 15秒超时
     );
+    console.log('Login response status:', res.status);
     const data = await res.json();
+    console.log('Login response data:', data);
     if (data.success) {
       localStorage.setItem('sbti_user', JSON.stringify(data.user));
       localStorage.setItem('sbti_token', data.token);
@@ -3333,9 +3348,14 @@ async function doLogin() {
     }
   } catch (e) {
     console.error('Login error:', e);
+    // 详细的错误日志
+    console.error('Error name:', e.name);
+    console.error('Error message:', e.message);
     let errorMsg = lang === 'zh' ? '网络错误，请检查网络连接后重试' : 'Network error, please check connection and retry';
     if (e.message === 'Request timeout') {
       errorMsg = lang === 'zh' ? '请求超时，请稍后重试' : 'Request timeout, please retry later';
+    } else if (e.name === 'TypeError') {
+      errorMsg = lang === 'zh' ? '网络连接失败，请检查网络' : 'Network connection failed, please check network';
     }
     errEl.textContent = errorMsg;
     errEl.classList.remove('hidden');
@@ -3374,7 +3394,20 @@ async function doRegister() {
     btn.disabled = true;
     btn.textContent = lang === 'zh' ? '注册中...' : 'Registering...';
   }
+  
+  // 检查网络连接
+  if (!navigator.onLine) {
+    errEl.textContent = lang === 'zh' ? '无网络连接，请检查网络' : 'No network connection';
+    errEl.classList.remove('hidden');
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+    return;
+  }
+  
   try {
+    console.log('Registering user:', username);
     const res = await fetchWithTimeout(
       'https://sbti-api.hebiwu007.workers.dev/api/auth/register',
       {
@@ -3384,7 +3417,9 @@ async function doRegister() {
       },
       15000 // 15秒超时
     );
+    console.log('Register response status:', res.status);
     const data = await res.json();
+    console.log('Register response data:', data);
     if (data.success) {
       localStorage.setItem('sbti_user', JSON.stringify(data.user));
       localStorage.setItem('sbti_token', data.token);
@@ -3401,9 +3436,15 @@ async function doRegister() {
     }
   } catch (e) {
     console.error('Register error:', e);
+    // 详细的错误日志
+    console.error('Error name:', e.name);
+    console.error('Error message:', e.message);
+    console.error('Error stack:', e.stack);
     let errorMsg = lang === 'zh' ? '网络错误，请检查网络连接后重试' : 'Network error, please check connection and retry';
     if (e.message === 'Request timeout') {
       errorMsg = lang === 'zh' ? '请求超时，请稍后重试' : 'Request timeout, please retry later';
+    } else if (e.name === 'TypeError') {
+      errorMsg = lang === 'zh' ? '网络连接失败，请检查网络' : 'Network connection failed, please check network';
     }
     errEl.textContent = errorMsg;
     errEl.classList.remove('hidden');
