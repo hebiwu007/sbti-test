@@ -1030,6 +1030,11 @@ function isConsecutiveDay(date1, date2) {
 
 // Start quiz
 function startQuiz() {
+  // 确保题目已加载
+  if (!questions || questions.length === 0) {
+    alert(lang === 'zh' ? '题目加载中，请稍后再试' : 'Questions loading, please try again');
+    return;
+  }
   // 从保存的进度恢复或从0开始
   if (Object.keys(answers).length === 0) {
     currentQuestion = 0;
@@ -1041,9 +1046,34 @@ function startQuiz() {
 // Render quiz page
 function renderQuiz() {
   const app = document.getElementById('app');
+  
+  // 确保题目已加载
+  if (!questions || questions.length === 0 || !questionOrder || questionOrder.length === 0) {
+    app.innerHTML = `
+      <div class="min-h-screen flex items-center justify-center bg-gradient-to-b from-cream to-white">
+        <div class="text-center">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p class="text-gray-600">${lang === 'zh' ? '加载中...' : 'Loading...'}</p>
+          <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-purple-600 text-white rounded-full text-sm">
+            ${lang === 'zh' ? '刷新页面' : 'Refresh'}
+          </button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+  
   // 使用乱序后的题目
   const qIndex = questionOrder[currentQuestion];
   const q = questions[qIndex];
+  
+  // 确保题目存在
+  if (!q) {
+    console.error('Question not found:', { currentQuestion, qIndex, questionsLength: questions.length });
+    alert(lang === 'zh' ? '题目加载失败，请刷新页面' : 'Failed to load question, please refresh');
+    return;
+  }
+  
   const progress = ((currentQuestion + 1) / questions.length) * 100;
   
   app.innerHTML = `
@@ -1517,43 +1547,7 @@ function showHistoryComparisonHTML(currentPersonality) {
 }
 
 // Show history comparison modal (detailed view)
-function showHistoryComparison() {
-  try {
-    const history = JSON.parse(localStorage.getItem('sbti_history') || '[]');
-    if (history.length === 0) {
-      alert(lang === 'zh' ? '暂无历史记录' : 'No history yet');
-      return;
-    }
-    
-    const historyHTML = history.map((h, i) => `
-      <div class="flex items-center justify-between p-3 ${i === 0 ? 'bg-purple-50 rounded-lg' : ''}">
-        <div>
-          <span class="font-bold">${h.code}</span>
-          <span class="text-xs text-gray-400 ml-2">${new Date(h.date).toLocaleDateString()}</span>
-        </div>
-        <span class="text-sm ${i === 0 ? 'text-purple-600 font-medium' : 'text-gray-500'}">${h.matchScore?.toFixed(1) || 0}%</span>
-      </div>
-    `).join('');
-    
-    const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-    modal.innerHTML = `
-      <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4 max-h-[80vh] overflow-auto">
-        <h3 class="text-xl font-bold text-gray-800 mb-4 text-center">${lang === 'zh' ? '📚 测试历史' : '📚 Test History'}</h3>
-        <div class="space-y-2 mb-6">${historyHTML}</div>
-        <button onclick="this.closest('.fixed').remove()" class="w-full py-3 bg-purple-600 text-white rounded-full font-medium">
-          ${lang === 'zh' ? '关闭' : 'Close'}
-        </button>
-      </div>
-    `;
-    document.body.appendChild(modal);
-    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
-  } catch (e) {
-    console.error('showHistoryComparison error:', e);
-  }
-}
 
-// Share result - generate share card image
 // Lazy-load QRCode.js library on demand
 function loadQRCode() {
   return new Promise((resolve, reject) => {
