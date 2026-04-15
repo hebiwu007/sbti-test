@@ -2306,6 +2306,10 @@ async function showTypeRankings(typeCode) {
     const data = await res.json();
     const list = document.getElementById('type-rank-list');
     const myGuestCode = localStorage.getItem('sbti_guest_code');
+    // 获取用户信息（已登录显示用户名，否则显示guest_code）
+    const userStr = localStorage.getItem('sbti_user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    const myDisplayName = user?.nickname || user?.username || myGuestCode || '';
 
     if (!data.rankings || !data.rankings.length) {
       list.innerHTML = `<div class="text-center py-8 text-gray-400">${lang === 'zh' ? '暂无排名数据' : 'No rankings yet'}</div>`;
@@ -2316,16 +2320,18 @@ async function showTypeRankings(typeCode) {
     list.innerHTML = data.rankings.map((r, i) => {
       const isMe = myGuestCode && r.guest_code === myGuestCode;
       const medal = i < 3 ? medals[i] : `<span class="text-gray-400">${i + 1}</span>`;
+      // 显示"我的"标识：已登录显示用户名，否则显示(You)
+      const myLabel = isMe ? (user ? ` (${myDisplayName})` : ' (You)') : '';
       return `
-        <div class="bg-white rounded-xl p-4 shadow-sm ${isMe ? 'ring-2 ring-purple-500' : ''}">
+        <div class="bg-white rounded-xl p-4 shadow-sm ${isMe ? 'ring-2 ring-purple-500 ring-offset-2' : ''}">
           <div class="flex items-center gap-3">
             <div class="text-xl w-8 text-center">${medal}</div>
             <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg" style="background:${color}20;border:2px solid ${color}">${emoji}</div>
-            <div class="flex-1">
-              <div class="font-bold ${isMe ? 'text-purple-600' : 'text-gray-800'}">${emoji} ${r.nickname}${isMe ? ' (You)' : ''}</div>
-              <div class="text-sm text-gray-500">${r.signature || (r.mbti_type || '')}</div>
+            <div class="flex-1 min-w-0">
+              <div class="font-bold ${isMe ? 'text-purple-600' : 'text-gray-800'} truncate">${emoji} ${r.nickname}${myLabel}</div>
+              <div class="text-sm text-gray-500 truncate">${r.signature || (r.mbti_type || '')}</div>
             </div>
-            <div class="text-right">
+            <div class="text-right flex-shrink-0">
               <div class="font-bold text-amber-600">${r.match_score ? r.match_score + '%' : '-'}</div>
               <div class="text-xs text-gray-400">${t('match_score')}</div>
             </div>
