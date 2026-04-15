@@ -315,7 +315,7 @@ function renderLanding(refCode) {
           </button>
           <button onclick="showComparison()" class="flex flex-col items-center p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition border border-gray-100">
             <span class="text-3xl mb-2">👥</span>
-            <span class="font-medium text-gray-700 text-sm">${t('compare')}</span>
+            <span class="font-medium text-gray-700 text-sm">${lang === 'zh' ? '人格对比' : 'Compare'}</span>
             <span class="text-xs text-gray-400 mt-1">${lang === 'zh' ? '与好友对比' : 'Compare w/ friends'}</span>
           </button>
           <button onclick="${hasHistory ? 'showHistoryComparison()' : 'startQuiz()'}" class="flex flex-col items-center p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition border border-gray-100 ${!hasHistory ? 'opacity-60' : ''}">
@@ -454,15 +454,17 @@ async function showDailyQuiz() {
             <div class="space-y-3 mb-6">
               ${dailyQuestion.options.map(opt => `
                 <button 
-                  onclick="submitDailyAnswer('${today}', '${opt.key}')"
+                  onclick="selectDailyOption(this, '${opt.key}')"
+                  data-option="${opt.key}"
                   class="w-full p-4 border-2 border-gray-200 rounded-xl text-left hover:border-purple-400 hover:bg-purple-50 transition flex items-center justify-between"
                 >
                   <div>
                     <div class="font-medium text-gray-800">${opt.key}. ${lang === 'zh' ? opt.text_zh : opt.text_en}</div>
                   </div>
-                  <div class="w-6 h-6 rounded-full border-2 border-gray-300"></div>
+                  <div class="w-6 h-6 rounded-full border-2 border-gray-300 daily-opt-circle"></div>
                 </button>
               `).join('')}
+              <button id="dailySubmitBtn" onclick="submitSelectedDaily('${today}')" disabled class="w-full py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition mt-4 disabled:opacity-50 disabled:cursor-not-allowed">${lang === 'zh' ? '提交答案' : 'Submit Answer'}</button>
             </div>
           </div>
         `}
@@ -489,17 +491,21 @@ async function showDailyQuiz() {
             <div>
               <h4 class="text-sm font-medium text-gray-600 mb-2">${t('answer_distribution')}</h4>
               <div class="space-y-2">
-                ${stats.distribution.map(d => `
+                ${stats.distribution.map(d => {
+                  const opt = dailyQuestion.options.find(o => o.key === d.option);
+                  const optText = opt ? (lang === 'zh' ? opt.text_zh : opt.text_en) : d.option;
+                  return `
                   <div class="flex items-center space-x-3">
-                    <div class="w-10 text-center font-medium text-gray-700">${d.option}</div>
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm ${d.option === 'A' ? 'bg-blue-500' : d.option === 'B' ? 'bg-green-500' : 'bg-purple-500'}">${d.option}</div>
                     <div class="flex-1">
-                      <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
-                        <div class="h-full bg-purple-500 rounded-full" style="width: ${d.percent}%"></div>
+                      <div class="text-xs text-gray-700 mb-1">${optText}</div>
+                      <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div class="h-full rounded-full ${d.option === 'A' ? 'bg-blue-500' : d.option === 'B' ? 'bg-green-500' : 'bg-purple-500'}" style="width: ${d.percent}%"></div>
                       </div>
                     </div>
-                    <div class="w-12 text-right text-sm text-gray-600">${d.percent}%</div>
-                  </div>
-                `).join('')}
+                    <div class="w-12 text-right text-sm font-medium text-gray-600">${d.percent}%</div>
+                  </div>`;
+                }).join('')}
               </div>
             </div>
           </div>
@@ -526,6 +532,34 @@ async function showDailyQuiz() {
 }
 
 // Submit daily answer
+// Select daily quiz option (UI only)
+let selectedDailyOption = null;
+function selectDailyOption(btn, key) {
+  // Reset all buttons
+  const buttons = btn.parentElement.querySelectorAll('button[data-option]');
+  buttons.forEach(b => {
+    b.classList.remove('border-purple-500', 'bg-purple-50');
+    b.classList.add('border-gray-200');
+    b.querySelector('.daily-opt-circle').classList.remove('bg-purple-500', 'border-purple-500');
+    b.querySelector('.daily-opt-circle').classList.add('border-gray-300');
+  });
+  // Highlight selected
+  btn.classList.remove('border-gray-200');
+  btn.classList.add('border-purple-500', 'bg-purple-50');
+  btn.querySelector('.daily-opt-circle').classList.remove('border-gray-300');
+  btn.querySelector('.daily-opt-circle').classList.add('bg-purple-500', 'border-purple-500');
+  selectedDailyOption = key;
+  // Enable submit button
+  document.getElementById('dailySubmitBtn').disabled = false;
+}
+
+// Submit selected daily answer
+async function submitSelectedDaily(date) {
+  if (!selectedDailyOption) return;
+  await submitDailyAnswer(date, selectedDailyOption);
+  selectedDailyOption = null;
+}
+
 async function submitDailyAnswer(date, answer) {
   // 保存答案本地
   const dailyAnswers = JSON.parse(localStorage.getItem('sbti_daily_answers') || '{}');
@@ -1769,7 +1803,7 @@ async function showLeaderboard(period = 'all', region = '') {
     <div class="min-h-screen bg-gradient-to-b from-cream to-white overflow-auto">
       <div class="max-w-md mx-auto px-4 py-8">
         <div class="flex items-center mb-6">
-          <button onclick="backToResult()" class="text-purple-600 mr-3">←</button>
+          <button onclick="renderLanding()" class="text-purple-600 mr-3">←</button>
           <h1 class="text-2xl font-bold text-gray-800">${t('leaderboard_title')}</h1>
         </div>
 
@@ -2668,24 +2702,23 @@ function showTrendAnalysis() {
     const dailyAnswers = JSON.parse(localStorage.getItem('sbti_daily_answers') || '{}');
     const dates = Object.keys(dailyAnswers).sort();
     
-    if (dates.length < 7) {
-      alert(lang === 'zh' ? 
-        `需要至少7天数据才能查看趋势，当前有${dates.length}天` : 
-        `Need at least 7 days data to view trend, currently have ${dates.length} days`);
+    if (dates.length < 1) {
+      alert(lang === 'zh' ? '暂无每日一测数据，参与后即可查看趋势' : 'No daily quiz data yet. Participate to see trends.');
       return;
     }
     
-    // 统计每个选项的出现频率趋势
-    const optionCounts = { A: [], B: [], C: [] };
+    // 获取每题的具体内容
+    const optionTexts = {};
     dates.forEach(date => {
-      const answer = dailyAnswers[date];
-      if (answer && optionCounts[answer]) {
-        optionCounts[answer].push({ date, count: 1 });
+      const seed = parseInt(date.replace(/-/g, '')) % questions.length;
+      const q = questions[seed];
+      if (q && dailyAnswers[date]) {
+        const opt = q.options.find(o => o.key === dailyAnswers[date]);
+        if (opt) {
+          optionTexts[date] = { question: lang === 'zh' ? q.text_zh : q.text_en, answerText: lang === 'zh' ? opt.text_zh : opt.text_en, key: dailyAnswers[date] };
+        }
       }
     });
-    
-    const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto';
     
     // 计算各选项趋势
     const trendData = {
@@ -2694,38 +2727,52 @@ function showTrendAnalysis() {
       C: dates.filter(d => dailyAnswers[d] === 'C').length
     };
     
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto';
+    
     modal.innerHTML = `
       <div class="bg-white rounded-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-auto">
-        <h2 class="text-xl font-bold text-gray-800 mb-2 text-center">${lang === 'zh' ? '30天趋势分析' : '30-Day Trend Analysis'}</h2>
-        <p class="text-gray-500 text-sm text-center mb-4">${lang === 'zh' ? `数据天数: ${dates.length}天` : `Data days: ${dates.length} days`}</p>
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-bold text-gray-800">${lang === 'zh' ? '每日一测趋势' : 'Daily Quiz Trend'}</h2>
+          <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+        </div>
+        <p class="text-gray-500 text-sm mb-4">${lang === 'zh' ? `已参与 ${dates.length} 天` : `${dates.length} days participated`}</p>
         
+        <!-- 选择分布 -->
         <div class="bg-gray-50 rounded-xl p-4 mb-4">
           <h3 class="font-bold text-gray-700 mb-3">${lang === 'zh' ? '选择分布' : 'Choice Distribution'}</h3>
-          
           <div class="space-y-3">
             ${['A', 'B', 'C'].map(opt => `
               <div>
                 <div class="flex justify-between text-sm mb-1">
                   <span class="text-gray-600">${opt}</span>
-                  <span class="font-medium">${trendData[opt]} ${lang === 'zh' ? '次' : 'times'} (${Math.round(trendData[opt]/dates.length*100)}%)</span>
+                  <span class="font-medium">${trendData[opt]} ${lang === 'zh' ? '次' : 'times'} (${dates.length > 0 ? Math.round(trendData[opt]/dates.length*100) : 0}%)</span>
                 </div>
                 <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
-                  <div class="h-full ${opt === 'A' ? 'bg-blue-500' : opt === 'B' ? 'bg-green-500' : 'bg-purple-500'}" style="width: ${Math.round(trendData[opt]/dates.length*100)}%"></div>
+                  <div class="h-full ${opt === 'A' ? 'bg-blue-500' : opt === 'B' ? 'bg-green-500' : 'bg-purple-500'}" style="width: ${dates.length > 0 ? Math.round(trendData[opt]/dates.length*100) : 0}%"></div>
                 </div>
               </div>
             `).join('')}
           </div>
         </div>
         
+        <!-- 答题历史（含题目和答案内容） -->
         <div class="bg-gray-50 rounded-xl p-4 mb-4">
-          <h3 class="font-bold text-gray-700 mb-2">${lang === 'zh' ? '最近答题记录' : 'Recent Answer History'}</h3>
-          <div class="flex flex-wrap gap-2">
-            ${dates.slice(-14).map(date => `
-              <div class="text-center">
-                <div class="text-xs text-gray-400">${date.slice(5)}</div>
-                <div class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${dailyAnswers[date] === 'A' ? 'bg-blue-500' : dailyAnswers[date] === 'B' ? 'bg-green-500' : 'bg-purple-500'}">${dailyAnswers[date]}</div>
-              </div>
-            `).join('')}
+          <h3 class="font-bold text-gray-700 mb-2">${lang === 'zh' ? '答题记录' : 'Answer History'}</h3>
+          <div class="space-y-3 max-h-80 overflow-y-auto">
+            ${dates.slice().reverse().map(date => {
+              const info = optionTexts[date];
+              const colorClass = dailyAnswers[date] === 'A' ? 'bg-blue-500' : dailyAnswers[date] === 'B' ? 'bg-green-500' : 'bg-purple-500';
+              return `
+                <div class="bg-white rounded-lg p-3 shadow-sm">
+                  <div class="text-xs text-gray-400 mb-1">${date}</div>
+                  <div class="text-sm text-gray-700 mb-1">${info ? info.question : ''}</div>
+                  <div class="flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold text-xs ${colorClass}">${dailyAnswers[date]}</span>
+                    <span class="text-sm font-medium text-gray-800">${info ? info.answerText : dailyAnswers[date]}</span>
+                  </div>
+                </div>`;
+            }).join('')}
           </div>
         </div>
         
@@ -2773,7 +2820,7 @@ function showUserProfile() {
     <div class="min-h-screen bg-gradient-to-b from-cream to-white overflow-auto">
       <div class="max-w-md mx-auto px-4 py-8">
         <div class="flex items-center mb-6">
-          <button onclick="backToResult()" class="text-purple-600 mr-3">←</button>
+          <button onclick="renderLanding()" class="text-purple-600 mr-3">←</button>
           <h1 class="text-2xl font-bold text-gray-800">${lang === 'zh' ? '我的' : 'Profile'}</h1>
         </div>
 
@@ -2893,7 +2940,7 @@ function showUserProfile() {
           </div>
         </div>
 
-        <button onclick="backToResult()" class="w-full py-3 border-2 border-purple-400 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${currentPersonality ? (lang === 'zh' ? '← 返回结果页' : '← Back to Result') : (lang === 'zh' ? '← 返回首页' : '← Back to Home')}</button>
+        <button onclick="renderLanding()" class="w-full py-3 border-2 border-purple-400 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${lang === 'zh' ? '← 返回首页' : '← Back to Home'}</button>
       </div>
       <button onclick="toggleLang()" class="fixed top-4 right-4 px-3 py-1 border border-purple-300 rounded-full text-purple-500 hover:bg-purple-50 text-sm">${lang === 'zh' ? 'EN' : '中文'}</button>
     </div>
@@ -3166,7 +3213,8 @@ async function doRegister() {
       errEl.classList.remove('hidden');
     }
   } catch (e) {
-    errEl.textContent = lang === 'zh' ? '网络错误' : 'Network error';
+    console.error('Register error:', e);
+    errEl.textContent = lang === 'zh' ? '网络错误，请稍后重试' : 'Network error, please try again';
     errEl.classList.remove('hidden');
   }
 }
