@@ -664,7 +664,7 @@ async function handleRegister(request, env, h) {
 
   // Check if username exists
   const existing = await env.DB.prepare('SELECT id FROM users WHERE username = ?').bind(username).first();
-  if (existing) return json({ error: lang === 'zh' ? '用户名已存在' : 'Username already exists' }, h, 409);
+  if (existing) return json({ error: 'Username already exists' }, h, 409);
 
   // Hash password (simple SHA-256 with salt — sufficient for this app's scale)
   const salt = crypto.randomUUID().substring(0, 8);
