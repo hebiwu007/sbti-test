@@ -1297,17 +1297,7 @@ async function fetchLeaderboard(period = 'all', region = '') {
     const res = await fetch(url);
     return await res.json();
   } catch (e) { return null; }
-}
 
-// Fetch total test count
-async function fetchTestCount() {
-  try {
-    const res = await fetch('https://sbti-api.hebiwu007.workers.dev/api/count');
-    return await res.json();
-  } catch (e) { return { total: 0, today: 0 }; }
-}
-
-// Render result
 function renderResult(personality) {
   // Submit to leaderboard (async, non-blocking)
   submitToLeaderboard(personality);
