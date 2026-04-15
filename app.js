@@ -724,10 +724,23 @@ async function showDailyQuiz() {
           </div>
         </div>
         
-        <div class="text-center">
+        <div class="text-center space-y-3">
+          ${(() => {
+            const dailyAnswers = JSON.parse(localStorage.getItem('sbti_daily_answers') || '{}');
+            const dates = Object.keys(dailyAnswers).sort();
+            const hasEnoughData = dates.length >= 7;
+            return `
+              <button 
+                onclick="showTrendAnalysis()"
+                class="w-full px-6 py-3 border-2 border-purple-400 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition ${hasEnoughData ? '' : 'opacity-50'}"
+              >
+                ${lang === 'zh' ? '📈 查看趋势' : '📈 View Trend'} ${hasEnoughData ? '' : `(${dates.length}/7)`}
+              </button>
+            `;
+          })()}
           <button 
             onclick="this.closest('.fixed').remove()"
-            class="px-6 py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition"
+            class="w-full px-6 py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition"
           >
             ${todayAnswer ? t('close') : t('cancel')}
           </button>
@@ -756,6 +769,167 @@ async function showDailyQuiz() {
     `;
     document.body.appendChild(modal);
   }
+}
+
+// Show trend analysis modal
+function showTrendAnalysis() {
+  try {
+    const dailyAnswers = JSON.parse(localStorage.getItem('sbti_daily_answers') || '{}');
+    const dates = Object.keys(dailyAnswers).sort();
+    
+    if (dates.length < 7) {
+      alert(lang === 'zh' ? `需要至少7天数据才能生成趋势分析（当前${dates.length}天）` : `Need at least 7 days of data (currently ${dates.length})`);
+      return;
+    }
+    
+    // 计算每日的模型维度倾向（简化版：基于选项映射到维度）
+    const dailyPatterns = dates.map(date => {
+      const answer = dailyAnswers[date];
+      // 简化映射：A=H(高), B=M(中), C=L(低)
+      const valueMap = { 'A': 2, 'B': 1, 'C': 0 };
+      return {
+        date,
+        value: valueMap[answer] ?? 1,
+        answer
+      };
+    });
+    
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto';
+    modal.innerHTML = `
+      <div class="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-auto">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-purple-600">${lang === 'zh' ? '📈 30天趋势分析' : '📈 30-Day Trend'}</h2>
+            <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+          </div>
+          
+          <div class="mb-4">
+            <p class="text-sm text-gray-500">${lang === 'zh' ? '已连续参与' : 'Streak'}: <span class="font-bold text-purple-600">${dates.length}</span> ${lang === 'zh' ? '天' : 'days'}</p>
+          </div>
+          
+          <!-- 趋势图表 -->
+          <div class="bg-gray-50 rounded-xl p-4 mb-4">
+            <canvas id="trendChart" width="300" height="150" class="w-full"></canvas>
+          </div>
+          
+          <!-- 统计摘要 -->
+          <div class="grid grid-cols-3 gap-3 mb-4">
+            <div class="text-center p-3 bg-blue-50 rounded-lg">
+              <div class="text-2xl font-bold text-blue-600">${dailyPatterns.filter(d => d.answer === 'A').length}</div>
+              <div class="text-xs text-blue-700">${lang === 'zh' ? '选A天数' : 'A Days'}</div>
+            </div>
+            <div class="text-center p-3 bg-green-50 rounded-lg">
+              <div class="text-2xl font-bold text-green-600">${dailyPatterns.filter(d => d.answer === 'B').length}</div>
+              <div class="text-xs text-green-700">${lang === 'zh' ? '选B天数' : 'B Days'}</div>
+            </div>
+            <div class="text-center p-3 bg-purple-50 rounded-lg">
+              <div class="text-2xl font-bold text-purple-600">${dailyPatterns.filter(d => d.answer === 'C').length}</div>
+              <div class="text-xs text-purple-700">${lang === 'zh' ? '选C天数' : 'C Days'}</div>
+            </div>
+          </div>
+          
+          <!-- 最近7天记录 -->
+          <div class="space-y-2 max-h-40 overflow-y-auto">
+            <h3 class="font-bold text-gray-700 text-sm">${lang === 'zh' ? '最近记录' : 'Recent'}</h3>
+            ${dailyPatterns.slice(-7).reverse().map(d => `
+              <div class="flex justify-between text-sm py-1 border-b border-gray-100">
+                <span class="text-gray-500">${d.date}</span>
+                <span class="font-medium ${d.answer === 'A' ? 'text-blue-600' : d.answer === 'B' ? 'text-green-600' : 'text-purple-600'}">${d.answer}</span>
+              </div>
+            `).join('')}
+          </div>
+          
+          <button onclick="this.closest('.fixed').remove()" class="w-full mt-4 py-3 bg-purple-600 text-white rounded-full font-medium">${lang === 'zh' ? '关闭' : 'Close'}</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    
+    // 绘制趋势图
+    setTimeout(() => drawTrendChart(dailyPatterns), 100);
+  } catch (e) {
+    console.error('Trend analysis error:', e);
+    alert(lang === 'zh' ? '无法加载趋势分析' : 'Cannot load trend analysis');
+  }
+}
+
+// Draw trend chart
+function drawTrendChart(dailyPatterns) {
+  const canvas = document.getElementById('trendChart');
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+  
+  const width = rect.width;
+  const height = rect.height;
+  const padding = 30;
+  
+  // 清空画布
+  ctx.clearRect(0, 0, width, height);
+  
+  // 绘制网格线
+  ctx.strokeStyle = '#E5E7EB';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 2; i++) {
+    const y = padding + (height - 2 * padding) * i / 2;
+    ctx.beginPath();
+    ctx.moveTo(padding, y);
+    ctx.lineTo(width - padding, y);
+    ctx.stroke();
+  }
+  
+  // 绘制数据线
+  if (dailyPatterns.length > 1) {
+    ctx.strokeStyle = '#8B5CF6';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    
+    dailyPatterns.forEach((d, i) => {
+      const x = padding + (width - 2 * padding) * i / (dailyPatterns.length - 1);
+      const y = padding + (height - 2 * padding) * (2 - d.value) / 2;
+      
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    
+    // 绘制数据点
+    dailyPatterns.forEach((d, i) => {
+      const x = padding + (width - 2 * padding) * i / (dailyPatterns.length - 1);
+      const y = padding + (height - 2 * padding) * (2 - d.value) / 2;
+      
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = d.answer === 'A' ? '#3B82F6' : d.answer === 'B' ? '#10B981' : '#8B5CF6';
+      ctx.fill();
+    });
+  }
+  
+  // 绘制标签
+  ctx.fillStyle = '#9CA3AF';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'center';
+  
+  // X轴标签（显示最近7天的日期）
+  const recentDates = dailyPatterns.slice(-7);
+  recentDates.forEach((d, i) => {
+    const x = padding + (width - 2 * padding) * (dailyPatterns.length - 7 + i) / (dailyPatterns.length - 1 || 1);
+    const dateStr = d.date.slice(5); // MM-DD
+    ctx.fillText(dateStr, x, height - 10);
+  });
+  
+  // Y轴标签
+  ctx.textAlign = 'right';
+  ctx.fillText('A', padding - 5, padding + 3);
+  ctx.fillText('B', padding - 5, padding + (height - 2 * padding) / 2 + 3);
+  ctx.fillText('C', padding - 5, height - padding + 3);
 }
 
 // Submit daily answer
