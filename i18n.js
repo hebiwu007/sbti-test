@@ -99,6 +99,14 @@ const i18n = {
     close: "关闭",
     lang_toggle: "EN",
     
+    // History comparison
+    history_comparison: "与上次对比",
+    history_title: "测试历史",
+    last_time: "上次",
+    current: "本次",
+    stable_type: "稳定的",
+    type_changed: "人格类型发生变化",
+    
     // Daily Quiz
     daily_quiz: "每日一测",
     daily_quiz_title: "今日情境题",
@@ -257,6 +265,14 @@ const i18n = {
     cancel: "Cancel",
     close: "Close",
     lang_toggle: "中文",
+    
+    // History comparison
+    history_comparison: "vs Last Time",
+    history_title: "Test History",
+    last_time: "Last",
+    current: "Current",
+    stable_type: "Stable",
+    type_changed: "Personality type changed",
     
     // Daily Quiz
     daily_quiz: "Daily Quiz",

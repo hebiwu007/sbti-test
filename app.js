@@ -1159,6 +1159,9 @@ function renderResult(personality) {
           </div>
         </div>
         
+        <!-- 历史对比区域 -->
+        ${showHistoryComparisonHTML(personality)}
+        
         <!-- MBTI × SBTI 交叉解读入口 -->
         <div class="bg-white rounded-2xl p-4 shadow-lg mb-6 text-center">
           <button onclick="showMBTIIntersection()" class="w-full py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition text-lg">
@@ -1282,6 +1285,89 @@ function drawRadarChart(pattern) {
     ctx.arc(x, y, 4, 0, Math.PI * 2);
     ctx.fillStyle = '#8B5CF6';
     ctx.fill();
+  }
+}
+
+// 显示历史对比 HTML
+function showHistoryComparisonHTML(currentPersonality) {
+  try {
+    const history = JSON.parse(localStorage.getItem('sbti_history') || '[]');
+    if (history.length < 2) return ''; // 至少需要当前和上一次
+    
+    const lastResult = history[1]; // 上一次结果（当前是[0]）
+    const current = history[0];
+    
+    const isSameType = current.code === lastResult.code;
+    const comparisonText = isSameType 
+      ? (lang === 'zh' ? `稳定的 ${current.code}` : `Stable ${current.code}`)
+      : (lang === 'zh' ? `${lastResult.code} → ${current.code}` : `${lastResult.code} → ${current.code}`);
+    
+    const matchDiff = (current.matchScore || 0) - (lastResult.matchScore || 0);
+    const diffArrow = matchDiff > 0 ? '↑' : (matchDiff < 0 ? '↓' : '→');
+    const diffColor = matchDiff > 0 ? 'text-green-500' : (matchDiff < 0 ? 'text-red-500' : 'text-gray-500');
+    
+    return `
+      <div class="bg-white rounded-2xl p-4 shadow-lg mb-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-3 text-center">${lang === 'zh' ? '📊 与上次对比' : '📊 vs Last Time'}</h3>
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-center flex-1">
+            <p class="text-sm text-gray-500">${lang === 'zh' ? '上次' : 'Last'}</p>
+            <p class="font-bold text-lg">${lastResult.code}</p>
+            <p class="text-xs text-gray-400">${lastResult.matchScore?.toFixed(1) || 0}%</p>
+          </div>
+          <div class="text-2xl text-gray-400">→</div>
+          <div class="text-center flex-1">
+            <p class="text-sm text-gray-500">${lang === 'zh' ? '本次' : 'Current'}</p>
+            <p class="font-bold text-lg" style="color: ${currentPersonality.color}">${current.code}</p>
+            <p class="text-xs" style="color: ${currentPersonality.color}">${current.matchScore?.toFixed(1) || 0}%</p>
+          </div>
+        </div>
+        <p class="text-center text-sm ${diffColor}">
+          ${comparisonText} · ${lang === 'zh' ? '匹配度' : 'Match'} ${diffArrow} ${Math.abs(matchDiff).toFixed(1)}%
+        </p>
+        ${!isSameType ? `<p class="text-center text-xs text-gray-400 mt-2">${lang === 'zh' ? '人格类型发生变化' : 'Personality type changed'}</p>` : ''}
+      </div>
+    `;
+  } catch (e) {
+    console.error('showHistoryComparisonHTML error:', e);
+    return '';
+  }
+}
+
+// Show history comparison modal (detailed view)
+function showHistoryComparison() {
+  try {
+    const history = JSON.parse(localStorage.getItem('sbti_history') || '[]');
+    if (history.length === 0) {
+      alert(lang === 'zh' ? '暂无历史记录' : 'No history yet');
+      return;
+    }
+    
+    const historyHTML = history.map((h, i) => `
+      <div class="flex items-center justify-between p-3 ${i === 0 ? 'bg-purple-50 rounded-lg' : ''}">
+        <div>
+          <span class="font-bold">${h.code}</span>
+          <span class="text-xs text-gray-400 ml-2">${new Date(h.date).toLocaleDateString()}</span>
+        </div>
+        <span class="text-sm ${i === 0 ? 'text-purple-600 font-medium' : 'text-gray-500'}">${h.matchScore?.toFixed(1) || 0}%</span>
+      </div>
+    `).join('');
+    
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+      <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4 max-h-[80vh] overflow-auto">
+        <h3 class="text-xl font-bold text-gray-800 mb-4 text-center">${lang === 'zh' ? '📚 测试历史' : '📚 Test History'}</h3>
+        <div class="space-y-2 mb-6">${historyHTML}</div>
+        <button onclick="this.closest('.fixed').remove()" class="w-full py-3 bg-purple-600 text-white rounded-full font-medium">
+          ${lang === 'zh' ? '关闭' : 'Close'}
+        </button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+  } catch (e) {
+    console.error('showHistoryComparison error:', e);
   }
 }
 
