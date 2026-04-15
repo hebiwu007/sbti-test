@@ -399,6 +399,24 @@ function saveProgress() {
   }));
 }
 
+// Get user button HTML for top-right corner
+function getUserButtonHTML() {
+  const userStr = localStorage.getItem('sbti_user');
+  const user = userStr ? JSON.parse(userStr) : null;
+  
+  if (user) {
+    // 已登录：显示用户名
+    const displayName = user.nickname || user.username;
+    return `<button onclick="showUserProfile()" class="px-3 py-1 border border-purple-300 rounded-full text-purple-500 hover:bg-purple-50 text-sm flex items-center gap-1">
+      <span>👤</span>
+      <span class="max-w-[80px] truncate">${displayName}</span>
+    </button>`;
+  } else {
+    // 未登录：显示默认图标
+    return `<button onclick="showUserProfile()" class="px-3 py-1 border border-purple-300 rounded-full text-purple-500 hover:bg-purple-50 text-sm">👤</button>`;
+  }
+}
+
 // Clear progress
 function clearProgress() {
   localStorage.removeItem('sbti_progress');
@@ -520,8 +538,8 @@ function renderLanding(refCode) {
         <!-- Bottom links -->
         <a href="privacy.html" class="inline-block text-gray-400 hover:text-purple-500 text-sm">${t('privacy_link')}</a>
       </div>
-      <div class="fixed top-4 right-4 flex gap-2">
-        <button onclick="showUserProfile()" class="px-3 py-1 border border-purple-300 rounded-full text-purple-500 hover:bg-purple-50 text-sm">👤</button>
+      <div class="fixed top-4 right-4 flex gap-2 items-center">
+        ${getUserButtonHTML()}
         <button onclick="toggleLang()" class="px-3 py-1 border border-purple-300 rounded-full text-purple-500 hover:bg-purple-50 text-sm">
           ${lang === 'zh' ? 'EN' : '中文'}
         </button>
