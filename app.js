@@ -1792,7 +1792,7 @@ async function showLeaderboard(period = 'all', region = '') {
     <div class="min-h-screen bg-gradient-to-b from-cream to-white overflow-auto">
       <div class="max-w-md mx-auto px-4 py-8">
         <div class="flex items-center mb-6">
-          <button onclick="goHomeFromLeaderboard()" class="text-purple-600 mr-3">←</button>
+          <button onclick="backToResult()" class="text-purple-600 mr-3">←</button>
           <h1 class="text-2xl font-bold text-gray-800">${t('leaderboard_title')}</h1>
         </div>
 
