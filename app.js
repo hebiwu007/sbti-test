@@ -1908,20 +1908,36 @@ async function doSubmitRanking() {
   }
 
   try {
+    // 检查网络连接
+    if (!navigator.onLine) {
+      errEl.textContent = lang === 'zh' ? '无网络连接，请检查网络' : 'No network connection';
+      errEl.classList.remove('hidden');
+      return;
+    }
+    
     const mbti = localStorage.getItem('sbti_mbti') || null;
-    const res = await fetch('https://sbti-api.hebiwu007.workers.dev/api/ranking/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        nickname,
-        personality_code: personality.code,
-        match_score: personality._matchScore || null,
-        mbti_type: mbti,
-        signature: signature || null,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || null
-      })
-    });
+    console.log('Submitting ranking:', { nickname, personality_code: personality.code });
+    
+    const res = await fetchWithTimeout(
+      'https://sbti-api.hebiwu007.workers.dev/api/ranking/submit',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nickname,
+          personality_code: personality.code,
+          match_score: personality._matchScore || null,
+          mbti_type: mbti,
+          signature: signature || null,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || null
+        })
+      },
+      15000 // 15秒超时
+    );
+    
+    console.log('Ranking submit response status:', res.status);
     const data = await res.json();
+    console.log('Ranking submit response data:', data);
     if (data.success) {
       localStorage.setItem('sbti_ranking_nickname', nickname);
       // guest_code已由getGuestCode()生成，API可能返回新的（排行榜的guest_code），保持一致
@@ -1950,11 +1966,20 @@ async function doSubmitRanking() {
         </div>
       `;
     } else {
-      errEl.textContent = data.error || 'Error';
+      errEl.textContent = data.error || (lang === 'zh' ? '提交失败' : 'Submit failed');
       errEl.classList.remove('hidden');
     }
   } catch (e) {
-    errEl.textContent = 'Network error';
+    console.error('Ranking submit error:', e);
+    console.error('Error name:', e.name);
+    console.error('Error message:', e.message);
+    let errorMsg = lang === 'zh' ? '网络错误，请检查网络连接后重试' : 'Network error, please check connection and retry';
+    if (e.message === 'Request timeout') {
+      errorMsg = lang === 'zh' ? '请求超时，请稍后重试' : 'Request timeout, please retry later';
+    } else if (e.name === 'TypeError') {
+      errorMsg = lang === 'zh' ? '网络连接失败，请检查网络' : 'Network connection failed, please check network';
+    }
+    errEl.textContent = errorMsg;
     errEl.classList.remove('hidden');
   }
 }
