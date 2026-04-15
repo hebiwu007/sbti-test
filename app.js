@@ -35,14 +35,18 @@ let _userDataCache = null;
 let _userDataCacheTime = 0;
 const CACHE_TTL = 30000; // 30秒缓存
 
-// 获取用户所有数据（带缓存）
+// 获取用户所有数据（带缓存和超时）
 async function fetchUserData(forceRefresh = false) {
   const now = Date.now();
   if (!forceRefresh && _userDataCache && (now - _userDataCacheTime) < CACHE_TTL) {
     return _userDataCache;
   }
   try {
-    const res = await fetch(`${API_BASE}/api/user/data?guest_code=${encodeURIComponent(getGuestCode())}`);
+    const res = await fetchWithTimeout(
+      `${API_BASE}/api/user/data?guest_code=${encodeURIComponent(getGuestCode())}`,
+      {},
+      8000 // 8秒超时
+    );
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     _userDataCache = data;
@@ -50,7 +54,10 @@ async function fetchUserData(forceRefresh = false) {
     return data;
   } catch (e) {
     console.error('fetchUserData error:', e);
-    return _userDataCache || { user_data: { test_count: 0 }, history: [], daily: { answers: {}, streak: 0, last_date: null } };
+    // 如果有缓存，返回缓存数据
+    if (_userDataCache) return _userDataCache;
+    // 否则返回默认值
+    return { user_data: { test_count: 0 }, history: [], daily: { answers: {}, streak: 0, last_date: null } };
   }
 }
 
@@ -98,10 +105,27 @@ async function saveTestHistory(personalityCode, pattern, matchScore, mbtiType, a
   }
 }
 
+// 带超时的fetch封装
+async function fetchWithTimeout(url, options = {}, timeoutMs = 10000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timeoutId);
+    return res;
+  } catch (e) {
+    clearTimeout(timeoutId);
+    if (e.name === 'AbortError') {
+      throw new Error('Request timeout');
+    }
+    throw e;
+  }
+}
+
 // 获取每日测试数据
 async function fetchDailyMy() {
   try {
-    const res = await fetch(`${API_BASE}/api/daily/my?guest_code=${encodeURIComponent(getGuestCode())}`);
+    const res = await fetchWithTimeout(`${API_BASE}/api/daily/my?guest_code=${encodeURIComponent(getGuestCode())}`, {}, 8000);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   } catch (e) {
@@ -2915,10 +2939,10 @@ async function showUserProfile() {
   const guestCode = getGuestCode();
   const nickname = localStorage.getItem('sbti_ranking_nickname') || '';
   
-  // 从数据库获取用户数据
+  // 从数据库获取用户数据（使用缓存，不强制刷新）
   let userData;
   try {
-    userData = await fetchUserData(true);
+    userData = await fetchUserData(false); // 使用缓存，避免阻塞页面渲染
   } catch (e) {
     userData = { user_data: {}, history: [], daily: { answers: {}, streak: 0, last_date: null } };
   }
@@ -3266,12 +3290,23 @@ async function doLogin() {
     errEl.classList.remove('hidden');
     return;
   }
+  // 显示加载状态
+  const btn = document.querySelector('#authModal button[onclick="doLogin()"]');
+  const originalText = btn?.textContent || (lang === 'zh' ? '登录' : 'Login');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = lang === 'zh' ? '登录中...' : 'Logging in...';
+  }
   try {
-    const res = await fetch('https://sbti-api.hebiwu007.workers.dev/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
-    });
+    const res = await fetchWithTimeout(
+      'https://sbti-api.hebiwu007.workers.dev/api/auth/login',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      },
+      15000 // 15秒超时
+    );
     const data = await res.json();
     if (data.success) {
       localStorage.setItem('sbti_user', JSON.stringify(data.user));
@@ -3289,13 +3324,25 @@ async function doLogin() {
       showToast(lang === 'zh' ? '登录成功！' : 'Logged in!');
       showUserProfile();
     } else {
-      errEl.textContent = data.error || 'Error';
+      errEl.textContent = data.error || (lang === 'zh' ? '登录失败' : 'Login failed');
       errEl.classList.remove('hidden');
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
     }
   } catch (e) {
     console.error('Login error:', e);
-    errEl.textContent = lang === 'zh' ? '网络错误，请检查网络连接后重试' : 'Network error, please check connection and retry';
+    let errorMsg = lang === 'zh' ? '网络错误，请检查网络连接后重试' : 'Network error, please check connection and retry';
+    if (e.message === 'Request timeout') {
+      errorMsg = lang === 'zh' ? '请求超时，请稍后重试' : 'Request timeout, please retry later';
+    }
+    errEl.textContent = errorMsg;
     errEl.classList.remove('hidden');
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
   }
 }
 
@@ -3320,12 +3367,23 @@ async function doRegister() {
     errEl.classList.remove('hidden');
     return;
   }
+  // 显示加载状态
+  const btn = document.querySelector('#authModal button[onclick="doRegister()"]');
+  const originalText = btn?.textContent || (lang === 'zh' ? '注册' : 'Register');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = lang === 'zh' ? '注册中...' : 'Registering...';
+  }
   try {
-    const res = await fetch('https://sbti-api.hebiwu007.workers.dev/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password, nickname: nickname || username })
-    });
+    const res = await fetchWithTimeout(
+      'https://sbti-api.hebiwu007.workers.dev/api/auth/register',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password, nickname: nickname || username })
+      },
+      15000 // 15秒超时
+    );
     const data = await res.json();
     if (data.success) {
       localStorage.setItem('sbti_user', JSON.stringify(data.user));
@@ -3334,13 +3392,25 @@ async function doRegister() {
       showToast(lang === 'zh' ? '注册成功！' : 'Registered!');
       showUserProfile();
     } else {
-      errEl.textContent = data.error || 'Error';
+      errEl.textContent = data.error || (lang === 'zh' ? '注册失败' : 'Registration failed');
       errEl.classList.remove('hidden');
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
     }
   } catch (e) {
     console.error('Register error:', e);
-    errEl.textContent = lang === 'zh' ? '网络错误，请检查网络连接后重试' : 'Network error, please check connection and retry';
+    let errorMsg = lang === 'zh' ? '网络错误，请检查网络连接后重试' : 'Network error, please check connection and retry';
+    if (e.message === 'Request timeout') {
+      errorMsg = lang === 'zh' ? '请求超时，请稍后重试' : 'Request timeout, please retry later';
+    }
+    errEl.textContent = errorMsg;
     errEl.classList.remove('hidden');
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
   }
 }
 
