@@ -549,8 +549,7 @@ function renderLanding(refCode) {
         <!-- Bottom links -->
         <a href="privacy.html" class="inline-block text-gray-400 hover:text-purple-500 text-sm">${t('privacy_link')}</a>
       </div>
-      <div class="fixed top-4 right-4 flex gap-2 items-center">
-        ${getUserButtonHTML()}
+      <div class="fixed top-4 right-4">
         <button onclick="toggleLang()" class="px-3 py-1 border border-purple-300 rounded-full text-purple-500 hover:bg-purple-50 text-sm">
           ${lang === 'zh' ? 'EN' : '中文'}
         </button>
