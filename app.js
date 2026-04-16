@@ -540,6 +540,7 @@ function renderLanding(refCode) {
         
         <!-- Bottom links -->
         <a href="privacy.html" class="inline-block text-gray-400 hover:text-purple-500 text-sm">${t('privacy_link')}</a>
+        <p class="text-xs text-gray-300 mt-3 leading-relaxed">${lang === 'zh' ? '⚠️ 本测试仅供娱乐，别拿它当诊断、面试、相亲、分手、招魂、算命或人生判决书。你可以笑，但别太当真。基于五大模型十五维度交叉计算，结果仅供参考与娱乐。' : '⚠️ For entertainment only. Don\'t use it for diagnosis, job interviews, dating, breakups, séances, fortune telling, or life sentences. You can laugh, but don\'t take it too seriously.'}</p>
       </div>
       <div class="fixed top-4 right-4">
         <button onclick="toggleLang()" class="px-3 py-1 border border-purple-300 rounded-full text-purple-500 hover:bg-purple-50 text-sm">
@@ -1681,6 +1682,7 @@ function renderResult(personality) {
           <button onclick="renderLanding()" class="w-full py-3 border-2 border-purple-300 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${lang === 'zh' ? '🏠 返回首页' : '🏠 Back to Home'}</button>
         </div>
         <a href="privacy.html" class="block text-center text-gray-400 hover:text-purple-500 text-sm mb-4">${t('privacy_link')}</a>
+        <p class="text-xs text-gray-300 text-center leading-relaxed mb-4">${lang === 'zh' ? '⚠️ 本测试仅供娱乐，别拿它当诊断、面试、相亲、分手、招魂、算命或人生判决书。你可以笑，但别太当真。基于五大模型十五维度交叉计算，结果仅供参考与娱乐。' : '⚠️ For entertainment only. Don\'t use it for diagnosis, job interviews, dating, breakups, séances, fortune telling, or life sentences. You can laugh, but don\'t take it too seriously.'}</p>
       </div>
       <button onclick="toggleLang()" class="fixed top-4 right-4 px-3 py-1 border border-purple-300 rounded-full text-purple-500 hover:bg-purple-50 text-sm">${lang === 'zh' ? 'EN' : '中文'}</button>
     </div>
