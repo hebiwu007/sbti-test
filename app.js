@@ -146,28 +146,22 @@ async function fetchTestCount() {
   return data.user_data?.test_count || 0;
 }
 
-// 加载全局测试计数（带冷启动模拟数据）
-// TODO: remove mock data logic when real data > 5000
+// 加载全局测试计数
 async function loadGlobalCount() {
   try {
     const res = await fetchWithTimeout(`${API_BASE}/api/count`, {}, 5000);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     
-    // 冷启动模拟数据：当真实数据 < 1000 时，显示 (total + 5000) 作为过渡
-    const realTotal = data.total || 0;
-    const displayTotal = realTotal < 1000 ? realTotal + 5000 : realTotal;
-    
-    testCount = displayTotal;
+    testCount = data.total || 0;
     const countEl = document.getElementById('global-count');
     if (countEl) {
-      countEl.textContent = displayTotal.toLocaleString();
+      countEl.textContent = testCount.toLocaleString();
     }
-    return displayTotal;
+    return testCount;
   } catch (e) {
     console.error('loadGlobalCount error:', e);
-    // 失败时使用本地缓存或默认值5000
-    const cached = parseInt(localStorage.getItem('sbti_test_count') || '5000');
+    const cached = parseInt(localStorage.getItem('sbti_test_count') || '0');
     testCount = cached;
     const countEl = document.getElementById('global-count');
     if (countEl) {
