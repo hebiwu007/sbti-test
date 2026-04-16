@@ -1,5 +1,5 @@
-// SBTI Service Worker v2.1 - Fixed external resource handling
-const CACHE_NAME = 'sbti-v3';
+// SBTI Service Worker v3 - Network-first for JS/HTML
+const CACHE_NAME = 'sbti-v4';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -58,24 +58,25 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Same-origin static assets: cache first, fallback to network
+  // Same-origin static assets: network first, fallback to cache
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).then((response) => {
-        // Cache successful responses
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-        }
-        return response;
-      });
-    }).catch(() => {
-      // Offline fallback
-      if (event.request.mode === 'navigate') {
-        return caches.match('/index.html');
+    fetch(event.request).then((response) => {
+      // Cache successful responses
+      if (response.ok) {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
       }
-      return new Response('Offline', { status: 503 });
+      return response;
+    }).catch(() => {
+      // Network failed, try cache
+      return caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        // Offline fallback
+        if (event.request.mode === 'navigate') {
+          return caches.match('/index.html');
+        }
+        return new Response('Offline', { status: 503 });
+      });
     })
   );
 });
