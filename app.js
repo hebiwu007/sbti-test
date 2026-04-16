@@ -446,10 +446,45 @@ function initApp() {
 }
 
 // Language toggle
+// Track current page for language toggle
+let currentPage = 'landing';
+let currentPageParams = null;
+
 function toggleLang() {
   lang = lang === 'zh' ? 'en' : 'zh';
   localStorage.setItem('sbti_lang', lang);
-  render();
+  
+  // Re-render current page based on tracked state
+  switch(currentPage) {
+    case 'landing':
+      renderLanding();
+      break;
+    case 'quiz':
+      renderQuiz();
+      break;
+    case 'result':
+      const personality = currentPersonality || findMatchedPersonality();
+      if (personality) renderResult(personality);
+      else renderLanding();
+      break;
+    case 'typeGuide':
+      showTypeGuide(currentPageParams);
+      break;
+    case 'leaderboard':
+      showLeaderboard(currentPageParams?.period, currentPageParams?.region);
+      break;
+    case 'typeRankings':
+      showTypeRankings(currentPageParams);
+      break;
+    case 'userProfile':
+      showUserProfile();
+      break;
+    case 'dailyQuiz':
+      showDailyQuiz();
+      break;
+    default:
+      renderLanding();
+  }
 }
 
 // Get translation
@@ -471,6 +506,9 @@ function getUserHeaderHTML(backBtn = '', title = '') {
 }
 
 function renderLanding(refCode) {
+  currentPage = 'landing';
+  currentPageParams = refCode || null;
+  
   const app = document.getElementById('app');
   
   // Build referral preview if coming from share link
@@ -573,6 +611,9 @@ function renderLanding(refCode) {
 // Get today's date string in local timezone (YYYY-MM-DD)
 // Show personality type guide (sbti.ai/types style)
 function showTypeGuide(filterCode) {
+  currentPage = 'typeGuide';
+  currentPageParams = filterCode || null;
+  
   const app = document.getElementById('app');
   
   if (filterCode) {
@@ -751,6 +792,9 @@ function getLocalDate() {
 
 // Show daily quiz
 async function showDailyQuiz() {
+  currentPage = 'dailyQuiz';
+  currentPageParams = null;
+  
   // 显示加载模态框
   const loadingModal = document.createElement('div');
   loadingModal.id = 'dailyQuizLoading';
@@ -1228,6 +1272,9 @@ function startQuiz() {
 
 // Render quiz page
 function renderQuiz() {
+  currentPage = 'quiz';
+  currentPageParams = null;
+  
   const app = document.getElementById('app');
   
   // 确保题目已加载
@@ -1638,6 +1685,9 @@ async function fetchLeaderboard(period = 'all', region = '') {
 }
 
 function renderResult(personality) {
+  currentPage = 'result';
+  currentPageParams = null;
+  
   // Submit to leaderboard (async, non-blocking)
   submitToLeaderboard(personality);
   const app = document.getElementById('app');
@@ -2595,6 +2645,9 @@ async function doSubmitRanking() {
 
 // Show rankings by personality type
 async function showTypeRankings(typeCode) {
+  currentPage = 'typeRankings';
+  currentPageParams = typeCode;
+  
   const personality = currentPersonality || findMatchedPersonality();
   const app = document.getElementById('app');
   const p = personalities.find(p => p.code === typeCode);
@@ -2668,6 +2721,9 @@ async function showTypeRankings(typeCode) {
 
 // Show Leaderboard
 async function showLeaderboard(period = 'all', region = '') {
+  currentPage = 'leaderboard';
+  currentPageParams = { period, region };
+  
   const app = document.getElementById('app');
   const emojiMap = {'CTRL':'🎯','BOSS':'👑','SHIT':'😒','PEACE':'🕊️','CARE':'🤗','LONE':'🐺','FUN':'🎉','DEEP':'🌌','REAL':'💎','GHOST':'👻','WARM':'☀️','EDGE':'🗡️','SAGE':'🧙','WILD':'🐆','COOL':'😎','SOFT':'🍬','SHARP':'⚡','DREAM':'💭','LOGIC':'🤖','SPARK':'✨','FLOW':'🌊','ROOT':'🌳','SKY':'☁️','FREE':'🦋','DARK':'🌑','STAR':'⭐','ECHO':'🔊'};
 
@@ -3620,6 +3676,9 @@ function generateDimensionDiff(currentPattern, previousPattern) {
 
 // ============ User Profile / Data Management ============
 function showUserProfile() {
+  currentPage = 'userProfile';
+  currentPageParams = null;
+  
   const personality = currentPersonality || findMatchedPersonality();
   const mbti = getSelectedMBTI();
   const guestCode = getGuestCode();
