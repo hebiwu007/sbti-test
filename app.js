@@ -695,11 +695,38 @@ function showTypeDetail(code) {
     const modelColor = getModelForDim(dim);
     const levelColor = level === 'H' ? '#8B5CF6' : (level === 'M' ? '#A78BFA' : '#DDD6FE');
     const levelText = level === 'H' ? (lang === 'zh' ? '高' : 'High') : (level === 'M' ? (lang === 'zh' ? '中' : 'Mid') : (lang === 'zh' ? '低' : 'Low'));
+    // Get dimension name from i18n instead of hardcoded Chinese
+    const dimNames = {
+      'S1': lang === 'zh' ? '自尊自信' : 'Self Esteem',
+      'S2': lang === 'zh' ? '自我清晰度' : 'Self Clarity',
+      'S3': lang === 'zh' ? '核心价值' : 'Core Values',
+      'E1': lang === 'zh' ? '依恋安全感' : 'Attachment Security',
+      'E2': lang === 'zh' ? '情感投入度' : 'Emotional Investment',
+      'E3': lang === 'zh' ? '边界与依赖' : 'Boundaries',
+      'A1': lang === 'zh' ? '世界观倾向' : 'Worldview',
+      'A2': lang === 'zh' ? '规则与灵活度' : 'Rules Flexibility',
+      'A3': lang === 'zh' ? '人生意义感' : 'Sense of Purpose',
+      'Ac1': lang === 'zh' ? '动机导向' : 'Motivation',
+      'Ac2': lang === 'zh' ? '决策风格' : 'Decision Style',
+      'Ac3': lang === 'zh' ? '执行模式' : 'Execution',
+      'So1': lang === 'zh' ? '社交主动性' : 'Social Initiative',
+      'So2': lang === 'zh' ? '人际边界感' : 'Interpersonal Boundaries',
+      'So3': lang === 'zh' ? '表达与真实度' : 'Expression'
+    };
+    const dimName = dimNames[dim] || dim;
+    const modelNames = {
+      'S': lang === 'zh' ? '自我' : 'Self',
+      'E': lang === 'zh' ? '情感' : 'Emotional',
+      'A': lang === 'zh' ? '态度' : 'Attitude',
+      'Ac': lang === 'zh' ? '行动' : 'Action',
+      'So': lang === 'zh' ? '社交' : 'Social'
+    };
+    const modelName = modelNames[meta.model] || meta.model;
     return `
       <div class="flex items-center gap-3 py-2 border-b border-gray-100 last:border-0">
-        <div class="w-16 text-xs font-medium" style="color:${modelColor}">${meta.name.split(' ')[0]}</div>
+        <div class="w-16 text-xs font-medium" style="color:${modelColor}">${modelName}</div>
         <div class="flex-1">
-          <div class="text-xs text-gray-500">${meta.name}</div>
+          <div class="text-xs text-gray-500">${dimName}</div>
         </div>
         <div class="flex items-center gap-1">
           <span class="inline-block w-8 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white" style="background:${levelColor}">${level}</span>
