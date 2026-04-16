@@ -69,7 +69,8 @@
       
       if (user && btn) {
         const displayName = user.nickname || user.username;
-        btn.innerHTML = `<span>👤</span><span class="max-w-[80px] truncate">${displayName}</span>`;
+        btn.innerHTML = `<span class="w-5 h-5 rounded-full bg-purple-200 flex items-center justify-center text-xs">👤</span><span class="max-w-[72px] truncate font-medium">${displayName}</span>`;
+        btn.className = 'flex items-center gap-1.5 px-2 py-1 rounded-full bg-purple-50 hover:bg-purple-100 text-sm text-purple-700 transition';
       }
     }
     

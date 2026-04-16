@@ -460,11 +460,11 @@ function t(key) {
 function getUserHeaderHTML(backBtn = '', title = '') {
   const user = JSON.parse(localStorage.getItem('sbti_user') || 'null');
   const userBtn = user
-    ? `<button onclick="showUserProfile()" class="flex items-center gap-1 text-sm text-purple-600 hover:text-purple-800 transition" title="@${user.username}">
-        <span class="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center text-base">${user.avatar || '👤'}</span>
-        <span class="hidden sm:inline max-w-[80px] truncate">${user.nickname || user.username}</span>
+    ? `<button onclick="showUserProfile()" class="flex items-center gap-1.5 px-2 py-1 rounded-full bg-purple-50 hover:bg-purple-100 transition" title="@${user.username}">
+        <span class="w-6 h-6 rounded-full bg-purple-200 flex items-center justify-center text-sm">${user.avatar || '👤'}</span>
+        <span class="text-sm font-medium text-purple-700 max-w-[72px] truncate">${user.nickname || user.username}</span>
       </button>`
-    : `<button onclick="showLoginModal()" class="text-sm text-gray-400 hover:text-purple-600 transition">${lang === 'zh' ? '登录' : 'Login'}</button>`;
+    : `<button onclick="showLoginModal()" class="flex items-center gap-1 px-3 py-1.5 rounded-full border border-purple-200 text-sm text-purple-500 hover:bg-purple-50 transition">👤 ${lang === 'zh' ? '登录' : 'Login'}</button>`;
   return `<div class="flex items-center justify-between mb-4">${backBtn}<span class="text-lg font-bold text-gray-800">${title}</span>${userBtn}</div>`;
 }
 
@@ -2308,7 +2308,7 @@ async function showTypeRankings(typeCode) {
             <div class="w-8 h-8 rounded-full flex items-center justify-center" style="background:${color}20;border:2px solid ${color}">${emoji}</div>
             <h1 class="text-xl font-bold" style="color:${color}">${emoji} ${typeCode} — ${name}</h1>
           </div>
-          ${(() => { const u = JSON.parse(localStorage.getItem('sbti_user') || 'null'); return u ? `<button onclick="showUserProfile()" class="flex items-center gap-1 text-sm text-purple-600" title="@${u.username}"><span class="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center text-base">${u.avatar || '👤'}</span></button>` : `<button onclick="showLoginModal()" class="text-sm text-gray-400 hover:text-purple-600">${lang === 'zh' ? '登录' : 'Login'}</button>`; })()}
+          ${(() => { const u = JSON.parse(localStorage.getItem('sbti_user') || 'null'); return u ? `<button onclick="showUserProfile()" class="flex items-center gap-1.5 px-2 py-1 rounded-full bg-purple-50 hover:bg-purple-100 transition" title="@${u.username}"><span class="w-6 h-6 rounded-full bg-purple-200 flex items-center justify-center text-sm">${u.avatar || '👤'}</span><span class="text-sm font-medium text-purple-700 max-w-[72px] truncate">${u.nickname || u.username}</span></button>` : `<button onclick="showLoginModal()" class="flex items-center gap-1 px-3 py-1.5 rounded-full border border-purple-200 text-sm text-purple-500 hover:bg-purple-50 transition">👤 ${lang === 'zh' ? '登录' : 'Login'}</button>`; })()}
         </div>
         <div id="type-rank-list" class="space-y-3">
           <div class="text-center py-8 text-gray-400">Loading...</div>
@@ -2373,7 +2373,7 @@ async function showLeaderboard(period = 'all', region = '') {
         <div class="flex items-center mb-6">
           <button onclick="renderLanding()" class="text-purple-600 mr-3">←</button>
           <h1 class="text-2xl font-bold text-gray-800 flex-1">${t('leaderboard_title')}</h1>
-          ${(() => { const u = JSON.parse(localStorage.getItem('sbti_user') || 'null'); return u ? `<button onclick="showUserProfile()" class="flex items-center gap-1 text-sm text-purple-600" title="@${u.username}"><span class="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center text-base">${u.avatar || '👤'}</span></button>` : `<button onclick="showLoginModal()" class="text-sm text-gray-400 hover:text-purple-600">${lang === 'zh' ? '登录' : 'Login'}</button>`; })()}
+          ${(() => { const u = JSON.parse(localStorage.getItem('sbti_user') || 'null'); return u ? `<button onclick="showUserProfile()" class="flex items-center gap-1.5 px-2 py-1 rounded-full bg-purple-50 hover:bg-purple-100 transition" title="@${u.username}"><span class="w-6 h-6 rounded-full bg-purple-200 flex items-center justify-center text-sm">${u.avatar || '👤'}</span><span class="text-sm font-medium text-purple-700 max-w-[72px] truncate">${u.nickname || u.username}</span></button>` : `<button onclick="showLoginModal()" class="flex items-center gap-1 px-3 py-1.5 rounded-full border border-purple-200 text-sm text-purple-500 hover:bg-purple-50 transition">👤 ${lang === 'zh' ? '登录' : 'Login'}</button>`; })()}
         </div>
 
         <!-- Stats cards -->
