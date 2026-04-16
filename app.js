@@ -854,7 +854,7 @@ async function showDailyQuiz() {
                 <div class="text-green-500 text-2xl mr-3">✓</div>
                 <div>
                   <h3 class="font-bold text-green-700">${t('already_answered')}</h3>
-                  <p class="text-green-600 text-sm">${lang === 'zh' ? '你的答案' : 'Your answer'}: <span class="font-bold">${todayAnswer}. ${lang === 'zh' ? dailyQuestion.options.find(o => o.key === todayAnswer)?.text_zh : dailyQuestion.options.find(o => o.key === todayAnswer)?.text_en}</span></p>
+                  <p class="text-green-600 text-sm">${lang === 'zh' ? '你的答案' : 'Your answer'}: <span class="font-bold">${'ABC'[dailyQuestion.options.findIndex(o => o.value === todayAnswer)] || todayAnswer}. ${dailyQuestion.options.find(o => o.value === todayAnswer)?.label || ''}</span></p>
                 </div>
               </div>
             </div>
@@ -863,17 +863,17 @@ async function showDailyQuiz() {
           <!-- 今日题目 -->
           <div class="mb-6">
             <h3 class="text-lg font-bold text-gray-800 mb-4">${t('daily_quiz_title')}</h3>
-            <p class="text-gray-700 leading-relaxed mb-6">${lang === 'zh' ? dailyQuestion.text_zh : dailyQuestion.text_en}</p>
+            <p class="text-gray-700 leading-relaxed mb-6">${dailyQuestion.text}</p>
             
             <div class="space-y-3 mb-6">
-              ${dailyQuestion.options.map(opt => `
+              ${dailyQuestion.options.map((opt, idx) => `
                 <button 
-                  onclick="selectDailyOption(this, '${opt.key}')"
-                  data-option="${opt.key}"
+                  onclick="selectDailyOption(this, ${opt.value})"
+                  data-option="${opt.value}"
                   class="w-full p-4 border-2 border-gray-200 rounded-xl text-left hover:border-purple-400 hover:bg-purple-50 transition flex items-center justify-between"
                 >
                   <div>
-                    <div class="font-medium text-gray-800">${opt.key}. ${lang === 'zh' ? opt.text_zh : opt.text_en}</div>
+                    <div class="font-medium text-gray-800">${'ABC'[idx] || (idx+1)}. ${opt.label}</div>
                   </div>
                   <div class="w-6 h-6 rounded-full border-2 border-gray-300 daily-opt-circle"></div>
                 </button>
@@ -906,15 +906,18 @@ async function showDailyQuiz() {
               <h4 class="text-sm font-medium text-gray-600 mb-2">${t('answer_distribution')}</h4>
               <div class="space-y-2">
                 ${stats.distribution.map(d => {
-                  const opt = dailyQuestion.options.find(o => o.key === d.option);
-                  const optText = opt ? (lang === 'zh' ? opt.text_zh : opt.text_en) : d.option;
+                  const opt = dailyQuestion.options.find(o => o.value === d.option);
+                  const optText = opt ? opt.label : d.option;
+                  const optIdx = dailyQuestion.options.findIndex(o => o.value === d.option);
+                  const optLetter = 'ABC'[optIdx] || String(d.option);
+                  const optColor = optIdx === 0 ? 'bg-blue-500' : optIdx === 1 ? 'bg-green-500' : 'bg-purple-500';
                   return `
                   <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm ${d.option === 'A' ? 'bg-blue-500' : d.option === 'B' ? 'bg-green-500' : 'bg-purple-500'}">${d.option}</div>
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm ${optColor}">${optLetter}</div>
                     <div class="flex-1">
                       <div class="text-xs text-gray-700 mb-1">${optText}</div>
                       <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div class="h-full rounded-full ${d.option === 'A' ? 'bg-blue-500' : d.option === 'B' ? 'bg-green-500' : 'bg-purple-500'}" style="width: ${d.percent}%"></div>
+                        <div class="h-full rounded-full ${optColor}" style="width: ${d.percent}%"></div>
                       </div>
                     </div>
                     <div class="w-12 text-right text-sm font-medium text-gray-600">${d.percent}%</div>
