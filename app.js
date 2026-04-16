@@ -172,96 +172,87 @@ async function loadGlobalCount() {
 }
 
 // Dimension mapping (matching questions.json)
+// 15 dimensions (sbti.ai aligned)
 const dimensionOrder = [
-  'self_esteem', 'self_esteem', 'self_clarity', 'self_clarity', 'core_values',
-  'attachment_security', 'emotional_investment', 'boundaries', 'attachment_security', 'boundaries',
-  'worldview', 'rules_flexibility', 'sense_of_purpose', 'rules_flexibility', 'worldview',
-  'motivation', 'decision_style', 'execution', 'execution', 'decision_style',
-  'social_initiative', 'interpersonal_boundaries', 'expression', 'social_initiative', 'expression'
+  'S1', 'S2', 'S3',
+  'E1', 'E2', 'E3',
+  'A1', 'A2', 'A3',
+  'Ac1', 'Ac2', 'Ac3',
+  'So1', 'So2', 'So3'
 ];
 
 // Model colors
 const modelColors = {
-  self: '#8B5CF6',
-  emotional: '#EC4899',
-  attitude: '#10B981',
-  action: '#F59E0B',
-  social: '#3B82F6'
+  S: '#8B5CF6',  // 自我模型
+  E: '#EC4899',  // 情感模型
+  A: '#10B981',  // 态度模型
+  Ac: '#F59E0B', // 行动驱力模型
+  So: '#3B82F6'  // 社交模型
 };
 
-// Radar dimension mapping (25-dimension pattern to 15-radar dimensions)
-const radarDimensionMapping = [
-  [0, 1],   // self_esteem (positions 0,1)
-  [2, 3],   // self_clarity (positions 2,3)
-  [4],      // core_values (position 4)
-  [5, 8],   // attachment_security (positions 5,8)
-  [6],      // emotional_investment (position 6)
-  [7, 9],   // boundaries (positions 7,9)
-  [10, 14], // worldview (positions 10,14)
-  [11, 13], // rules_flexibility (positions 11,13)
-  [12],     // sense_of_purpose (position 12)
-  [15],     // motivation (position 15)
-  [16, 19], // decision_style (positions 16,19)
-  [17, 18], // execution (positions 17,18)
-  [20, 23], // social_initiative (positions 20,23)
-  [21],     // interpersonal_boundaries (position 21)
-  [22, 24]  // expression (positions 22,24)
-];
-
-const radarDimensions = [
-  'self_esteem', 'self_clarity', 'core_values',
-  'attachment_security', 'emotional_investment', 'boundaries',
-  'worldview', 'rules_flexibility', 'sense_of_purpose',
-  'motivation', 'decision_style', 'execution',
-  'social_initiative', 'interpersonal_boundaries', 'expression'
-];
-
-// Convert 25-dimension pattern to 15-radar dimension values
-function patternToRadarValues(pattern) {
-  const patternValues = pattern.split('').map(v => v === 'H' ? 3 : (v === 'M' ? 2 : 1));
-  return radarDimensionMapping.map(indices => {
-    const sum = indices.reduce((total, idx) => total + patternValues[idx], 0);
-    return sum / indices.length;
-  });
+// Dimension to model mapping
+function getModelForDim(dim) {
+  if (dim.startsWith('S')) return 'S';
+  if (dim.startsWith('E')) return 'E';
+  if (dim.startsWith('Ac')) return 'Ac';
+  if (dim.startsWith('A')) return 'A';
+  if (dim.startsWith('So')) return 'So';
+  return 'S';
 }
 
-// Convert radar value back to H/M/L for display
-function radarValueToLabel(value) {
-  if (value >= 2.5) return 'H';
-  if (value <= 1.5) return 'L';
-  return 'M';
+// Dimension metadata (sbti.ai aligned)
+const dimensionMeta = {
+  'S1': {name: 'S1 自尊自信', model: 'S'},
+  'S2': {name: 'S2 自我清晰度', model: 'S'},
+  'S3': {name: 'S3 核心价值', model: 'S'},
+  'E1': {name: 'E1 依恋安全感', model: 'E'},
+  'E2': {name: 'E2 情感投入度', model: 'E'},
+  'E3': {name: 'E3 边界与依赖', model: 'E'},
+  'A1': {name: 'A1 世界观倾向', model: 'A'},
+  'A2': {name: 'A2 规则与灵活度', model: 'A'},
+  'A3': {name: 'A3 人生意义感', model: 'A'},
+  'Ac1': {name: 'Ac1 动机导向', model: 'Ac'},
+  'Ac2': {name: 'Ac2 决策风格', model: 'Ac'},
+  'Ac3': {name: 'Ac3 执行模式', model: 'Ac'},
+  'So1': {name: 'So1 社交主动性', model: 'So'},
+  'So2': {name: 'So2 人际边界感', model: 'So'},
+  'So3': {name: 'So3 表达与真实度', model: 'So'}
+};
+
+// Convert 15-char pattern to radar values (1:1 mapping now)
+function patternToRadarValues(pattern) {
+  return pattern.split('').map(v => v === 'H' ? 3 : (v === 'M' ? 2 : 1));
 }
 
 // Personality avatars (abstract emoji representation)
 const personalityAvatars = {
-  'CTRL': '🎯',   // 拿捏者 The Controller
-  'BOSS': '👑',   // 领导者 The Boss
-  'SHIT': '😒',   // 愤世者 The Cynic
-  'PEACE': '🕊️',  // 和平主义者 The Peacemaker
-  'CARE': '🤗',   // 照顾者 The Caregiver
-  'LONE': '🐺',   // 独行侠 The Lone Wolf
-  'FUN': '🎉',    // 开心果 The Fun Maker
-  'DEEP': '🌌',   // 深思者 The Deep Thinker
-  'REAL': '💎',   // 真实者 The Realist
-  'GHOST': '👻',  // 隐形人 The Ghost
-  'WARM': '☀️',   // 温暖者 The Warmer
-  'EDGE': '🗡️',   // 边缘人 The Edgewalker
-  'SAGE': '🧙',   // 智者 The Sage
-  'WILD': '🐆',   // 野马 The Wild Horse
-  'COOL': '😎',   // 酷盖 The Cool Kid
-  'SOFT': '🍬',   // 软糖 The Softie
-  'SHARP': '⚡',   // 锐利者 The Sharp One
-  'DREAM': '💭',  // 梦想家 The Dreamer
-  'LOGIC': '🤖',  // 逻辑怪 The Logic Bot
-  'SPARK': '✨',   // 火花 The Spark
-  'FLOW': '🌊',   // 流水 The Flow
-  'ROOT': '🌳',   // 扎根者 The Rooted
-  'SKY': '☁️',    // 天空 The Sky
-  'FREE': '🦋',   // 自由人 The Free Spirit
-  'DARK': '🌑',   // 暗夜 The Dark Knight
-  'STAR': '⭐',   // 星星 The Star
-  'ECHO': '🔊',   // 回声 The Echo
-  'DRUNK': '🍺',  // 酒鬼 The Drunkard
+  'CTRL': '🎯',   // 拿捏者
+  'ATM-er': '🏧', // 送钱者
+  'Dior-s': '🛋️', // 屌丝
+  'BOSS': '👑',   // 领导者
+  'THAN-K': '🙏', // 感恩者
+  'OH-NO': '😱',  // 哦不人
+  'GOGO': '🏃',   // 行者
+  'SEXY': '💋',   // 尤物
+  'LOVE-R': '💕', // 多情者
+  'MUM': '🤱',    // 妈妈
+  'FAKE': '🎭',   // 伪人
+  'OJBK': '👌',   // 无所谓人
+  'MALO': '🐒',   // 吗喽
+  'JOKE-R': '🤡', // 小丑
+  'WOC!': '😮',   // 握草人
+  'THIN-K': '🧠', // 思考者
+  'SHIT': '💩',   // 愤世者
+  'ZZZZ': '💤',   // 装死者
+  'POOR': '🥜',   // 贫困者
+  'MONK': '🧘',   // 僧人
+  'IMSB': '🤪',   // 傻者
+  'SOLO': '🥀',   // 孤儿
+  'FUCK': '😤',   // 草者
+  'DEAD': '💀',   // 死者
+  'IMFW': '🗑️',  // 废物
+  'HHHH': '😄',   // 傻乐者
+  'DRUNK': '🍺',  // 酒鬼
 };
 
 // Get avatar for personality code
@@ -380,7 +371,7 @@ function checkSavedProgress() {
         answers = data.answers;
         currentQuestion = data.currentQuestion || 0;
         // 清理无效进度：已完成全部题目则重置
-        if (currentQuestion >= 25 || currentQuestion < 0) {
+        if (currentQuestion >= questions.length || currentQuestion < 0) {
           currentQuestion = 0;
           answers = {};
           localStorage.removeItem('sbti_progress');
@@ -1106,15 +1097,14 @@ function renderQuiz() {
             ${t('question_prefix')}${currentQuestion + 1}/${questions.length}
           </p>
           <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-8 text-center">
-            ${lang === 'zh' ? q.text_zh : q.text_en}
+            ${q.text}
           </h2>
           <div class="space-y-3">
             ${q.options.map((opt, i) => `
-              <button onclick="selectAnswer(${currentQuestion}, '${opt.value}')" 
-                class="w-full p-5 md:p-4 text-left border-2 rounded-2xl md:rounded-xl transition-all duration-200 hover:border-purple-400 hover:bg-purple-50 active:scale-[0.98] ${answers[currentQuestion] === opt.value ? 'border-purple-500 bg-purple-100' : 'border-gray-200 bg-white'}"
-                style="${answers[currentQuestion] === opt.value ? 'border-color: #8B5CF6' : ''}">
-                <span class="inline-block w-10 h-10 md:w-8 md:h-8 rounded-full bg-purple-100 text-purple-600 font-bold text-center leading-10 md:leading-8 mr-3 text-lg md:text-base">${opt.key}</span>
-                <span class="text-gray-700 text-base md:text-lg">${lang === 'zh' ? opt.text_zh : opt.text_en}</span>
+              <button onclick="selectAnswer(${currentQuestion}, ${opt.value})" 
+                class="w-full p-5 md:p-4 text-left border-2 rounded-2xl md:rounded-xl transition-all duration-200 hover:border-purple-400 hover:bg-purple-50 active:scale-[0.98] ${answers[currentQuestion] == opt.value ? 'border-purple-500 bg-purple-100' : 'border-gray-200 bg-white'}"
+                style="${answers[currentQuestion] == opt.value ? 'border-color: #8B5CF6' : ''}">
+                <span class="text-gray-700 text-base md:text-lg">${opt.label}</span>
               </button>
             `).join('')}
           </div>
@@ -1137,9 +1127,9 @@ function renderQuiz() {
   `;
 }
 
-// Select answer
+// Select answer (sbti.ai aligned: numeric value 1/2/3)
 function selectAnswer(qIndex, value) {
-  answers[qIndex] = value;
+  answers[qIndex] = Number(value);
   saveProgress();
   // 如果不是最后一题，自动跳转下一题
   if (currentQuestion < questions.length - 1) {
@@ -1177,29 +1167,35 @@ function nextQuestion() {
 }
 
 // Show hidden question
+// Drink gate state
+let drinkGateAnswers = {};
+
 function showHiddenQuestion() {
   const app = document.getElementById('app');
-  const hiddenQ = {
-    text_zh: "周末深夜独处时，你通常会？",
-    text_en: "What do you usually do alone on weekend late nights?",
+  // First drink gate question: hobby
+  drinkGateAnswers = {};
+  const dq1 = {
+    text: "您平时有什么爱好？",
     options: [
-      { key: "A", text_zh: "看书、学习、做自己的事", text_en: "Read, study, do my own thing" },
-      { key: "B", text_zh: "刷手机、追剧、放松一下", text_en: "Scroll phone, binge shows, relax" },
-      { key: "C", text_zh: "约朋友喝酒/聚会 🍺", text_en: "Meet friends for drinks/party 🍺" }
+      { label: "吃喝拉撒", value: 1 },
+      { label: "艺术爱好", value: 2 },
+      { label: "饮酒", value: 3 },
+      { label: "健身", value: 4 }
     ]
   };
   
   app.innerHTML = `
     <div class="min-h-screen flex flex-col items-center justify-center px-4 bg-gradient-to-b from-cream to-white">
       <div class="w-full max-w-md">
+        <p class="text-sm text-gray-400 mb-2 text-center">🎤 ${'附加题 1/2'}</p>
         <h2 class="text-xl font-bold text-gray-800 mb-8 text-center">
-          ${lang === 'zh' ? hiddenQ.text_zh : hiddenQ.text_en}
+          ${dq1.text}
         </h2>
         <div class="space-y-3">
-          ${hiddenQ.options.map((opt, i) => `
-            <button onclick="handleHiddenAnswer(${i})" 
+          ${dq1.options.map((opt, i) => `
+            <button onclick="handleDrinkGate1(${opt.value})" 
               class="w-full p-4 text-left border-2 border-gray-200 rounded-xl hover:border-purple-400 hover:bg-purple-50 transition">
-              <span class="text-gray-700">${lang === 'zh' ? opt.text_zh : opt.text_en}</span>
+              <span class="text-gray-700">${opt.label}</span>
             </button>
           `).join('')}
         </div>
@@ -1208,39 +1204,118 @@ function showHiddenQuestion() {
   `;
 }
 
-// Handle hidden answer
-function handleHiddenAnswer(optionIndex) {
-  if (optionIndex === 2) {
-    calculateResult(true);
+// Handle drink gate q1 answer
+function handleDrinkGate1(value) {
+  drinkGateAnswers.drink_gate_q1 = value;
+  if (value === 3) {
+    // Selected "饮酒" → show q2
+    showDrinkGateQ2();
   } else {
+    // Not a drinker → normal result
     calculateResult(false);
+    clearProgress();
   }
+}
+
+function showDrinkGateQ2() {
+  const app = document.getElementById('app');
+  const dq2 = {
+    text: "您对饮酒的态度是？",
+    options: [
+      { label: "小酌怡情，喝不了太多。", value: 1 },
+      { label: "我习惯将白酒灌在保温杯，当白开水喝，酒精令我信服。", value: 2 }
+    ]
+  };
+  
+  app.innerHTML = `
+    <div class="min-h-screen flex flex-col items-center justify-center px-4 bg-gradient-to-b from-cream to-white">
+      <div class="w-full max-w-md">
+        <p class="text-sm text-gray-400 mb-2 text-center">🎤 ${'附加题 2/2'}</p>
+        <h2 class="text-xl font-bold text-gray-800 mb-8 text-center">
+          ${dq2.text}
+        </h2>
+        <div class="space-y-3">
+          ${dq2.options.map((opt, i) => `
+            <button onclick="handleDrinkGate2(${opt.value})" 
+              class="w-full p-4 text-left border-2 border-gray-200 rounded-xl hover:border-purple-400 hover:bg-purple-50 transition">
+              <span class="text-gray-700">${opt.label}</span>
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Handle drink gate q2 answer
+function handleDrinkGate2(value) {
+  // DRUNK triggered when answer == 2
+  calculateResult(value === 2);
   clearProgress();
 }
 
-// Calculate result
+// Calculate result (sbti.ai aligned)
 function calculateResult(isDrunk) {
   let result;
+  let modeKicker = '';
+  let badge = '';
+  let sub = '';
+  let isSpecial = false;
+  let secondaryType = null;
   
   if (isDrunk) {
+    // DRUNK - special trigger
     result = personalities.find(p => p.code === 'DRUNK');
+    modeKicker = '隐藏人格已激活';
+    badge = '匹配度 100% · 酒精异常因子已接管';
+    sub = '乙醇亲和性过强，系统已直接跳过常规人格审判。';
+    isSpecial = true;
+    result._matchScore = 100;
   } else {
     const userPattern = calculateUserPattern();
-    let minDistance = Infinity;
-    let matchedPersonality = null;
+    const normalTypes = personalities.filter(p => p.code !== 'DRUNK' && p.code !== 'HHHH');
     
-    for (const p of personalities) {
-      if (p.code === 'DRUNK') continue;
+    // Calculate distance and exact matches for each type
+    const ranked = normalTypes.map(p => {
       const distance = calculateDistance(userPattern, p.pattern);
-      if (distance < minDistance) {
-        minDistance = distance;
-        matchedPersonality = p;
+      let exact = 0;
+      for (let i = 0; i < userPattern.length; i++) {
+        if (userPattern[i] === p.pattern[i]) exact++;
       }
+      const similarity = Math.max(0, Math.round((1 - distance / 30) * 100));
+      return { ...p, distance, exact, similarity, _matchScore: similarity };
+    }).sort((a, b) => {
+      if (a.distance !== b.distance) return a.distance - b.distance;
+      if (b.exact !== a.exact) return b.exact - a.exact;
+      return b.similarity - a.similarity;
+    });
+    
+    const bestNormal = ranked[0];
+    secondaryType = null;
+    
+    // HHHH fallback: if best match < 60%
+    if (bestNormal.similarity < 60) {
+      result = personalities.find(p => p.code === 'HHHH');
+      modeKicker = '系统强制底底';
+      badge = `标准人格库最高匹配仅 ${bestNormal.similarity}%`;
+      sub = '标准人格库对你的脑回路集体罢工了，于是系统把你强制分配给了 HHHH。';
+      isSpecial = true;
+      secondaryType = bestNormal;
+      result._matchScore = bestNormal.similarity;
+    } else {
+      result = bestNormal;
+      modeKicker = '你的主类型';
+      badge = `匹配度 ${result.similarity}% · 精准命中 ${result.exact}/15 维`;
+      sub = '维度命中度较高，当前结果可视为你的第一人格画像。';
     }
-    result = matchedPersonality;
-    // Calculate match score: max distance is 50 (25 dims × 2), score = (1 - dist/50) × 100
-    result._matchScore = Math.max(0, Math.round((1 - minDistance / 50) * 1000) / 10);
   }
+  
+  // Store metadata on result
+  result._modeKicker = modeKicker;
+  result._badge = badge;
+  result._sub = sub;
+  result._isSpecial = isSpecial;
+  result._secondaryType = secondaryType;
   
   currentPersonality = result;
   testCount++;
@@ -1280,35 +1355,36 @@ function saveToHistory(personality, userPattern) {
   }
 }
 
-// Calculate user pattern
+// Calculate user pattern (sbti.ai aligned: numeric sum per dimension)
 function calculateUserPattern() {
-  const dimCounts = {};
+  // answers[i] = numeric value (1, 2, or 3)
+  // Each dimension has 2 questions, sum them (range 2-6)
+  // <=3 → L, ==4 → M, >=5 → H
+  const dimScores = {};
   
-  for (let i = 0; i < 25; i++) {
-    const dim = dimensionOrder[i];
-    const value = answers[i];
-    if (!dimCounts[dim]) dimCounts[dim] = { H: 0, M: 0, L: 0 };
-    if (value) dimCounts[dim][value]++;
+  for (let i = 0; i < questionOrder.length; i++) {
+    const qIdx = questionOrder[i];
+    const q = questions[qIdx];
+    if (q && q.dim) {
+      if (!dimScores[q.dim]) dimScores[q.dim] = 0;
+      dimScores[q.dim] += Number(answers[i] || 0);
+    }
   }
   
   return dimensionOrder.map(dim => {
-    const counts = dimCounts[dim];
-    if (!counts) return 'M';
-    if (counts.H >= counts.M && counts.H >= counts.L) return 'H';
-    if (counts.L >= counts.M && counts.L >= counts.H) return 'L';
-    return 'M';
+    const score = dimScores[dim] || 0;
+    if (score <= 3) return 'L';
+    if (score === 4) return 'M';
+    return 'H'; // >=5
   }).join('');
 }
 
-// Calculate Manhattan distance
+// Calculate Manhattan distance (sbti.ai aligned: 15-char pattern, max distance = 30)
 function calculateDistance(pattern1, pattern2) {
+  const v = c => c === 'H' ? 3 : (c === 'L' ? 1 : 2);
   let distance = 0;
   for (let i = 0; i < pattern1.length; i++) {
-    if (pattern1[i] !== pattern2[i]) {
-      const v1 = pattern1[i] === 'H' ? 2 : (pattern1[i] === 'L' ? 0 : 1);
-      const v2 = pattern2[i] === 'H' ? 2 : (pattern2[i] === 'L' ? 0 : 1);
-      distance += Math.abs(v1 - v2);
-    }
+    distance += Math.abs(v(pattern1[i]) - v(pattern2[i]));
   }
   return distance;
 }
