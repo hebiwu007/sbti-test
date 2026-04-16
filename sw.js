@@ -1,5 +1,5 @@
-// SBTI Service Worker - Offline Cache
-const CACHE_NAME = 'sbti-v2';
+// SBTI Service Worker v2.1 - Fixed external resource handling
+const CACHE_NAME = 'sbti-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
