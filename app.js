@@ -190,15 +190,7 @@ const modelColors = {
   So: '#3B82F6'  // 社交模型
 };
 
-// Dimension to model mapping
-function getModelForDim(dim) {
-  if (dim.startsWith('S')) return 'S';
-  if (dim.startsWith('E')) return 'E';
-  if (dim.startsWith('Ac')) return 'Ac';
-  if (dim.startsWith('A')) return 'A';
-  if (dim.startsWith('So')) return 'So';
-  return 'S';
-}
+// Dimension to model mapping (defined below at showTypeDetail)
 
 // Dimension metadata (sbti.ai aligned)
 const dimensionMeta = {
@@ -1350,7 +1342,7 @@ function showHiddenQuestion() {
     <div class="min-h-screen flex flex-col bg-gradient-to-b from-cream to-white">
       <div class="flex-1 flex flex-col items-center justify-center px-4 py-8">
         <div class="w-full max-w-md">
-          <p class="text-sm text-gray-400 mb-2 text-center">🎤 ${'附加题 1/2'}</p>
+          <p class="text-sm text-gray-400 mb-2 text-center">🎤 ${'附加题'}</p>
           <h2 class="text-base md:text-lg font-medium text-gray-800 mb-6 text-center leading-relaxed">
             ${dq1.text}
           </h2>
@@ -1683,13 +1675,9 @@ function renderResult(personality) {
         
         <div class="space-y-3 mb-8">
           <button onclick="shareResult()" class="w-full py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition">${t('share_card')}</button>
-          <div class="grid grid-cols-2 gap-3">
-            <button onclick="copyShareLink()" class="py-3 border-2 border-purple-400 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${t('share_link')}</button>
-            <button onclick="shareNative()" class="py-3 border-2 border-purple-400 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${t('share_native')}</button>
-          </div>
+          <button onclick="copyShareLink()" class="w-full py-3 border-2 border-purple-400 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${t('share_link')}</button>
           <button onclick="showDetailedAnalysis()" class="w-full py-3 border-2 border-green-500 text-green-600 rounded-full font-medium hover:bg-green-50 transition">${t('detailed_analysis')}</button>
           <button onclick="showComparison()" class="w-full py-3 border-2 border-blue-500 text-blue-600 rounded-full font-medium hover:bg-blue-50 transition">${lang === 'zh' ? '👥 人格对比' : '👥 Compare'}</button>
-          <button onclick="showRankingSubmit()" class="w-full py-3 border-2 border-amber-500 text-amber-600 rounded-full font-medium hover:bg-amber-50 transition">${t('submit_to_ranking')}</button>
           <button onclick="renderLanding()" class="w-full py-3 border-2 border-purple-300 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition">${lang === 'zh' ? '🏠 返回首页' : '🏠 Back to Home'}</button>
         </div>
         <a href="privacy.html" class="block text-center text-gray-400 hover:text-purple-500 text-sm mb-4">${t('privacy_link')}</a>
@@ -2438,7 +2426,9 @@ function showRankingSubmit() {
   const personality = currentPersonality || findMatchedPersonality();
   if (!personality) return;
   const avatar = getPersonalityAvatar(personality.code);
-  const existingNickname = localStorage.getItem('sbti_ranking_nickname') || '';
+  const user = JSON.parse(localStorage.getItem('sbti_user') || 'null');
+  // 已登录用户自动使用用户名，无需填写昵称
+  const defaultNickname = user ? (user.nickname || user.username) : (localStorage.getItem('sbti_ranking_nickname') || '');
   const existingGuestCode = getGuestCode();
 
   const modal = document.createElement('div');
@@ -2461,10 +2451,10 @@ function showRankingSubmit() {
         <p class="text-gray-500 text-sm mb-4">${t('submit_ranking_desc')}</p>
         ${existingGuestCode ? `<div class="bg-green-50 rounded-xl p-3 mb-4 text-sm text-green-700">✅ ${t('your_guest_code')}: <strong>${existingGuestCode}</strong></div>` : ''}
         <div class="space-y-3">
-          <div>
+          ${user ? `<div class="bg-purple-50 rounded-xl p-3 text-sm text-purple-700">👤 ${lang === 'zh' ? '已登录为' : 'Logged in as'}: <strong>${user.nickname || user.username}</strong></div>` : `<div>
             <label class="block text-sm font-medium text-gray-700 mb-1">${t('ranking_nickname')} *</label>
-            <input id="rankingNickname" type="text" maxlength="16" value="${existingNickname}" placeholder="${lang === 'zh' ? '2-16个字符' : '2-16 characters'}" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none text-lg">
-          </div>
+            <input id="rankingNickname" type="text" maxlength="16" value="${defaultNickname}" placeholder="${lang === 'zh' ? '2-16个字符' : '2-16 characters'}" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none text-lg">
+          </div>`}
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">${t('ranking_signature')}</label>
             <input id="rankingSignature" type="text" maxlength="50" placeholder="${lang === 'zh' ? '一句话介绍自己' : 'Describe yourself in one line'}" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none">
@@ -2482,7 +2472,17 @@ function showRankingSubmit() {
 async function doSubmitRanking() {
   const personality = currentPersonality || findMatchedPersonality();
   if (!personality) return;
-  const nickname = document.getElementById('rankingNickname').value.trim();
+  const user = JSON.parse(localStorage.getItem('sbti_user') || 'null');
+  // 已登录用户自动使用用户名，未登录需要填写昵称
+  let nickname;
+  const nicknameInput = document.getElementById('rankingNickname');
+  if (user) {
+    nickname = user.nickname || user.username;
+  } else if (nicknameInput) {
+    nickname = nicknameInput.value.trim();
+  } else {
+    nickname = '';
+  }
   const signature = document.getElementById('rankingSignature').value.trim();
   const errEl = document.getElementById('rankingError');
 
@@ -2813,6 +2813,50 @@ function showDetailedAnalysis() {
               </ul>
             </div>
           </div>
+          
+          <!-- 十五维度详解 -->
+          ${(function() {
+            const userPattern = calculateUserPattern();
+            const dims = userPattern.split('');
+            const models = [
+              { key: 'S', prefix: 'S', label_zh: '自我模型', label_en: 'Self Model', color: modelColors.S, dims: ['S1','S2','S3'] },
+              { key: 'E', prefix: 'E', label_zh: '情感模型', label_en: 'Emotional Model', color: modelColors.E, dims: ['E1','E2','E3'] },
+              { key: 'A', prefix: 'A', label_zh: '态度模型', label_en: 'Attitude Model', color: modelColors.A, dims: ['A1','A2','A3'] },
+              { key: 'Ac', prefix: 'Ac', label_zh: '行动驱力模型', label_en: 'Action Model', color: modelColors.Ac, dims: ['Ac1','Ac2','Ac3'] },
+              { key: 'So', prefix: 'So', label_zh: '社交模型', label_en: 'Social Model', color: modelColors.So, dims: ['So1','So2','So3'] }
+            ];
+            return `<div class="bg-white border border-gray-200 rounded-xl p-5">
+              <h4 class="font-bold text-lg text-gray-800 mb-4">${lang === 'zh' ? '🔬 十五维度详解' : '🔬 15 Dimensions'}</h4>
+              <div class="space-y-4">
+                ${models.map(model => {
+                  const modelDimDetails = model.dims.map(dim => {
+                    const idx = dimensionOrder.indexOf(dim);
+                    const level = dims[idx] || 'M';
+                    const meta = dimensionMeta[dim];
+                    const barColor = level === 'H' ? model.color : (level === 'M' ? model.color + '80' : model.color + '30');
+                    const levelText = level === 'H' ? (lang === 'zh' ? '高' : 'High') : (level === 'M' ? (lang === 'zh' ? '中' : 'Mid') : (lang === 'zh' ? '低' : 'Low'));
+                    return `<div class="flex items-center gap-3">
+                      <div class="w-20 text-xs font-medium text-gray-600 shrink-0">${meta.name.split(' ').slice(1).join(' ')}</div>
+                      <div class="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
+                        <div class="h-full rounded-full transition-all" style="width:${level === 'H' ? '90%' : (level === 'M' ? '55%' : '20%')};background:${barColor}"></div>
+                      </div>
+                      <div class="w-8 text-xs font-bold text-right" style="color:${model.color}">${levelText}</div>
+                    </div>`;
+                  }).join('');
+                  return `<div>
+                    <div class="flex items-center gap-2 mb-2">
+                      <span class="w-3 h-3 rounded-full" style="background:${model.color}"></span>
+                      <span class="text-sm font-bold" style="color:${model.color}">${lang === 'zh' ? model.label_zh : model.label_en}</span>
+                    </div>
+                    <div class="pl-5 space-y-1.5">${modelDimDetails}</div>
+                  </div>`;
+                }).join('')}
+              </div>
+              <div class="mt-4 pt-3 border-t border-gray-100 text-center">
+                <span class="text-xs text-gray-400">Pattern: ${userPattern}</span>
+              </div>
+            </div>`;
+          })()}
           
           <!-- 适合职业 -->
           <div class="bg-white border border-blue-100 rounded-xl p-5">
