@@ -1,5 +1,5 @@
 // SBTI Service Worker - Offline Cache
-const CACHE_NAME = 'sbti-v1';
+const CACHE_NAME = 'sbti-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -41,23 +41,30 @@ self.addEventListener('fetch', (event) => {
 
   // API calls: network only (no cache)
   if (url.hostname === 'sbti-api.hebiwu007.workers.dev') {
-    event.respondWith(fetch(event.request).catch(() => new Response('{}', { status: 503 })));
+    event.respondWith(
+      fetch(event.request)
+        .catch(() => new Response('{}', { headers: { 'Content-Type': 'application/json' }, status: 503 }))
+    );
     return;
   }
 
-  // Skip non-GET requests - must return a response
+  // External resources (fonts, CDNs): network only, don't intercept
+  if (url.origin !== self.location.origin) {
+    return; // Don't intercept - let browser handle directly
+  }
+
+  // Skip non-GET requests
   if (event.request.method !== 'GET') {
-    event.respondWith(fetch(event.request).catch(() => new Response('{}', { status: 503 })));
     return;
   }
 
-  // Static assets: cache first, fallback to network
+  // Same-origin static assets: cache first, fallback to network
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
       return fetch(event.request).then((response) => {
-        // Cache successful responses for static files
-        if (response.ok && (url.pathname.endsWith('.js') || url.pathname.endsWith('.json') || url.pathname.endsWith('.html') || url.pathname.endsWith('.css'))) {
+        // Cache successful responses
+        if (response.ok) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
