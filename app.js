@@ -854,7 +854,7 @@ async function showDailyQuiz() {
                 <div class="text-green-500 text-2xl mr-3">✓</div>
                 <div>
                   <h3 class="font-bold text-green-700">${t('already_answered')}</h3>
-                  <p class="text-green-600 text-sm">${lang === 'zh' ? '你的答案' : 'Your answer'}: <span class="font-bold">${'ABC'[dailyQuestion.options.findIndex(o => o.value === todayAnswer)] || todayAnswer}. ${dailyQuestion.options.find(o => o.value === todayAnswer)?.label || ''}</span></p>
+                  <p class="text-green-600 text-sm">${lang === 'zh' ? '你的答案' : 'Your answer'}: <span class="font-bold">${(() => { const ansVal = Number(todayAnswer) || todayAnswer; const ansIdx = dailyQuestion.options.findIndex(o => o.value === ansVal); return (ansIdx >= 0 ? 'ABC'[ansIdx] : todayAnswer) + '. ' + (dailyQuestion.options.find(o => o.value === ansVal)?.label || ''); })()}</span></p>
                 </div>
               </div>
             </div>
@@ -929,19 +929,6 @@ async function showDailyQuiz() {
         </div>
         
         <div class="text-center space-y-3">
-          ${(() => {
-            const dailyAnswers = JSON.parse(localStorage.getItem('sbti_daily_answers') || '{}');
-            const dates = Object.keys(dailyAnswers).sort();
-            const hasEnoughData = dates.length >= 7;
-            return `
-              <button 
-                onclick="showTrendAnalysis()"
-                class="w-full px-6 py-3 border-2 border-purple-400 text-purple-600 rounded-full font-medium hover:bg-purple-50 transition ${hasEnoughData ? '' : 'opacity-50'}"
-              >
-                ${lang === 'zh' ? '📈 查看趋势' : '📈 View Trend'} ${hasEnoughData ? '' : `(${dates.length}/7)`}
-              </button>
-            `;
-          })()}
           <button 
             onclick="this.closest('.fixed').remove()"
             class="w-full px-6 py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition"
