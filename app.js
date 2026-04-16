@@ -379,8 +379,16 @@ function checkSavedProgress() {
       if (data.answers && Object.keys(data.answers).length > 0) {
         answers = data.answers;
         currentQuestion = data.currentQuestion || 0;
+        // 清理无效进度：已完成全部题目则重置
+        if (currentQuestion >= 25 || currentQuestion < 0) {
+          currentQuestion = 0;
+          answers = {};
+          localStorage.removeItem('sbti_progress');
+        }
       }
-    } catch (e) {}
+    } catch (e) {
+      localStorage.removeItem('sbti_progress');
+    }
   }
 }
 
@@ -1046,6 +1054,10 @@ function startQuiz() {
   if (Object.keys(answers).length === 0) {
     currentQuestion = 0;
     answers = {};
+  }
+  // 边界检查：currentQuestion 不能超出题目范围
+  if (currentQuestion >= questions.length || currentQuestion < 0) {
+    currentQuestion = 0;
   }
   renderQuiz();
 }
