@@ -164,7 +164,17 @@ const i18n = {
     view_type_ranking: "查看排名",
     submit_ranking_desc: "输入昵称提交到排行榜，凭临时码可查看排名",
     nickname_required: "请输入昵称",
-    nickname_too_long: "昵称最多16个字符"
+    nickname_too_long: "昵称最多16个字符",
+
+    // Type guide
+    type_guide: "人格图鉴",
+    type_guide_subtitle: "27种人格类型一览",
+    type_guide_desc: "五大模型十五维度交叉分析，每种人格都有独特的维度组合。点击卡片查看详情。",
+    type_guide_count: "种人格",
+    type_detail: "详情",
+    type_intro: "口头禅",
+    type_pattern: "维度分布",
+    type_desc: "人格描述"
   },
   
   en: {
@@ -331,7 +341,17 @@ const i18n = {
     view_type_ranking: "View Rankings",
     submit_ranking_desc: "Enter a nickname to join the leaderboard. Use your guest code to check your rank later.",
     nickname_required: "Please enter a nickname",
-    nickname_too_long: "Nickname must be 16 characters or less"
+    nickname_too_long: "Nickname must be 16 characters or less",
+
+    // Type guide
+    type_guide: "Type Guide",
+    type_guide_subtitle: "27 Personality Types",
+    type_guide_desc: "5 models × 15 dimensions cross-analysis. Each type has a unique dimension combination. Tap a card for details.",
+    type_guide_count: "types",
+    type_detail: "Details",
+    type_intro: "Catchphrase",
+    type_pattern: "Dimensions",
+    type_desc: "Description"
   }
 };
 

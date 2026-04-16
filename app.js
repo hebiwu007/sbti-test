@@ -509,6 +509,11 @@ function renderLanding(refCode) {
         
         <!-- Feature Grid -->
         <div class="grid grid-cols-2 gap-3 mb-6">
+          <button onclick="showTypeGuide()" class="flex flex-col items-center p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition border border-gray-100">
+            <span class="text-3xl mb-2">📖</span>
+            <span class="font-medium text-gray-700 text-sm">${t('type_guide')}</span>
+            <span class="text-xs text-gray-400 mt-1">${personalities.length} ${t('type_guide_count')}</span>
+          </button>
           <button onclick="showDailyQuiz()" class="flex flex-col items-center p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition border border-gray-100">
             <span class="text-3xl mb-2">🎯</span>
             <span class="font-medium text-gray-700 text-sm">${t('daily_quiz')}</span>
@@ -557,6 +562,179 @@ function renderLanding(refCode) {
 }
 
 // Get today's date string in local timezone (YYYY-MM-DD)
+// Show personality type guide (sbti.ai/types style)
+function showTypeGuide(filterCode) {
+  const app = document.getElementById('app');
+  
+  if (filterCode) {
+    // Show detail for a specific type
+    showTypeDetail(filterCode);
+    return;
+  }
+  
+  // Sort: NORMAL_TYPES first (by code), then HHHH, then DRUNK
+  const sorted = [...personalities].sort((a, b) => {
+    if (a.code === 'DRUNK') return 1;
+    if (b.code === 'DRUNK') return -1;
+    if (a.code === 'HHHH') return 1;
+    if (b.code === 'HHHH') return -1;
+    return a.code.localeCompare(b.code);
+  });
+  
+  app.innerHTML = `
+    <div class="min-h-screen bg-gradient-to-b from-cream to-white">
+      <div class="max-w-lg mx-auto px-4 py-6">
+        ${getUserHeaderHTML(`<button onclick="renderLanding()" class="text-purple-600 mr-2">←</button>`, t('type_guide'))}
+        <div class="text-center mb-6">
+          <h1 class="text-2xl font-bold text-purple-600 mb-2">${t('type_guide_subtitle')}</h1>
+          <p class="text-sm text-gray-500">${t('type_guide_desc')}</p>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          ${sorted.map(p => {
+            const emoji = personalityAvatars[p.code] || '🧩';
+            const name = lang === 'zh' ? p.name_zh : p.name_en;
+            const intro = lang === 'zh' ? p.tagline_zh : p.tagline_en;
+            const pattern = p.pattern || '';
+            // Dimension mini bar
+            const dims = pattern.split('').slice(0, 15);
+            const dimBar = dims.map(v => {
+              const c = v === 'H' ? '#8B5CF6' : (v === 'M' ? '#A78BFA' : '#DDD6FE');
+              return `<span style="display:inline-block;width:8px;height:14px;background:${c};border-radius:2px;"></span>`;
+            }).join('');
+            return `
+              <button onclick="showTypeGuide('${p.code}')" class="bg-white rounded-2xl p-3 shadow-sm hover:shadow-md transition border border-gray-100 text-left group">
+                <div class="flex items-center gap-2 mb-2">
+                  <div class="w-10 h-10 rounded-full flex items-center justify-center text-xl" style="background:${p.color}20;border:2px solid ${p.color}">
+                    ${emoji}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="font-bold text-sm" style="color:${p.color}">${p.code}</div>
+                    <div class="text-xs text-gray-600 truncate">${name}</div>
+                  </div>
+                </div>
+                <div class="text-xs text-gray-400 mb-2 line-clamp-1">${intro}</div>
+                <div class="flex gap-0.5">${dimBar}</div>
+              </button>`;
+          }).join('')}
+        </div>
+        <button onclick="toggleLang()" class="fixed top-4 right-4 px-3 py-1 border border-purple-300 rounded-full text-purple-500 hover:bg-purple-50 text-sm">
+          ${lang === 'zh' ? 'EN' : '中文'}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+// Show detail for a specific personality type
+function showTypeDetail(code) {
+  const p = personalities.find(pp => pp.code === code);
+  if (!p) { showTypeGuide(); return; }
+  
+  const app = document.getElementById('app');
+  const emoji = personalityAvatars[p.code] || '🧩';
+  const name = lang === 'zh' ? p.name_zh : p.name_en;
+  const intro = lang === 'zh' ? p.tagline_zh : p.tagline_en;
+  const desc = lang === 'zh' ? p.desc_zh : p.desc_en;
+  const pattern = p.pattern || '';
+  const dims = pattern.split('').slice(0, 15);
+  
+  // Dimension details
+  const dimDetails = dimensionOrder.map((dim, i) => {
+    const level = dims[i] || 'M';
+    const meta = dimensionMeta[dim];
+    const modelColor = getModelForDim(dim);
+    const levelColor = level === 'H' ? '#8B5CF6' : (level === 'M' ? '#A78BFA' : '#DDD6FE');
+    const levelText = level === 'H' ? (lang === 'zh' ? '高' : 'High') : (level === 'M' ? (lang === 'zh' ? '中' : 'Mid') : (lang === 'zh' ? '低' : 'Low'));
+    return `
+      <div class="flex items-center gap-3 py-2 border-b border-gray-100 last:border-0">
+        <div class="w-16 text-xs font-medium" style="color:${modelColor}">${meta.name.split(' ')[0]}</div>
+        <div class="flex-1">
+          <div class="text-xs text-gray-500">${meta.name}</div>
+        </div>
+        <div class="flex items-center gap-1">
+          <span class="inline-block w-8 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white" style="background:${levelColor}">${level}</span>
+          <span class="text-xs text-gray-400">${levelText}</span>
+        </div>
+      </div>`;
+  }).join('');
+  
+  // Strengths and blind spots
+  const strengths = (lang === 'zh' ? p.strengths_zh : p.strengths_en) || [];
+  const blindSpots = (lang === 'zh' ? p.blind_spots_zh : p.blind_spots_en) || [];
+  
+  app.innerHTML = `
+    <div class="min-h-screen bg-gradient-to-b from-cream to-white">
+      <div class="max-w-md mx-auto px-4 py-6">
+        ${getUserHeaderHTML(`<button onclick="showTypeGuide()" class="text-purple-600 mr-2">←</button>`, p.code)}
+        
+        <!-- Type header -->
+        <div class="text-center mb-6">
+          <div class="inline-flex items-center justify-center w-20 h-20 rounded-full text-3xl mb-4" style="background-color: ${p.color}20; border: 2px solid ${p.color}">
+            ${emoji}
+          </div>
+          <h1 class="text-4xl font-bold mb-1" style="color: ${p.color}">${p.code}</h1>
+          <h2 class="text-xl text-gray-700 mb-2">${name}</h2>
+          <p class="text-base text-gray-500 italic">\"${intro}\"</p>
+        </div>
+        
+        <!-- Description -->
+        <div class="bg-white rounded-2xl p-5 shadow-lg mb-4">
+          <h3 class="text-sm font-bold text-gray-400 mb-3 uppercase tracking-wide">${t('type_desc')}</h3>
+          <p class="text-gray-700 leading-relaxed text-sm">${desc}</p>
+        </div>
+        
+        <!-- Dimensions -->
+        <div class="bg-white rounded-2xl p-5 shadow-lg mb-4">
+          <h3 class="text-sm font-bold text-gray-400 mb-3 uppercase tracking-wide">${t('type_pattern')}</h3>
+          <div class="flex gap-1 mb-4 justify-center">
+            ${dims.map(v => {
+              const c = v === 'H' ? '#8B5CF6' : (v === 'M' ? '#A78BFA' : '#DDD6FE');
+              return `<span style="display:inline-block;width:20px;height:32px;background:${c};border-radius:4px;"></span>`;
+            }).join('<span style="width:4px;display:inline-block;"></span>')}
+          </div>
+          <div class="space-y-0">
+            ${dimDetails}
+          </div>
+        </div>
+        
+        <!-- Strengths and Blind spots -->
+        ${strengths.length || blindSpots.length ? `
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          <div class="bg-white rounded-2xl p-4 shadow-lg">
+            <h4 class="font-bold text-green-600 mb-3 text-sm">${t('strengths')}</h4>
+            <ul class="space-y-2">
+              ${strengths.map(s => `<li class="text-gray-600 text-xs">✓ ${s}</li>`).join('')}
+            </ul>
+          </div>
+          <div class="bg-white rounded-2xl p-4 shadow-lg">
+            <h4 class="font-bold text-red-500 mb-3 text-sm">${t('blind_spots')}</h4>
+            <ul class="space-y-2">
+              ${blindSpots.map(s => `<li class="text-gray-600 text-xs">✗ ${s}</li>`).join('')}
+            </ul>
+          </div>
+        </div>` : ''}
+        
+        <button onclick="startQuiz()" class="w-full py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition mb-3">
+          ${lang === 'zh' ? '测测我的SBTI' : 'Take the Test'}
+        </button>
+      </div>
+      <button onclick="toggleLang()" class="fixed top-4 right-4 px-3 py-1 border border-purple-300 rounded-full text-purple-500 hover:bg-purple-50 text-sm">
+        ${lang === 'zh' ? 'EN' : '中文'}
+      </button>
+    </div>
+  `;
+}
+
+// Helper: get model color for dimension
+function getModelForDim(dim) {
+  if (dim.startsWith('Ac')) return modelColors.Ac;
+  if (dim.startsWith('So')) return modelColors.So;
+  if (dim.startsWith('S')) return modelColors.S;
+  if (dim.startsWith('E')) return modelColors.E;
+  if (dim.startsWith('A')) return modelColors.A;
+  return '#8B5CF6';
+}
+
 function getLocalDate() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -1041,15 +1219,11 @@ function startQuiz() {
     alert(lang === 'zh' ? '题目加载中，请稍后再试' : 'Questions loading, please try again');
     return;
   }
-  // 从保存的进度恢复或从0开始
-  if (Object.keys(answers).length === 0) {
-    currentQuestion = 0;
-    answers = {};
-  }
-  // 边界检查：currentQuestion 不能超出题目范围
-  if (currentQuestion >= questions.length || currentQuestion < 0) {
-    currentQuestion = 0;
-  }
+  // 每次点击开始测试，都从头开始（清除旧进度）
+  currentQuestion = 0;
+  answers = {};
+  clearProgress();
+  shuffleQuestions();
   renderQuiz();
 }
 
