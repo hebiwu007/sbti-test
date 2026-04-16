@@ -1096,15 +1096,15 @@ function renderQuiz() {
           <p class="text-purple-500 font-medium mb-4 text-base md:text-lg">
             ${t('question_prefix')}${currentQuestion + 1}/${questions.length}
           </p>
-          <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-8 text-center">
+          <h2 class="text-base md:text-lg font-medium text-gray-800 mb-6 text-center leading-relaxed">
             ${q.text}
           </h2>
-          <div class="space-y-3">
+          <div class="space-y-2">
             ${q.options.map((opt, i) => `
               <button onclick="selectAnswer(${currentQuestion}, ${opt.value})" 
-                class="w-full p-5 md:p-4 text-left border-2 rounded-2xl md:rounded-xl transition-all duration-200 hover:border-purple-400 hover:bg-purple-50 active:scale-[0.98] ${answers[currentQuestion] == opt.value ? 'border-purple-500 bg-purple-100' : 'border-gray-200 bg-white'}"
+                class="w-full p-3 md:p-4 text-left border-2 rounded-xl transition-all duration-200 hover:border-purple-400 hover:bg-purple-50 active:scale-[0.98] ${answers[currentQuestion] == opt.value ? 'border-purple-500 bg-purple-100' : 'border-gray-200 bg-white'}"
                 style="${answers[currentQuestion] == opt.value ? 'border-color: #8B5CF6' : ''}">
-                <span class="text-gray-700 text-base md:text-lg">${opt.label}</span>
+                <span class="text-gray-700 text-sm md:text-base">${opt.label}</span>
               </button>
             `).join('')}
           </div>
@@ -1172,7 +1172,6 @@ let drinkGateAnswers = {};
 
 function showHiddenQuestion() {
   const app = document.getElementById('app');
-  // First drink gate question: hobby
   drinkGateAnswers = {};
   const dq1 = {
     text: "您平时有什么爱好？",
@@ -1185,37 +1184,57 @@ function showHiddenQuestion() {
   };
   
   app.innerHTML = `
-    <div class="min-h-screen flex flex-col items-center justify-center px-4 bg-gradient-to-b from-cream to-white">
-      <div class="w-full max-w-md">
-        <p class="text-sm text-gray-400 mb-2 text-center">🎤 ${'附加题 1/2'}</p>
-        <h2 class="text-xl font-bold text-gray-800 mb-8 text-center">
-          ${dq1.text}
-        </h2>
-        <div class="space-y-3">
-          ${dq1.options.map((opt, i) => `
-            <button onclick="handleDrinkGate1(${opt.value})" 
-              class="w-full p-4 text-left border-2 border-gray-200 rounded-xl hover:border-purple-400 hover:bg-purple-50 transition">
-              <span class="text-gray-700">${opt.label}</span>
-            </button>
-          `).join('')}
+    <div class="min-h-screen flex flex-col bg-gradient-to-b from-cream to-white">
+      <div class="flex-1 flex flex-col items-center justify-center px-4 py-8">
+        <div class="w-full max-w-md">
+          <p class="text-sm text-gray-400 mb-2 text-center">🎤 ${'附加题 1/2'}</p>
+          <h2 class="text-base md:text-lg font-medium text-gray-800 mb-6 text-center leading-relaxed">
+            ${dq1.text}
+          </h2>
+          <div class="space-y-2">
+            ${dq1.options.map((opt, i) => `
+              <button onclick="selectDrinkGate1(${opt.value})" id="dg1_opt_${opt.value}"
+                class="w-full p-3 md:p-4 text-left border-2 border-gray-200 rounded-xl hover:border-purple-400 hover:bg-purple-50 transition">
+                <span class="text-gray-700 text-sm md:text-base">${opt.label}</span>
+              </button>
+            `).join('')}
+          </div>
         </div>
+      </div>
+      <div class="p-4 flex justify-center max-w-md mx-auto w-full">
+        <button onclick="confirmDrinkGate1()" id="dg1_submit" disabled
+          class="w-full px-6 py-3 rounded-full bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-base">
+          确认提交
+        </button>
       </div>
     </div>
   `;
 }
 
-// Handle drink gate q1 answer
-function handleDrinkGate1(value) {
+function selectDrinkGate1(value) {
   drinkGateAnswers.drink_gate_q1 = value;
+  // Update button styles
+  const opts = document.querySelectorAll('[id^="dg1_opt_"]');
+  opts.forEach(btn => {
+    btn.className = btn.id === 'dg1_opt_' + value
+      ? 'w-full p-3 md:p-4 text-left border-2 border-purple-500 bg-purple-100 rounded-xl hover:border-purple-400 hover:bg-purple-50 transition'
+      : 'w-full p-3 md:p-4 text-left border-2 border-gray-200 rounded-xl hover:border-purple-400 hover:bg-purple-50 transition';
+  });
+  document.getElementById('dg1_submit').disabled = false;
+}
+
+function confirmDrinkGate1() {
+  const value = drinkGateAnswers.drink_gate_q1;
+  if (!value) return;
   if (value === 3) {
-    // Selected "饮酒" → show q2
     showDrinkGateQ2();
   } else {
-    // Not a drinker → normal result
     calculateResult(false);
     clearProgress();
   }
 }
+
+// (drink gate handlers replaced by selectDrinkGate1/confirmDrinkGate1/selectDrinkGate2/confirmDrinkGate2)
 
 function showDrinkGateQ2() {
   const app = document.getElementById('app');
@@ -1228,31 +1247,52 @@ function showDrinkGateQ2() {
   };
   
   app.innerHTML = `
-    <div class="min-h-screen flex flex-col items-center justify-center px-4 bg-gradient-to-b from-cream to-white">
-      <div class="w-full max-w-md">
-        <p class="text-sm text-gray-400 mb-2 text-center">🎤 ${'附加题 2/2'}</p>
-        <h2 class="text-xl font-bold text-gray-800 mb-8 text-center">
-          ${dq2.text}
-        </h2>
-        <div class="space-y-3">
-          ${dq2.options.map((opt, i) => `
-            <button onclick="handleDrinkGate2(${opt.value})" 
-              class="w-full p-4 text-left border-2 border-gray-200 rounded-xl hover:border-purple-400 hover:bg-purple-50 transition">
-              <span class="text-gray-700">${opt.label}</span>
-            </button>
-          `).join('')}
+    <div class="min-h-screen flex flex-col bg-gradient-to-b from-cream to-white">
+      <div class="flex-1 flex flex-col items-center justify-center px-4 py-8">
+        <div class="w-full max-w-md">
+          <p class="text-sm text-gray-400 mb-2 text-center">🎤 ${'附加题 2/2'}</p>
+          <h2 class="text-base md:text-lg font-medium text-gray-800 mb-6 text-center leading-relaxed">
+            ${dq2.text}
+          </h2>
+          <div class="space-y-2">
+            ${dq2.options.map((opt, i) => `
+              <button onclick="selectDrinkGate2(${opt.value})" id="dg2_opt_${opt.value}"
+                class="w-full p-3 md:p-4 text-left border-2 border-gray-200 rounded-xl hover:border-purple-400 hover:bg-purple-50 transition">
+                <span class="text-gray-700 text-sm md:text-base">${opt.label}</span>
+              </button>
+            `).join('')}
+          </div>
         </div>
+      </div>
+      <div class="p-4 flex justify-center max-w-md mx-auto w-full">
+        <button onclick="confirmDrinkGate2()" id="dg2_submit" disabled
+          class="w-full px-6 py-3 rounded-full bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-base">
+          确认提交
+        </button>
       </div>
     </div>
   `;
 }
 
-// Handle drink gate q2 answer
-function handleDrinkGate2(value) {
-  // DRUNK triggered when answer == 2
+function selectDrinkGate2(value) {
+  drinkGateAnswers.drink_gate_q2 = value;
+  const opts = document.querySelectorAll('[id^="dg2_opt_"]');
+  opts.forEach(btn => {
+    btn.className = btn.id === 'dg2_opt_' + value
+      ? 'w-full p-3 md:p-4 text-left border-2 border-purple-500 bg-purple-100 rounded-xl hover:border-purple-400 hover:bg-purple-50 transition'
+      : 'w-full p-3 md:p-4 text-left border-2 border-gray-200 rounded-xl hover:border-purple-400 hover:bg-purple-50 transition';
+  });
+  document.getElementById('dg2_submit').disabled = false;
+}
+
+function confirmDrinkGate2() {
+  const value = drinkGateAnswers.drink_gate_q2;
+  if (!value) return;
   calculateResult(value === 2);
   clearProgress();
 }
+
+// (handleDrinkGate2 replaced by selectDrinkGate2 + confirmDrinkGate2)
 
 // Calculate result (sbti.ai aligned)
 function calculateResult(isDrunk) {
