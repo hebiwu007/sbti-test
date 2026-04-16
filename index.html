@@ -55,19 +55,10 @@
   }
   </script>
   
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <!-- QRCode.js loaded on-demand in shareResult() -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet" crossorigin="anonymous">
-  <!-- Fallback font style -->
+  <!-- Local fonts (no external CDN dependency) -->
+  <link rel="stylesheet" href="/fonts/fonts.css">
   <style>
-    @font-face {
-      font-family: 'Inter';
-      font-style: normal;
-      font-weight: 400;
-      font-display: swap;
-      src: local('Inter'), local('Inter-Regular');
-    }
+    /* Chinese font fallback - use system fonts */
     @font-face {
       font-family: 'Noto Sans SC';
       font-style: normal;

@@ -1860,7 +1860,7 @@ function loadQRCode() {
   return new Promise((resolve, reject) => {
     if (window.QRCode) { resolve(); return; }
     const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+    script.src = '/js/qrcode.min.js';
     script.onload = resolve;
     script.onerror = () => reject(new Error('Failed to load QRCode.js'));
     document.head.appendChild(script);
