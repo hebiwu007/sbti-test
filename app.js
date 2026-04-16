@@ -935,7 +935,7 @@ async function showDailyQuiz() {
                 <div class="text-green-500 text-2xl mr-3">✓</div>
                 <div>
                   <h3 class="font-bold text-green-700">${t('already_answered')}</h3>
-                  <p class="text-green-600 text-sm">${lang === 'zh' ? '你的答案' : 'Your answer'}: <span class="font-bold">${(() => { const ansVal = Number(todayAnswer) || todayAnswer; const ansIdx = dailyQuestion.options.findIndex(o => o.value === ansVal); return (ansIdx >= 0 ? 'ABC'[ansIdx] : todayAnswer) + '. ' + (dailyQuestion.options.find(o => o.value === ansVal)?.label || ''); })()}</span></p>
+                  <p class="text-green-600 text-sm">${lang === 'zh' ? '你的答案' : 'Your answer'}: <span class="font-bold">${(() => { const opts = lang === 'en' && dailyQuestion.options_en ? dailyQuestion.options_en : dailyQuestion.options; const ansVal = Number(todayAnswer) || todayAnswer; const ansIdx = opts.findIndex(o => o.value === ansVal); return (ansIdx >= 0 ? 'ABC'[ansIdx] : todayAnswer) + '. ' + (opts.find(o => o.value === ansVal)?.label || ''); })()}</span></p>
                 </div>
               </div>
             </div>
@@ -944,10 +944,10 @@ async function showDailyQuiz() {
           <!-- 今日题目 -->
           <div class="mb-6">
             <h3 class="text-lg font-bold text-gray-800 mb-4">${t('daily_quiz_title')}</h3>
-            <p class="text-gray-700 leading-relaxed mb-6">${dailyQuestion.text}</p>
+            <p class="text-gray-700 leading-relaxed mb-6">${lang === 'en' && dailyQuestion.text_en ? dailyQuestion.text_en : dailyQuestion.text}</p>
             
             <div class="space-y-3 mb-6">
-              ${dailyQuestion.options.map((opt, idx) => `
+              ${(lang === 'en' && dailyQuestion.options_en ? dailyQuestion.options_en : dailyQuestion.options).map((opt, idx) => `
                 <button 
                   onclick="selectDailyOption(this, ${opt.value})"
                   data-option="${opt.value}"
@@ -987,9 +987,10 @@ async function showDailyQuiz() {
               <h4 class="text-sm font-medium text-gray-600 mb-2">${t('answer_distribution')}</h4>
               <div class="space-y-2">
                 ${stats.distribution.map(d => {
-                  const opt = dailyQuestion.options.find(o => o.value === d.option);
+                  const opts = lang === 'en' && dailyQuestion.options_en ? dailyQuestion.options_en : dailyQuestion.options;
+                  const opt = opts.find(o => o.value === d.option);
                   const optText = opt ? opt.label : d.option;
-                  const optIdx = dailyQuestion.options.findIndex(o => o.value === d.option);
+                  const optIdx = opts.findIndex(o => o.value === d.option);
                   const optLetter = 'ABC'[optIdx] || String(d.option);
                   const optColor = optIdx === 0 ? 'bg-blue-500' : optIdx === 1 ? 'bg-green-500' : 'bg-purple-500';
                   return `
@@ -1344,10 +1345,10 @@ function renderQuiz() {
             ${t('question_prefix')}${currentQuestion + 1}/${questions.length}
           </p>
           <h2 class="text-base md:text-lg font-medium text-gray-800 mb-6 text-center leading-relaxed">
-            ${q.text}
+            ${lang === 'en' && q.text_en ? q.text_en : q.text}
           </h2>
           <div class="space-y-2">
-            ${q.options.map((opt, i) => `
+            ${(lang === 'en' && q.options_en ? q.options_en : q.options).map((opt, i) => `
               <button onclick="selectAnswer(${currentQuestion}, ${opt.value})" 
                 class="w-full p-3 md:p-4 text-left border-2 rounded-xl transition-all duration-200 hover:border-purple-400 hover:bg-purple-50 active:scale-[0.98] ${answers[currentQuestion] == opt.value ? 'border-purple-500 bg-purple-100' : 'border-gray-200 bg-white'}"
                 style="${answers[currentQuestion] == opt.value ? 'border-color: #8B5CF6' : ''}">
