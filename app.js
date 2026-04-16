@@ -45,7 +45,7 @@ async function fetchUserData(forceRefresh = false) {
     const res = await fetchWithRetry(
       `${API_BASE}/api/user/data?guest_code=${encodeURIComponent(getGuestCode())}`,
       {},
-      15000 // 15秒超时（增加超时时间）
+      8000 // 8秒超时
     );
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
@@ -123,18 +123,18 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
 }
 
 // 带重试的fetch
-async function fetchWithRetry(url, options = {}, timeoutMs = 15000, retries = 2) {
+async function fetchWithRetry(url, options = {}, timeoutMs = 8000, retries = 1) {
   for (let i = 0; i <= retries; i++) {
     try {
       const res = await fetchWithTimeout(url, options, timeoutMs);
       if (res.status === 503 && i < retries) {
-        await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+        await new Promise(r => setTimeout(r, 500 * (i + 1)));
         continue;
       }
       return res;
     } catch (e) {
       if (i === retries) throw e;
-      await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+      await new Promise(r => setTimeout(r, 500 * (i + 1)));
     }
   }
 }
@@ -166,7 +166,7 @@ async function fetchTestCount() {
 // 加载全局测试计数
 async function loadGlobalCount() {
   try {
-    const res = await fetchWithRetry(`${API_BASE}/api/count`, {}, 10000);
+    const res = await fetchWithRetry(`${API_BASE}/api/count`, {}, 5000, 1);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     
@@ -3619,20 +3619,29 @@ function generateDimensionDiff(currentPattern, previousPattern) {
 // Cloudflare Pages native GitHub integration - Tue Apr 14 11:14:35 AM CST 2026
 
 // ============ User Profile / Data Management ============
-async function showUserProfile() {
+function showUserProfile() {
   const personality = currentPersonality || findMatchedPersonality();
   const mbti = getSelectedMBTI();
   const guestCode = getGuestCode();
   const nickname = localStorage.getItem('sbti_ranking_nickname') || '';
   
-  // 从数据库获取用户数据（使用缓存，不强制刷新）
-  let userData;
-  try {
-    userData = await fetchUserData(false); // 使用缓存，避免阻塞页面渲染
-  } catch (e) {
-    userData = { user_data: {}, history: [], daily: { answers: {}, streak: 0, last_date: null } };
-  }
+  // 先用缓存或默认值立即渲染页面，不阻塞
+  const cachedData = _userDataCache || { user_data: {}, history: [], daily: { answers: {}, streak: 0, last_date: null } };
+  const userData = cachedData;
   
+  // 后台异步刷新数据（不阻塞页面渲染）
+  fetchUserData(false).then(freshData => {
+    if (freshData && JSON.stringify(freshData) !== JSON.stringify(cachedData)) {
+      // 数据有变化，重新渲染
+      _renderUserProfileContent(freshData, personality, mbti, guestCode, nickname);
+    }
+  }).catch(() => {});
+  
+  _renderUserProfileContent(userData, personality, mbti, guestCode, nickname);
+}
+
+// 实际渲染“我的”页面（可被异步刷新调用）
+function _renderUserProfileContent(userData, personality, mbti, guestCode, nickname) {
   const history = userData.history.length > 0
     ? userData.history.map(h => ({ code: h.personality_code, pattern: h.pattern, matchScore: h.match_score, date: h.created_at }))
     : JSON.parse(localStorage.getItem('sbti_history') || '[]');
