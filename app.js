@@ -456,6 +456,18 @@ function t(key) {
 }
 
 // Render landing page
+// 通用右上角用户按钮 - 所有页面通用
+function getUserHeaderHTML(backBtn = '', title = '') {
+  const user = JSON.parse(localStorage.getItem('sbti_user') || 'null');
+  const userBtn = user
+    ? `<button onclick="showUserProfile()" class="flex items-center gap-1 text-sm text-purple-600 hover:text-purple-800 transition" title="@${user.username}">
+        <span class="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center text-base">${user.avatar || '👤'}</span>
+        <span class="hidden sm:inline max-w-[80px] truncate">${user.nickname || user.username}</span>
+      </button>`
+    : `<button onclick="showLoginModal()" class="text-sm text-gray-400 hover:text-purple-600 transition">${lang === 'zh' ? '登录' : 'Login'}</button>`;
+  return `<div class="flex items-center justify-between mb-4">${backBtn}<span class="text-lg font-bold text-gray-800">${title}</span>${userBtn}</div>`;
+}
+
 function renderLanding(refCode) {
   const app = document.getElementById('app');
   
@@ -489,6 +501,7 @@ function renderLanding(refCode) {
   app.innerHTML = `
     <div class="min-h-screen flex flex-col items-center px-4 bg-gradient-to-b from-cream to-white pb-8">
       <div class="text-center max-w-md mx-auto w-full pt-8">
+        ${getUserHeaderHTML('', '')}
         ${refPreview}
         <h1 class="text-4xl md:text-5xl font-bold text-purple-600 mb-2">${t('app_title')}</h1>
         <p class="text-lg md:text-xl text-gray-500 mb-6">${t('app_subtitle')}</p>
@@ -1327,6 +1340,7 @@ async function fetchLeaderboard(period = 'all', region = '') {
     const res = await fetch(url);
     return await res.json();
   } catch (e) { return null; }
+}
 
 function renderResult(personality) {
   // Submit to leaderboard (async, non-blocking)
@@ -1337,6 +1351,7 @@ function renderResult(personality) {
   app.innerHTML = `
     <div class="min-h-screen bg-gradient-to-b from-cream to-white overflow-auto">
       <div class="max-w-md mx-auto px-4 py-8">
+        ${getUserHeaderHTML(`<button onclick="renderLanding()" class="text-purple-600 mr-2">←</button>`, lang === 'zh' ? '测试结果' : 'Result')}
         <div class="text-center mb-8">
           <div class="inline-flex items-center justify-center w-20 h-20 rounded-full text-3xl mb-4" style="background-color: ${personality.color}20; border: 2px solid ${personality.color}">
             ${avatar}
@@ -2289,10 +2304,11 @@ async function showTypeRankings(typeCode) {
       <div class="max-w-md mx-auto px-4 py-8">
         <div class="flex items-center mb-6">
           <button onclick="showLeaderboard()" class="text-purple-600 mr-3">←</button>
-          <div class="flex items-center gap-2">
+          <div class="flex-1 flex items-center gap-2">
             <div class="w-8 h-8 rounded-full flex items-center justify-center" style="background:${color}20;border:2px solid ${color}">${emoji}</div>
             <h1 class="text-xl font-bold" style="color:${color}">${emoji} ${typeCode} — ${name}</h1>
           </div>
+          ${(() => { const u = JSON.parse(localStorage.getItem('sbti_user') || 'null'); return u ? `<button onclick="showUserProfile()" class="flex items-center gap-1 text-sm text-purple-600" title="@${u.username}"><span class="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center text-base">${u.avatar || '👤'}</span></button>` : `<button onclick="showLoginModal()" class="text-sm text-gray-400 hover:text-purple-600">${lang === 'zh' ? '登录' : 'Login'}</button>`; })()}
         </div>
         <div id="type-rank-list" class="space-y-3">
           <div class="text-center py-8 text-gray-400">Loading...</div>
@@ -2356,7 +2372,8 @@ async function showLeaderboard(period = 'all', region = '') {
       <div class="max-w-md mx-auto px-4 py-8">
         <div class="flex items-center mb-6">
           <button onclick="renderLanding()" class="text-purple-600 mr-3">←</button>
-          <h1 class="text-2xl font-bold text-gray-800">${t('leaderboard_title')}</h1>
+          <h1 class="text-2xl font-bold text-gray-800 flex-1">${t('leaderboard_title')}</h1>
+          ${(() => { const u = JSON.parse(localStorage.getItem('sbti_user') || 'null'); return u ? `<button onclick="showUserProfile()" class="flex items-center gap-1 text-sm text-purple-600" title="@${u.username}"><span class="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center text-base">${u.avatar || '👤'}</span></button>` : `<button onclick="showLoginModal()" class="text-sm text-gray-400 hover:text-purple-600">${lang === 'zh' ? '登录' : 'Login'}</button>`; })()}
         </div>
 
         <!-- Stats cards -->
