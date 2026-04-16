@@ -42,7 +42,7 @@ async function fetchUserData(forceRefresh = false) {
     return _userDataCache;
   }
   try {
-    const res = await fetchWithTimeout(
+    const res = await fetchWithRetry(
       `${API_BASE}/api/user/data?guest_code=${encodeURIComponent(getGuestCode())}`,
       {},
       15000 // 15秒超时（增加超时时间）
@@ -106,7 +106,7 @@ async function saveTestHistory(personalityCode, pattern, matchScore, mbtiType, a
 }
 
 // 带超时的fetch封装
-async function fetchWithTimeout(url, options = {}, timeoutMs = 10000) {
+async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -119,6 +119,23 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 10000) {
       throw new Error('Request timeout');
     }
     throw e;
+  }
+}
+
+// 带重试的fetch
+async function fetchWithRetry(url, options = {}, timeoutMs = 15000, retries = 2) {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const res = await fetchWithTimeout(url, options, timeoutMs);
+      if (res.status === 503 && i < retries) {
+        await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+        continue;
+      }
+      return res;
+    } catch (e) {
+      if (i === retries) throw e;
+      await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+    }
   }
 }
 
@@ -149,7 +166,7 @@ async function fetchTestCount() {
 // 加载全局测试计数
 async function loadGlobalCount() {
   try {
-    const res = await fetchWithTimeout(`${API_BASE}/api/count`, {}, 5000);
+    const res = await fetchWithRetry(`${API_BASE}/api/count`, {}, 10000);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     
