@@ -57,7 +57,6 @@
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
   <!-- QRCode.js loaded on-demand in shareResult() -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet" crossorigin="anonymous">
   <!-- Fallback font style -->
@@ -77,28 +76,8 @@
       src: local('Noto Sans SC'), local('Source Han Sans SC'), local('Microsoft YaHei'), local('PingFang SC'), local('SimHei');
     }
   </style>
-  <!-- Tailwind CSS loaded async -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            purple: {
-              50: '#f5f3ff', 100: '#ede9fe', 200: '#ddd6fe', 300: '#c4b5fd',
-              400: '#a78bfa', 500: '#8b5cf6', 600: '#7c3aed', 700: '#6d28d9',
-              800: '#5b21b6', 900: '#4c1d95'
-            },
-            cream: '#FFF8F0',
-            mint: '#99F6E4',
-            coral: '#FDA4AF',
-            sky: '#7DD3FC'
-          },
-          fontFamily: { sans: ['Inter', 'Noto Sans SC', 'sans-serif'] }
-        }
-      }
-    }
-  </script>
+  <!-- Tailwind CSS (pre-built, no CDN dependency) -->
+  <link rel="stylesheet" href="/tailwind.min.css">
   <style>
     * { -webkit-tap-highlight-color: transparent; }
     body {
