@@ -1,4 +1,5 @@
 // app.js - SBTI Personality Test Application
+// Cache-bust: 2026-04-17T18:12:00+08:00
 
 // State
 let questions = [];
