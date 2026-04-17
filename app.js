@@ -864,7 +864,7 @@ async function showDailyQuiz() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
       
-      const res = await fetch(`https://sbti-api.hebiwu007.workers.dev/api/daily/stats?date=${today}`, {
+      const res = await fetch(`${API_BASE}/api/daily/stats?date=${today}`, {
         signal: controller.signal
       });
       clearTimeout(timeoutId);
@@ -1257,7 +1257,7 @@ async function submitDailyAnswer(date, answer) {
 
   // 提交到 API（streak由服务端计算）
   try {
-    await fetch('https://sbti-api.hebiwu007.workers.dev/api/daily/submit', {
+    await fetch(`${API_BASE}/api/daily/submit`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ quiz_date: date, answer, guest_code: getGuestCode() })
@@ -1687,7 +1687,7 @@ async function submitToLeaderboard(personality) {
   try {
     const mbti = localStorage.getItem('sbti_mbti') || null;
     const pattern = calculateUserPattern();
-    await fetch('https://sbti-api.hebiwu007.workers.dev/api/submit', {
+    await fetch(`${API_BASE}/api/submit`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1705,7 +1705,7 @@ async function submitToLeaderboard(personality) {
 // Fetch leaderboard data
 async function fetchLeaderboard(period = 'all', region = '') {
   try {
-    let url = `https://sbti-api.hebiwu007.workers.dev/api/leaderboard?period=${period}&limit=27`;
+    let url = `${API_BASE}/api/leaderboard?period=${period}&limit=27`;
     if (region) url += `&region=${region}`;
     const res = await fetch(url);
     return await res.json();
@@ -2606,7 +2606,7 @@ async function doSubmitRanking() {
     console.log('Submitting ranking:', { nickname, personality_code: personality.code });
     
     const res = await fetchWithTimeout(
-      'https://sbti-api.hebiwu007.workers.dev/api/ranking/submit',
+      `${API_BASE}/api/ranking/submit`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2705,7 +2705,7 @@ async function showTypeRankings(typeCode) {
   `;
 
   try {
-    const res = await fetch(`https://sbti-api.hebiwu007.workers.dev/api/rankings?type=${typeCode}&limit=50`);
+    const res = await fetch(`${API_BASE}/api/rankings?type=${typeCode}&limit=50`);
     const data = await res.json();
     const list = document.getElementById('type-rank-list');
     const myGuestCode = localStorage.getItem('sbti_guest_code');
@@ -3885,7 +3885,7 @@ async function deleteMyServerData() {
   const confirmed = confirm(lang === 'zh' ? '确定删除服务器上的所有数据？此操作不可恢复。' : 'Delete all data from server? This cannot be undone.');
   if (!confirmed) return;
   try {
-    const res = await fetch('https://sbti-api.hebiwu007.workers.dev/api/data', {
+    const res = await fetch(`${API_BASE}/api/data`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ guest_code: guestCode })
@@ -4094,7 +4094,7 @@ async function doLogin() {
   try {
     console.log('Logging in user:', username);
     const res = await fetchWithTimeout(
-      'https://sbti-api.hebiwu007.workers.dev/api/auth/login',
+      `${API_BASE}/api/auth/login`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -4111,7 +4111,7 @@ async function doLogin() {
       // Link existing guest code to account
       const guestCode = localStorage.getItem('sbti_guest_code');
       if (guestCode) {
-        fetch('https://sbti-api.hebiwu007.workers.dev/api/auth/link-guest', {
+        fetch(`${API_BASE}/api/auth/link-guest`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ user_id: data.user.id, guest_code: guestCode })
@@ -4191,7 +4191,7 @@ async function doRegister() {
   try {
     console.log('Registering user:', username);
     const res = await fetchWithTimeout(
-      'https://sbti-api.hebiwu007.workers.dev/api/auth/register',
+      `${API_BASE}/api/auth/register`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
