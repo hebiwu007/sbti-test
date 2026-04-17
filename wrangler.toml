@@ -1,0 +1,18 @@
+name = "sbti-api"
+main = "worker/index.js"
+compatibility_date = "2026-04-16"
+account_id = "e8ae2227899374d7efc0b60bbf39ada9"
+workers_dev = false
+
+# 使用自定义域名
+routes = [
+  { pattern = "api.sbti.solutions/*", zone_name = "sbti.solutions" }
+]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "sbti-db"
+database_id = "0ba8d202-def4-4ab7-ad0e-5f13101cc3f2"
+
+# Pages 配置
+pages_build_output_dir = "."

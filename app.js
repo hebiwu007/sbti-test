@@ -3163,7 +3163,8 @@ function showComparison() {
     // No test result yet — prompt user to take test or enter code manually
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50';
-    modal.innerHTML = `<div class="bg-white rounded-2xl max-w-md w-full p-6 text-center">
+    modal.innerHTML = `<div class="bg-white rounded-2xl max-w-md w-full p-6 text-center relative">
+      <button onclick="this.closest('.fixed').remove()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl">✕</button>
       <div class="text-4xl mb-4">👥</div>
       <h2 class="text-xl font-bold text-gray-800 mb-2">${lang === 'zh' ? '好友对比' : 'Compare with Friends'}</h2>
       <p class="text-gray-500 mb-4">${lang === 'zh' ? '输入朋友的SBTI人格代码进行对比，或先测出自己的结果' : 'Enter a friend\'s SBTI code to compare, or take the test first'}</p>

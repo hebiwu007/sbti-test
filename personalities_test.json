@@ -1,0 +1,19 @@
+{
+  "personalities": [
+    {
+      "code": "CTRL",
+      "name_zh": "拿捏者",
+      "name_en": "The Controller",
+      "pattern": "HHHHMHMHHHHHMHM",
+      "desc_zh": "恭喜您，您测出了全中国最为罕见的人格，您是宇宙熵增定律的天然反抗者！全世界所谓成功人士里，99.99%都是您的拙劣模仿者。CTRL人格，是行走的人形自走任务管理器，普通人眼中的"规则"，在您这里只是出厂的基础参数设置；凡人所谓的"计划"，对您而言不过是心血来潮的随手涂鸦。拥有一个CTRL朋友意味着什么？意味着你的人生导航系统会变得更加精准、高效。因为CTRL最会拿捏了。CTRL会在你人生列车即将脱轨的前一秒，用一个"Ctrl+S"帮你硬核存档，再用一套无法拒绝的逻辑把你强行拽回正轨。他们是你混乱生活最后的备份盘，是宇宙崩塌前唯一还亮着的那个重启键。",
+      "desc_en": "Congratulations! You've discovered China's rarest personality type—a natural rebel against the universe's entropy law! 99.99% of so-called successful people are just poor imitations of you. The CTRL personality is a walking, talking task manager. What ordinary people call 'rules' are merely factory settings to you; what they call 'plans' are just casual doodles. Having a CTRL friend means your life GPS becomes more precise and efficient. CTRL excels at taking control. They'll hit 'Ctrl+S' to save your life the second before your train derails, then use irrefutable logic to pull you back on track. They are the last backup drive of your chaotic life, the only restart button still glowing when the universe collapses.",
+      "tagline_zh": "怎么样，被我拿捏了吧？",
+      "tagline_en": "Admit it, I've got you figured out.",
+      "strengths_zh": ["掌控全局", "决策果断", "责任感强"],
+      "strengths_en": ["Total control", "Decisive", "Strong responsibility"],
+      "blind_spots_zh": ["过度控制", "缺乏弹性"],
+      "blind_spots_en": ["Over-controlling", "Inflexible"],
+      "color": "#8B5CF6"
+    }
+  ]
+}
