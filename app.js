@@ -619,11 +619,28 @@ function renderLanding(refCode) {
 
 // Get today's date string in local timezone (YYYY-MM-DD)
 // Show personality type guide (sbti.ai/types style)
-function showTypeGuide(filterCode) {
+async function showTypeGuide(filterCode) {
   currentPage = 'typeGuide';
   currentPageParams = filterCode || null;
   
   const app = document.getElementById('app');
+  
+  // 确保 personalities 数据已加载
+  if (!personalities || personalities.length === 0) {
+    app.innerHTML = `
+      <div class="min-h-screen bg-gradient-to-b from-cream to-white flex items-center justify-center">
+        <div class="text-center">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p class="text-gray-600">${lang === 'zh' ? '加载中...' : 'Loading...'}</p>
+        </div>
+      </div>
+    `;
+    // 等待数据加载
+    await loadData();
+    // 重新渲染
+    showTypeGuide(filterCode);
+    return;
+  }
   
   if (filterCode) {
     // Show detail for a specific type
@@ -4262,9 +4279,5 @@ function doLogout() {
   showUserProfile();
 }
 
-// Initialize app
-loadData().then(() => {
-  initApp();
-}).catch(err => {
-  console.error('Failed to initialize app:', err);
-});
+// Initialize app - 移除重复的 loadData 调用，只在 DOMContentLoaded 中初始化一次
+// 注意：loadData 已在上方 DOMContentLoaded 事件中调用
