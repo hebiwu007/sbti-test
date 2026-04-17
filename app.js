@@ -3914,13 +3914,8 @@ function _renderUserProfileContent(userData, personality, mbti, guestCode, nickn
         <div class="bg-white rounded-2xl p-4 shadow-lg mb-6">
           <h3 class="font-bold text-gray-800 mb-3">${lang === 'zh' ? '数据管理' : 'Data Management'}</h3>
           <div class="space-y-3">
-            ${guestCode ? `
-            <button onclick="deleteMyServerData()" class="w-full py-3 border-2 border-red-300 text-red-500 rounded-xl font-medium hover:bg-red-50 transition">
-              ${lang === 'zh' ? '🗑 删除服务器数据' : '🗑 Delete server data'}
-            </button>
-            ` : ''}
-            <button onclick="clearAllLocalData()" class="w-full py-3 border-2 border-red-300 text-red-500 rounded-xl font-medium hover:bg-red-50 transition">
-              ${lang === 'zh' ? '清除本地数据' : 'Clear local data'}
+            <button onclick="deleteAllData()" class="w-full py-3 border-2 border-red-300 text-red-500 rounded-xl font-medium hover:bg-red-50 transition">
+              ${lang === 'zh' ? '🗑 清除所有数据' : '🗑 Delete all data'}
             </button>
             <button onclick="exportMyData()" class="w-full py-3 border-2 border-gray-300 text-gray-600 rounded-xl font-medium hover:bg-gray-50 transition">
               ${lang === 'zh' ? '📦 导出我的数据' : '📦 Export my data'}
@@ -3935,46 +3930,39 @@ function _renderUserProfileContent(userData, personality, mbti, guestCode, nickn
   `;
 }
 
-// Delete server-side data
-async function deleteMyServerData() {
-  const guestCode = getGuestCode();
-  const confirmed = confirm(lang === 'zh' ? '确定删除服务器上的所有数据？此操作不可恢复。' : 'Delete all data from server? This cannot be undone.');
+// Delete all data (server + local)
+async function deleteAllData() {
+  const confirmed = confirm(lang === 'zh' ? '确定清除所有数据？包括服务器和本地的测试历史、排行榜、每日一测等，此操作不可恢复。' : 'Delete ALL data? Including server and local test history, rankings, daily quiz, etc. This cannot be undone.');
   if (!confirmed) return;
+
+  // 1. Delete server data
   try {
+    const guestCode = getGuestCode();
     const res = await fetch(`${API_BASE}/api/data`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ guest_code: guestCode })
     });
     const data = await res.json();
-    if (data.success) {
-      localStorage.removeItem('sbti_guest_code');
-      localStorage.removeItem('sbti_ranking_nickname');
-      clearUserDataCache();
-      const d = data.deleted || {};
-      alert(lang === 'zh' ? `服务器数据已删除\n排行榜: ${d.rankings || 0}条\n每日一测: ${d.daily_quiz || 0}条\n历史: ${d.history || 0}条` : `Server data deleted\nRankings: ${d.rankings || 0}\nDaily: ${d.daily_quiz || 0}\nHistory: ${d.history || 0}`);
-      showUserProfile();
-    } else {
-      alert(data.error || (lang === 'zh' ? '删除失败' : 'Delete failed'));
+    if (!data.success) {
+      alert(data.error || (lang === 'zh' ? '服务器数据删除失败' : 'Server data delete failed'));
+      return;
     }
   } catch (e) {
-    alert(lang === 'zh' ? '网络错误' : 'Network error');
+    // Server unreachable — continue to clear local
   }
-}
 
-// Clear all local data
-function clearAllLocalData() {
-  const confirmed = confirm(lang === 'zh' ? '确定清除所有本地数据？包括测试历史、每日一测记录等。' : 'Clear all local data? Including test history, daily answers, etc.');
-  if (!confirmed) return;
-  const keysToKeep = []; // nothing to keep
+  // 2. Clear local data
+  clearUserDataCache();
   const sbtiKeys = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (key.startsWith('sbti_')) sbtiKeys.push(key);
   }
   sbtiKeys.forEach(k => localStorage.removeItem(k));
-  alert(lang === 'zh' ? '本地数据已清除' : 'Local data cleared');
-  showUserProfile();
+
+  alert(lang === 'zh' ? '所有数据已清除' : 'All data cleared');
+  renderLanding();
 }
 
 // Export user data as TXT
