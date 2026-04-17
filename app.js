@@ -1,5 +1,5 @@
 // app.js - SBTI Personality Test Application
-// Cache-bust: 2026-04-17T21:20:00+08:00
+// Cache-bust: 2026-04-17T21:22:00+08:00
 
 // State
 let questions = [];
@@ -3929,34 +3929,10 @@ function _renderUserProfileContent(userData, personality, mbti, guestCode, nickn
 
 // Delete all data (server + local)
 async function deleteAllData() {
-  // 第1次确认 - 列出将删除的具体数据
-  const guestCode = getGuestCode();
-  let serverInfo = '';
-  try {
-    const res = await fetch(`${API_BASE}/api/data?guest_code=${encodeURIComponent(guestCode)}`, { method: 'GET' });
-    const data = await res.json();
-    if (data.success && data.summary) {
-      const s = data.summary;
-      if (lang === 'zh') {
-        serverInfo = `\n【服务器数据】\n• 排行榜记录: ${s.rankings || 0} 条\n• 每日一测记录: ${s.daily_quiz || 0} 条\n• 测试历史: ${s.history || 0} 条`;
-      } else {
-        serverInfo = `\n[Server Data]\n• Rankings: ${s.rankings || 0}\n• Daily quiz records: ${s.daily_quiz || 0}\n• Test history: ${s.history || 0}`;
-      }
-    }
-  } catch (e) {}
-
-  // 统计本地数据
-  let localKeys = 0;
-  for (let i = 0; i < localStorage.length; i++) {
-    if (localStorage.key(i).startsWith('sbti_')) localKeys++;
-  }
-  let localInfo = lang === 'zh'
-    ? `\n【本地数据】\n• 测试结果\n• 个人设置\n• 语言偏好\n• 共 ${localKeys} 条本地记录`
-    : `\n[Local Data]\n• Test results\n• Personal settings\n• Language preference\n• ${localKeys} local records`;
-
+  // 第1次确认 - 明确列出将删除的数据类型
   const confirmed1 = confirm(lang === 'zh'
-    ? `⚠️ 确定清除以下数据？${serverInfo}${localInfo}\n\n此操作不可恢复。`
-    : `⚠️ Delete the following data?${serverInfo}${localInfo}\n\nThis cannot be undone.`);
+    ? '⚠️ 确定删除所有数据？\n\n将删除：排行榜、每日一测、测试历史及本地数据。\n\n此操作不可恢复。'
+    : '⚠️ Delete ALL data?\n\nThis will remove: Rankings, Daily quiz, Test history & Local data.\n\nThis cannot be undone.');
   if (!confirmed1) return;
 
   // 第2次确认
