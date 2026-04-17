@@ -1,5 +1,5 @@
 // app.js - SBTI Personality Test Application
-// Cache-bust: 2026-04-17T21:10:00+08:00
+// Cache-bust: 2026-04-17T21:20:00+08:00
 
 // State
 let questions = [];
@@ -3662,20 +3662,20 @@ function showHistoryComparison() {
         
         <div class="flex justify-between items-center mb-4">
           <div class="text-center">
-            <div class="text-sm text-gray-500 mb-1">${lang === 'zh' ? '本次' : 'Current'}</div>
-            <div class="text-3xl font-bold" style="color: ${currentPersona?.color || '#8B5CF6'}">${current.code}</div>
-            <div class="text-sm text-gray-600">${currentPersona ? (lang === 'zh' ? currentPersona.name_zh : currentPersona.name_en) : ''}</div>
-            <div class="text-xs text-gray-400">${formatDate(current.date)}</div>
+            <div class="text-sm text-gray-500 mb-1">${lang === 'zh' ? '上次' : 'Previous'}</div>
+            <div class="text-3xl font-bold" style="color: ${previousPersona?.color || '#8B5CF6'}">${previous.code}</div>
+            <div class="text-sm text-gray-600">${previousPersona ? (lang === 'zh' ? previousPersona.name_zh : previousPersona.name_en) : ''}</div>
+            <div class="text-xs text-gray-400">${formatDate(previous.date)}</div>
           </div>
           <div class="text-center">
             <div class="text-2xl">${isSamePersonality ? '✓' : '→'}</div>
             <div class="text-sm text-gray-500 mt-2">${isSamePersonality ? (lang === 'zh' ? '稳定的' : 'Stable') : (lang === 'zh' ? '变化了' : 'Changed')}</div>
           </div>
           <div class="text-center">
-            <div class="text-sm text-gray-500 mb-1">${lang === 'zh' ? '上次' : 'Previous'}</div>
-            <div class="text-3xl font-bold" style="color: ${previousPersona?.color || '#8B5CF6'}">${previous.code}</div>
-            <div class="text-sm text-gray-600">${previousPersona ? (lang === 'zh' ? previousPersona.name_zh : previousPersona.name_en) : ''}</div>
-            <div class="text-xs text-gray-400">${formatDate(previous.date)}</div>
+            <div class="text-sm text-gray-500 mb-1">${lang === 'zh' ? '本次' : 'Current'}</div>
+            <div class="text-3xl font-bold" style="color: ${currentPersona?.color || '#8B5CF6'}">${current.code}</div>
+            <div class="text-sm text-gray-600">${currentPersona ? (lang === 'zh' ? currentPersona.name_zh : currentPersona.name_en) : ''}</div>
+            <div class="text-xs text-gray-400">${formatDate(current.date)}</div>
           </div>
         </div>
         
@@ -3694,8 +3694,8 @@ function showHistoryComparison() {
         ` : ''}
         
         <div class="flex justify-between text-sm text-gray-500 mb-4">
-          <span>${lang === 'zh' ? '本次匹配度' : 'Match Score'}: ${current.matchScore}%</span>
-          <span>${lang === 'zh' ? '上次匹配度' : 'Previous Match Score'}: ${previous.matchScore}%</span>
+          <span>${lang === 'zh' ? '上次匹配度' : 'Previous Score'}: ${previous.matchScore}%</span>
+          <span>${lang === 'zh' ? '本次匹配度' : 'Current Score'}: ${current.matchScore}%</span>
         </div>
         
         <button onclick="this.closest('.fixed').remove()" class="w-full py-3 bg-purple-600 text-white rounded-full">
