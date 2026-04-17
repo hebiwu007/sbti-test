@@ -3357,7 +3357,7 @@ function showComparison() {
                       const yourRadarValues = patternToRadarValues(yourPattern);
                       const friendRadarValues = patternToRadarValues(friendPattern);
                       
-                      return radarDimensions.map((dim, index) => {
+                      return dimensionOrder.map((dim, index) => {
                         const yourValue = radarValueToLabel(yourRadarValues[index]);
                         const friendValue = radarValueToLabel(friendRadarValues[index]);
                         const isSame = yourValue === friendValue;
@@ -3554,7 +3554,7 @@ async function generateComparisonCard(friendCode) {
   
   // yourRadarValues and friendRadarValues are already declared above
   
-  radarDimensions.slice(0, 10).forEach((dim, index) => {
+  dimensionOrder.slice(0, 10).forEach((dim, index) => {
     const y = 960 + index * 60;
     const yourVal = radarValueToLabel(yourRadarValues[index]);
     const friendVal = radarValueToLabel(friendRadarValues[index]);
@@ -3932,10 +3932,10 @@ function _renderUserProfileContent(userData, personality, mbti, guestCode, nickn
 
 // Delete all data (server + local)
 async function deleteAllData() {
-  // 第1次确认
+  // 第1次确认 - 列出将删除的数据类型
   const confirmed1 = confirm(lang === 'zh'
-    ? '⚠️ 确定清除所有数据？\n将删除服务器和本地的所有测试数据，此操作不可恢复。'
-    : '⚠️ Delete ALL data?\nThis will remove all server and local test data. This cannot be undone.');
+    ? '⚠️ 确定清除所有数据？将删除以下内容：\n\n【服务器数据】\n• 排行榜记录\n• 每日一测记录\n• 测试历史\n\n【本地数据】\n• 测试结果\n• 个人设置\n• 语言偏好\n\n此操作不可恢复。'
+    : '⚠️ Delete ALL data? The following will be removed:\n\n[Server]\n• Rankings\n• Daily quiz records\n• Test history\n\n[Local]\n• Test results\n• Personal settings\n• Language preference\n\nThis cannot be undone.');
   if (!confirmed1) return;
 
   // 第2次确认
