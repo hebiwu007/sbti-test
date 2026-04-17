@@ -274,9 +274,9 @@ async function handleLeaderboard(env, h, url) {
   else if (period === 'month') conditions.push("created_at >= date('now', '-30 days')");
   if (region && regionMap[region.toLowerCase()]) {
     const prefixes = regionMap[region.toLowerCase()];
-    const tzList = prefixes.map(() => '?').join(',');
-    conditions.push(`timezone IN (${tzList})`);
-    params.push(...prefixes);
+    const tzConditions = prefixes.map(() => 'timezone LIKE ?').join(' OR ');
+    conditions.push(`(${tzConditions})`);
+    params.push(...prefixes.map(p => p + '%'));
   }
   const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
   const results = await env.DB.prepare(`SELECT personality_code, COUNT(*) as count FROM test_results ${whereClause} GROUP BY personality_code ORDER BY count DESC LIMIT ?`).bind(...params, limit).all();

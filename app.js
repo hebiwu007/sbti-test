@@ -2853,7 +2853,7 @@ async function showLeaderboard(period = 'all', region = '') {
 
   // Fetch data
   const [stats, lbData] = await Promise.all([
-    fetchTestCount(),
+    fetch(`${API_BASE}/api/count`).then(r => r.json()).catch(() => ({total: 0, today: 0})),
     fetchLeaderboard(period, region)
   ]);
 
