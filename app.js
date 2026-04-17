@@ -1,5 +1,5 @@
 // app.js - SBTI Personality Test Application
-// Cache-bust: 2026-04-17T18:12:00+08:00
+// Cache-bust: 2026-04-17T20:03:00+08:00
 
 // State
 let questions = [];
@@ -232,6 +232,11 @@ const dimensionMeta = {
 // Convert 15-char pattern to radar values (1:1 mapping now)
 function patternToRadarValues(pattern) {
   return pattern.split('').map(v => v === 'H' ? 3 : (v === 'M' ? 2 : 1));
+}
+
+// Convert numeric radar value back to label
+function radarValueToLabel(val) {
+  return val >= 3 ? 'H' : (val >= 2 ? 'M' : 'L');
 }
 
 // Personality avatars (abstract emoji representation)
