@@ -1,5 +1,5 @@
 // SBTI Service Worker v3 - Network-first for JS/HTML
-const CACHE_NAME = 'sbti-v5';
+const CACHE_NAME = 'sbti-v6';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
