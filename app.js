@@ -905,7 +905,7 @@ async function showDailyQuiz() {
     // 计算百分比
     const totalCount = stats.distribution.reduce((sum, d) => sum + d.count, 0);
     stats.distribution.forEach(d => {
-      d.percent = Math.round((d.count / totalCount) * 100);
+      d.percent = totalCount > 0 ? Math.round((d.count / totalCount) * 100) : 0;
     });
     
     // 移除加载模态框
@@ -1359,10 +1359,16 @@ function renderQuiz() {
         </div>
       </div>
       <div class="p-4 flex justify-between max-w-md mx-auto w-full">
-        <button onclick="prevQuestion()" ${currentQuestion === 0 ? 'disabled' : ''} 
-          class="px-6 py-3 md:px-8 md:py-4 rounded-full border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-base md:text-lg">
-          ${t('prev_btn')}
-        </button>
+        <div class="flex gap-2">
+          <button onclick="renderLanding()" 
+            class="px-4 py-3 md:px-6 md:py-4 rounded-full border border-gray-300 text-gray-600 hover:bg-gray-50 text-base md:text-lg">
+            ${lang === 'zh' ? '← 首页' : '← Home'}
+          </button>
+          <button onclick="prevQuestion()" ${currentQuestion === 0 ? 'disabled' : ''} 
+            class="px-6 py-3 md:px-8 md:py-4 rounded-full border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-base md:text-lg">
+            ${t('prev_btn')}
+          </button>
+        </div>
         <button onclick="nextQuestion()" ${!answers[currentQuestion] ? 'disabled' : ''}
           class="px-6 py-3 md:px-8 md:py-4 rounded-full bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-base md:text-lg">
           ${currentQuestion === questions.length - 1 ? t('finish_btn') : t('next_btn')}
