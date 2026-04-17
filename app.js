@@ -212,21 +212,21 @@ const modelColors = {
 
 // Dimension metadata (sbti.ai aligned)
 const dimensionMeta = {
-  'S1': {name: 'S1 自尊自信', model: 'S'},
-  'S2': {name: 'S2 自我清晰度', model: 'S'},
-  'S3': {name: 'S3 核心价值', model: 'S'},
-  'E1': {name: 'E1 依恋安全感', model: 'E'},
-  'E2': {name: 'E2 情感投入度', model: 'E'},
-  'E3': {name: 'E3 边界与依赖', model: 'E'},
-  'A1': {name: 'A1 世界观倾向', model: 'A'},
-  'A2': {name: 'A2 规则与灵活度', model: 'A'},
-  'A3': {name: 'A3 人生意义感', model: 'A'},
-  'Ac1': {name: 'Ac1 动机导向', model: 'Ac'},
-  'Ac2': {name: 'Ac2 决策风格', model: 'Ac'},
-  'Ac3': {name: 'Ac3 执行模式', model: 'Ac'},
-  'So1': {name: 'So1 社交主动性', model: 'So'},
-  'So2': {name: 'So2 人际边界感', model: 'So'},
-  'So3': {name: 'So3 表达与真实度', model: 'So'}
+  'S1': {name_zh: 'S1 自尊自信', name_en: 'S1 Self Esteem', model: 'S'},
+  'S2': {name_zh: 'S2 自我清晰度', name_en: 'S2 Self Clarity', model: 'S'},
+  'S3': {name_zh: 'S3 核心价值', name_en: 'S3 Core Values', model: 'S'},
+  'E1': {name_zh: 'E1 依恋安全感', name_en: 'E1 Attachment Security', model: 'E'},
+  'E2': {name_zh: 'E2 情感投入度', name_en: 'E2 Emotional Investment', model: 'E'},
+  'E3': {name_zh: 'E3 边界与依赖', name_en: 'E3 Boundaries', model: 'E'},
+  'A1': {name_zh: 'A1 世界观倾向', name_en: 'A1 Worldview', model: 'A'},
+  'A2': {name_zh: 'A2 规则与灵活度', name_en: 'A2 Rules Flexibility', model: 'A'},
+  'A3': {name_zh: 'A3 人生意义感', name_en: 'A3 Sense of Purpose', model: 'A'},
+  'Ac1': {name_zh: 'Ac1 动机导向', name_en: 'Ac1 Motivation', model: 'Ac'},
+  'Ac2': {name_zh: 'Ac2 决策风格', name_en: 'Ac2 Decision Style', model: 'Ac'},
+  'Ac3': {name_zh: 'Ac3 执行模式', name_en: 'Ac3 Execution', model: 'Ac'},
+  'So1': {name_zh: 'So1 社交主动性', name_en: 'So1 Social Initiative', model: 'So'},
+  'So2': {name_zh: 'So2 人际边界感', name_en: 'So2 Interpersonal Boundaries', model: 'So'},
+  'So3': {name_zh: 'So3 表达与真实度', name_en: 'So3 Expression', model: 'So'}
 };
 
 // Convert 15-char pattern to radar values (1:1 mapping now)
@@ -1459,12 +1459,17 @@ function showHiddenQuestion() {
   const app = document.getElementById('app');
   drinkGateAnswers = {};
   const dq1 = {
-    text: "您平时有什么爱好？",
-    options: [
+    text: lang === 'zh' ? "您平时有什么爱好？" : "What are your usual hobbies?",
+    options: lang === 'zh' ? [
       { label: "吃喝拉撒", value: 1 },
       { label: "艺术爱好", value: 2 },
       { label: "饮酒", value: 3 },
       { label: "健身", value: 4 }
+    ] : [
+      { label: "Eat, drink, sleep, repeat", value: 1 },
+      { label: "Art & culture", value: 2 },
+      { label: "Drinking", value: 3 },
+      { label: "Fitness", value: 4 }
     ]
   };
   
@@ -1472,7 +1477,7 @@ function showHiddenQuestion() {
     <div class="min-h-screen flex flex-col bg-gradient-to-b from-cream to-white">
       <div class="flex-1 flex flex-col items-center justify-center px-4 py-8">
         <div class="w-full max-w-md">
-          <p class="text-sm text-gray-400 mb-2 text-center">🎤 ${'附加题'}</p>
+          <p class="text-sm text-gray-400 mb-2 text-center">🎤 ${lang === 'zh' ? '附加题' : 'Bonus Question'}</p>
           <h2 class="text-base md:text-lg font-medium text-gray-800 mb-6 text-center leading-relaxed">
             ${dq1.text}
           </h2>
@@ -1489,7 +1494,7 @@ function showHiddenQuestion() {
       <div class="p-4 flex justify-center max-w-md mx-auto w-full">
         <button onclick="confirmDrinkGate1()" id="dg1_submit" disabled
           class="w-full px-6 py-3 rounded-full bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-base">
-          确认提交
+          ${lang === 'zh' ? '确认提交' : 'Submit'}
         </button>
       </div>
     </div>
@@ -1524,10 +1529,13 @@ function confirmDrinkGate1() {
 function showDrinkGateQ2() {
   const app = document.getElementById('app');
   const dq2 = {
-    text: "您对饮酒的态度是？",
-    options: [
+    text: lang === 'zh' ? "您对饮酒的态度是？" : "What's your attitude toward drinking?",
+    options: lang === 'zh' ? [
       { label: "小酌怡情，喝不了太多。", value: 1 },
       { label: "我习惯将白酒灌在保温杯，当白开水喝，酒精令我信服。", value: 2 }
+    ] : [
+      { label: "A little sip is enough for me.", value: 1 },
+      { label: "I keep liquor in my thermos like water. Alcohol makes me a believer.", value: 2 }
     ]
   };
   
@@ -1535,7 +1543,7 @@ function showDrinkGateQ2() {
     <div class="min-h-screen flex flex-col bg-gradient-to-b from-cream to-white">
       <div class="flex-1 flex flex-col items-center justify-center px-4 py-8">
         <div class="w-full max-w-md">
-          <p class="text-sm text-gray-400 mb-2 text-center">🎤 ${'附加题 2/2'}</p>
+          <p class="text-sm text-gray-400 mb-2 text-center">🎤 ${lang === 'zh' ? '附加题 2/2' : 'Bonus Question 2/2'}</p>
           <h2 class="text-base md:text-lg font-medium text-gray-800 mb-6 text-center leading-relaxed">
             ${dq2.text}
           </h2>
@@ -1552,7 +1560,7 @@ function showDrinkGateQ2() {
       <div class="p-4 flex justify-center max-w-md mx-auto w-full">
         <button onclick="confirmDrinkGate2()" id="dg2_submit" disabled
           class="w-full px-6 py-3 rounded-full bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-base">
-          确认提交
+          ${lang === 'zh' ? '确认提交' : 'Submit'}
         </button>
       </div>
     </div>
@@ -1591,9 +1599,9 @@ function calculateResult(isDrunk) {
   if (isDrunk) {
     // DRUNK - special trigger
     result = personalities.find(p => p.code === 'DRUNK');
-    modeKicker = '隐藏人格已激活';
-    badge = '匹配度 100% · 酒精异常因子已接管';
-    sub = '乙醇亲和性过强，系统已直接跳过常规人格审判。';
+    modeKicker = lang === 'zh' ? '隐藏人格已激活' : 'Hidden personality activated';
+    badge = lang === 'zh' ? '匹配度 100% · 酒精异常因子已接管' : '100% Match · Alcohol anomaly factor engaged';
+    sub = lang === 'zh' ? '乙醇亲和性过强，系统已直接跳过常规人格审判。' : 'Ethanol affinity too strong. System bypassed normal personality judgment.';
     isSpecial = true;
     result._matchScore = 100;
   } else {
@@ -1621,17 +1629,17 @@ function calculateResult(isDrunk) {
     // HHHH fallback: if best match < 60%
     if (bestNormal.similarity < 60) {
       result = personalities.find(p => p.code === 'HHHH');
-      modeKicker = '系统强制底底';
-      badge = `标准人格库最高匹配仅 ${bestNormal.similarity}%`;
-      sub = '标准人格库对你的脑回路集体罢工了，于是系统把你强制分配给了 HHHH。';
+      modeKicker = lang === 'zh' ? '系统强制底底' : 'System Fallback';
+      badge = lang === 'zh' ? `标准人格库最高匹配仅 ${bestNormal.similarity}%` : `Max match in standard types: ${bestNormal.similarity}%`;
+      sub = lang === 'zh' ? '标准人格库对你的脑回路集体罢工了，于是系统把你强制分配给了 HHHH。' : 'The standard personality database went on strike for your brain circuits, so the system assigned you HHHH.';
       isSpecial = true;
       secondaryType = bestNormal;
       result._matchScore = bestNormal.similarity;
     } else {
       result = bestNormal;
-      modeKicker = '你的主类型';
-      badge = `匹配度 ${result.similarity}% · 精准命中 ${result.exact}/15 维`;
-      sub = '维度命中度较高，当前结果可视为你的第一人格画像。';
+      modeKicker = lang === 'zh' ? '你的主类型' : 'Your Primary Type';
+      badge = lang === 'zh' ? `匹配度 ${result.similarity}% · 精准命中 ${result.exact}/15 维` : `Match ${result.similarity}% · ${result.exact}/15 dims exact`;
+      sub = lang === 'zh' ? '维度命中度较高，当前结果可视为你的第一人格画像。' : 'High dimension match. This can be considered your primary personality profile.';
     }
   }
   
@@ -2976,7 +2984,7 @@ function showDetailedAnalysis() {
                     const barColor = level === 'H' ? model.color : (level === 'M' ? model.color + '80' : model.color + '30');
                     const levelText = level === 'H' ? (lang === 'zh' ? '高' : 'High') : (level === 'M' ? (lang === 'zh' ? '中' : 'Mid') : (lang === 'zh' ? '低' : 'Low'));
                     return `<div class="flex items-center gap-3">
-                      <div class="w-20 text-xs font-medium text-gray-600 shrink-0">${meta.name.split(' ').slice(1).join(' ')}</div>
+                      <div class="w-20 text-xs font-medium text-gray-600 shrink-0">${lang === 'zh' ? meta.name_zh.split(' ').slice(1).join(' ') : meta.name_en.split(' ').slice(1).join(' ')}</div>
                       <div class="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
                         <div class="h-full rounded-full transition-all" style="width:${level === 'H' ? '90%' : (level === 'M' ? '55%' : '20%')};background:${barColor}"></div>
                       </div>
@@ -3319,11 +3327,11 @@ function showComparison() {
                         <div class="grid grid-cols-2 gap-4 text-center">
                           <div class="p-3 bg-green-50 rounded-lg">
                             <div class="text-2xl font-bold text-green-600">${sameCount}</div>
-                            <div class="text-sm text-green-700">相同维度</div>
+                            <div class="text-sm text-green-700">${lang === 'zh' ? '相同维度' : 'Same Dims'}</div>
                           </div>
                           <div class="p-3 bg-red-50 rounded-lg">
                             <div class="text-2xl font-bold text-red-600">${diffCount}</div>
-                            <div class="text-sm text-red-700">不同维度</div>
+                            <div class="text-sm text-red-700">${lang === 'zh' ? '不同维度' : 'Diff Dims'}</div>
                           </div>
                         </div>
                       `;
@@ -3333,7 +3341,7 @@ function showComparison() {
                 
                 <!-- 维度对比详情 -->
                 <div class="bg-white border border-gray-200 rounded-xl p-5">
-                  <h3 class="font-bold text-gray-800 mb-4">${t('dimension_differences')} (15维度)</h3>
+                  <h3 class="font-bold text-gray-800 mb-4">${t('dimension_differences')} (15${lang === 'zh' ? '维度' : ' Dims'})</h3>
                   
                   <div class="space-y-2 max-h-60 overflow-y-auto pr-2">
                     ${(() => {
