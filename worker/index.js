@@ -549,15 +549,27 @@ async function handleUserDataGet(env, h, url) {
     return json({ error: 'guest_code required' }, h, 400);
   }
   // Aggregate user data from multiple tables
-  const profile = await env.DB.prepare('SELECT guest_code, user_id FROM user_rankings WHERE guest_code = ?').bind(guest_code).first();
-  const testCount = await env.DB.prepare('SELECT COUNT(*) as count FROM user_test_history WHERE guest_code = ?').bind(guest_code).first();
-  const dailyStats = await env.DB.prepare('SELECT total_days, current_streak, last_quiz_date FROM user_daily_stats WHERE guest_code = ?').bind(guest_code).first();
-  const mbtiRow = await env.DB.prepare('SELECT mbti_type FROM users WHERE id = (SELECT user_id FROM user_rankings WHERE guest_code = ?)').bind(guest_code).first();
+  let testCount = 0;
+  try {
+    const tc = await env.DB.prepare('SELECT COUNT(*) as count FROM user_test_history WHERE guest_code = ?').bind(guest_code).first();
+    testCount = tc ? tc.count : 0;
+  } catch(e) {}
 
-  const historyResults = await env.DB.prepare('SELECT personality_code, pattern, match_score, mbti_type, created_at FROM user_test_history WHERE guest_code = ? ORDER BY created_at DESC LIMIT 20').bind(guest_code).all();
+  let dailyStats = null;
+  try {
+    dailyStats = await env.DB.prepare('SELECT total_days, current_streak, last_quiz_date FROM user_daily_stats WHERE guest_code = ?').bind(guest_code).first();
+  } catch(e) {}
+
+  let historyResults = { results: [] };
+  try {
+    historyResults = await env.DB.prepare('SELECT personality_code, pattern, match_score, created_at FROM user_test_history WHERE guest_code = ? ORDER BY created_at DESC LIMIT 20').bind(guest_code).all();
+  } catch(e) {}
 
   // Get all daily answers
-  const dailyAnswersResults = await env.DB.prepare('SELECT quiz_date, answer FROM daily_quiz WHERE guest_code = ? ORDER BY quiz_date DESC').bind(guest_code).all();
+  let dailyAnswersResults = { results: [] };
+  try {
+    dailyAnswersResults = await env.DB.prepare('SELECT quiz_date, answer FROM daily_quiz WHERE guest_code = ? ORDER BY quiz_date DESC').bind(guest_code).all();
+  } catch(e) {}
   const dailyAnswers = {};
   for (const r of dailyAnswersResults.results) {
     dailyAnswers[r.quiz_date] = r.answer;
@@ -566,8 +578,7 @@ async function handleUserDataGet(env, h, url) {
   return json({
     success: true,
     user_data: {
-      test_count: testCount ? testCount.count : 0,
-      mbti_type: mbtiRow ? mbtiRow.mbti_type : null
+      test_count: testCount
     },
     history: historyResults.results || [],
     daily: {
