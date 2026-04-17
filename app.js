@@ -3932,8 +3932,20 @@ function _renderUserProfileContent(userData, personality, mbti, guestCode, nickn
 
 // Delete all data (server + local)
 async function deleteAllData() {
-  const confirmed = confirm(lang === 'zh' ? '确定清除所有数据？包括服务器和本地的测试历史、排行榜、每日一测等，此操作不可恢复。' : 'Delete ALL data? Including server and local test history, rankings, daily quiz, etc. This cannot be undone.');
-  if (!confirmed) return;
+  // 第1次确认
+  const confirmed1 = confirm(lang === 'zh'
+    ? '⚠️ 确定清除所有数据？\n将删除服务器和本地的所有测试数据，此操作不可恢复。'
+    : '⚠️ Delete ALL data?\nThis will remove all server and local test data. This cannot be undone.');
+  if (!confirmed1) return;
+
+  // 第2次确认
+  const confirmed2 = confirm(lang === 'zh'
+    ? '🔴 最后确认：数据将永久删除，无法找回。确定继续？'
+    : '🔴 Final warning: Data will be permanently deleted. Continue?');
+  if (!confirmed2) return;
+
+  let serverDeleted = null;
+  let localDeleted = 0;
 
   // 1. Delete server data
   try {
@@ -3944,9 +3956,8 @@ async function deleteAllData() {
       body: JSON.stringify({ guest_code: guestCode })
     });
     const data = await res.json();
-    if (!data.success) {
-      alert(data.error || (lang === 'zh' ? '服务器数据删除失败' : 'Server data delete failed'));
-      return;
+    if (data.success) {
+      serverDeleted = data.deleted || {};
     }
   } catch (e) {
     // Server unreachable — continue to clear local
@@ -3960,8 +3971,37 @@ async function deleteAllData() {
     if (key.startsWith('sbti_')) sbtiKeys.push(key);
   }
   sbtiKeys.forEach(k => localStorage.removeItem(k));
+  localDeleted = sbtiKeys.length;
 
-  alert(lang === 'zh' ? '所有数据已清除' : 'All data cleared');
+  // 3. Show detailed result
+  let msg = '';
+  if (lang === 'zh') {
+    msg = '✅ 所有数据已清除\n\n';
+    msg += '【服务器数据】\n';
+    if (serverDeleted) {
+      msg += `• 排行榜记录: ${serverDeleted.rankings || 0} 条\n`;
+      msg += `• 每日一测记录: ${serverDeleted.daily_quiz || 0} 条\n`;
+      msg += `• 测试历史: ${serverDeleted.history || 0} 条\n`;
+    } else {
+      msg += '• 无服务器数据或已清除\n';
+    }
+    msg += `\n【本地数据】\n`;
+    msg += `• 已清除 ${localDeleted} 条本地记录`;
+  } else {
+    msg = '✅ All data cleared\n\n';
+    msg += '[Server]\n';
+    if (serverDeleted) {
+      msg += `• Rankings: ${serverDeleted.rankings || 0}\n`;
+      msg += `• Daily quiz: ${serverDeleted.daily_quiz || 0}\n`;
+      msg += `• History: ${serverDeleted.history || 0}\n`;
+    } else {
+      msg += '• No server data or already cleared\n';
+    }
+    msg += `\n[Local]\n`;
+    msg += `• ${localDeleted} local record(s) removed`;
+  }
+
+  alert(msg);
   renderLanding();
 }
 
