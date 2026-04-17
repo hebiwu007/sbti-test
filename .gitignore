@@ -1,1 +1,6 @@
 node_modules/\npackage-lock.json\npackage.json\ntailwind.config.js\nsrc/
+.env
+deploy.sh
+direct-upload.sh
+upload-direct.sh
+wrangler.toml.backup

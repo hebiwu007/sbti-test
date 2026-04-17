@@ -66,6 +66,12 @@ export default {
         return await handleUserProfile(request, env, corsHeaders);
       if (path === '/api/auth/link-guest' && request.method === 'POST')
         return await handleLinkGuest(request, env, corsHeaders);
+      if (path === '/api/user/data' && request.method === 'GET')
+        return await handleUserDataGet(env, corsHeaders, url);
+      if (path === '/api/user/data' && request.method === 'PUT')
+        return await handleUserDataPut(request, env, corsHeaders);
+      if (path === '/api/daily/my' && request.method === 'GET')
+        return await handleDailyMy(env, corsHeaders, url);
 
       return new Response(JSON.stringify({ error: 'Not found' }), {
         status: 404,
@@ -535,6 +541,76 @@ async function handleUserProfile(request, env, h) {
   }
   await env.DB.prepare('UPDATE users SET nickname = ?, mbti_type = ?, avatar = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').bind(nickname || null, mbti_type || null, avatar || null, user_id).run();
   return json({ success: true }, h);
+}
+
+async function handleUserDataGet(env, h, url) {
+  const guest_code = url.searchParams.get('guest_code');
+  if (!guest_code) {
+    return json({ error: 'guest_code required' }, h, 400);
+  }
+  // Aggregate user data from multiple tables
+  const profile = await env.DB.prepare('SELECT guest_code, user_id FROM user_rankings WHERE guest_code = ?').bind(guest_code).first();
+  const testCount = await env.DB.prepare('SELECT COUNT(*) as count FROM user_test_history WHERE guest_code = ?').bind(guest_code).first();
+  const dailyStats = await env.DB.prepare('SELECT total_days, current_streak, last_quiz_date FROM user_daily_stats WHERE guest_code = ?').bind(guest_code).first();
+  const mbtiRow = await env.DB.prepare('SELECT mbti_type FROM users WHERE id = (SELECT user_id FROM user_rankings WHERE guest_code = ?)').bind(guest_code).first();
+
+  const historyResults = await env.DB.prepare('SELECT personality_code, pattern, match_score, mbti_type, created_at FROM user_test_history WHERE guest_code = ? ORDER BY created_at DESC LIMIT 20').bind(guest_code).all();
+
+  // Get all daily answers
+  const dailyAnswersResults = await env.DB.prepare('SELECT quiz_date, answer FROM daily_quiz WHERE guest_code = ? ORDER BY quiz_date DESC').bind(guest_code).all();
+  const dailyAnswers = {};
+  for (const r of dailyAnswersResults.results) {
+    dailyAnswers[r.quiz_date] = r.answer;
+  }
+
+  return json({
+    success: true,
+    user_data: {
+      test_count: testCount ? testCount.count : 0,
+      mbti_type: mbtiRow ? mbtiRow.mbti_type : null
+    },
+    history: historyResults.results || [],
+    daily: {
+      answers: dailyAnswers,
+      streak: dailyStats ? dailyStats.current_streak : 0,
+      last_date: dailyStats ? dailyStats.last_quiz_date : null,
+      total_days: dailyStats ? dailyStats.total_days : 0
+    }
+  }, h);
+}
+
+async function handleUserDataPut(request, env, h) {
+  const body = await request.json();
+  const { guest_code, mbti_type } = body;
+  if (!guest_code) {
+    return json({ error: 'guest_code required' }, h, 400);
+  }
+  // Update mbti_type in users table if linked
+  const ranking = await env.DB.prepare('SELECT user_id FROM user_rankings WHERE guest_code = ?').bind(guest_code).first();
+  if (ranking && ranking.user_id && mbti_type) {
+    await env.DB.prepare('UPDATE users SET mbti_type = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').bind(mbti_type, ranking.user_id).run();
+  }
+  return json({ success: true }, h);
+}
+
+async function handleDailyMy(env, h, url) {
+  const guest_code = url.searchParams.get('guest_code');
+  if (!guest_code) {
+    return json({ error: 'guest_code required' }, h, 400);
+  }
+  const dailyStats = await env.DB.prepare('SELECT total_days, current_streak, last_quiz_date FROM user_daily_stats WHERE guest_code = ?').bind(guest_code).first();
+  const dailyAnswersResults = await env.DB.prepare('SELECT quiz_date, answer FROM daily_quiz WHERE guest_code = ? ORDER BY quiz_date DESC').bind(guest_code).all();
+  const answers = {};
+  for (const r of dailyAnswersResults.results) {
+    answers[r.quiz_date] = r.answer;
+  }
+  return json({
+    success: true,
+    answers: answers,
+    streak: dailyStats ? dailyStats.current_streak : 0,
+    last_date: dailyStats ? dailyStats.last_quiz_date : null,
+    total_days: dailyStats ? dailyStats.total_days : 0
+  }, h);
 }
 
 async function handleLinkGuest(request, env, h) {

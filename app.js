@@ -957,12 +957,16 @@ async function showDailyQuiz() {
         ${todayAnswer ? `
           <!-- 已参与 -->
           <div class="mb-6">
+            <!-- 显示今日题目 -->
+            <div class="bg-gray-50 rounded-xl p-4 mb-4">
+              <p class="text-gray-800 font-medium">${lang === 'en' && dailyQuestion.text_en ? dailyQuestion.text_en : dailyQuestion.text}</p>
+            </div>
             <div class="bg-green-50 border border-green-200 rounded-xl p-5 mb-4">
               <div class="flex items-center">
                 <div class="text-green-500 text-2xl mr-3">✓</div>
                 <div>
                   <h3 class="font-bold text-green-700">${t('already_answered')}</h3>
-                  <p class="text-green-600 text-sm">${lang === 'zh' ? '你的答案' : 'Your answer'}: <span class="font-bold">${(() => { const opts = lang === 'en' && dailyQuestion.options_en ? dailyQuestion.options_en : dailyQuestion.options; const ansVal = Number(todayAnswer) || todayAnswer; const ansIdx = opts.findIndex(o => o.value === ansVal); return (ansIdx >= 0 ? 'ABC'[ansIdx] : todayAnswer) + '. ' + (opts.find(o => o.value === ansVal)?.label || ''); })()}</span></p>
+                  <p class="text-green-600 text-sm">${lang === 'zh' ? '你的答案' : 'Your answer'}: <span class="font-bold">${(() => { const opts = lang === 'en' && dailyQuestion.options_en ? dailyQuestion.options_en : dailyQuestion.options; const ansVal = Number(todayAnswer) || todayAnswer; const ansIdx = opts.findIndex(o => Number(o.value) === Number(ansVal)); return (ansIdx >= 0 ? 'ABC'[ansIdx] : String(todayAnswer)) + '. ' + (opts.find(o => Number(o.value) === Number(ansVal))?.label || ''); })()}</span></p>
                 </div>
               </div>
             </div>
@@ -1015,10 +1019,10 @@ async function showDailyQuiz() {
               <div class="space-y-2">
                 ${stats.distribution.map(d => {
                   const opts = lang === 'en' && dailyQuestion.options_en ? dailyQuestion.options_en : dailyQuestion.options;
-                  const opt = opts.find(o => o.value === d.option);
-                  const optText = opt ? opt.label : d.option;
-                  const optIdx = opts.findIndex(o => o.value === d.option);
-                  const optLetter = 'ABC'[optIdx] || String(d.option);
+                  const opt = opts.find(o => Number(o.value) === Number(d.option));
+                  const optText = opt ? opt.label : String(d.option);
+                  const optIdx = opt ? opts.indexOf(opt) : -1;
+                  const optLetter = optIdx >= 0 ? 'ABC'[optIdx] : String(d.option);
                   const optColor = optIdx === 0 ? 'bg-blue-500' : optIdx === 1 ? 'bg-green-500' : 'bg-purple-500';
                   return `
                   <div class="flex items-center space-x-3">
