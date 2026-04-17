@@ -3206,8 +3206,9 @@ function findMatchedPersonality() {
 
 // Show personality comparison
 function showComparison() {
-  const personality = currentPersonality || findMatchedPersonality();
-  if (!personality) {
+  // Only allow comparison if user has actually completed a test
+  const hasTestResult = currentPersonality || (JSON.parse(localStorage.getItem('sbti_history') || '[]').length > 0);
+  if (!hasTestResult) {
     // No test result yet — must take test first
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50';
@@ -3223,6 +3224,7 @@ function showComparison() {
     return;
   }
   
+  const personality = currentPersonality || findMatchedPersonality();
   let friendCode = '';
   
   const modal = document.createElement('div');
