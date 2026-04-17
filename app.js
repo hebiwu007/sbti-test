@@ -3246,7 +3246,7 @@ function showComparison() {
                   type="text" 
                   value="${friendCode}"
                   class="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
-                  placeholder="例如: PEACE, BOSS, SHIT"
+                  placeholder="例如: CTRL, BOSS, SHIT"
                   maxlength="5"
                 />
                 <button 
@@ -3406,8 +3406,10 @@ function showComparison() {
         input.addEventListener('input', (e) => {
           e.target.value = e.target.value.toUpperCase();
           friendCode = e.target.value;
-          renderModal();
+          // Don't re-render modal on every keystroke — just update the variable
         });
+        // Focus the input after modal renders
+        input.focus();
       }
       if (btn) {
         btn.addEventListener('click', () => {
@@ -3415,6 +3417,9 @@ function showComparison() {
             const fp = personalities.find(p => p.code === friendCode.toUpperCase());
             if (!fp || fp.code === 'DRUNK') {
               alert(lang === 'zh' ? '请输入有效的SBTI代码（27种人格之一）' : 'Please enter a valid SBTI code (one of 27 personalities)');
+            } else {
+              // Valid code — re-render to show comparison result
+              renderModal();
             }
           }
         });
