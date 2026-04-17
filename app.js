@@ -1,5 +1,5 @@
 // app.js - SBTI Personality Test Application
-// Cache-bust: 2026-04-17T20:03:00+08:00
+// Cache-bust: 2026-04-17T21:10:00+08:00
 
 // State
 let questions = [];
@@ -3204,19 +3204,16 @@ function findMatchedPersonality() {
 function showComparison() {
   const personality = currentPersonality || findMatchedPersonality();
   if (!personality) {
-    // No test result yet — prompt user to take test or enter code manually
+    // No test result yet — must take test first
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50';
     modal.innerHTML = `<div class="bg-white rounded-2xl max-w-md w-full p-6 text-center relative">
       <button onclick="this.closest('.fixed').remove()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl">✕</button>
-      <div class="text-4xl mb-4">👥</div>
-      <h2 class="text-xl font-bold text-gray-800 mb-2">${lang === 'zh' ? '好友对比' : 'Compare with Friends'}</h2>
-      <p class="text-gray-500 mb-4">${lang === 'zh' ? '输入朋友的SBTI人格代码进行对比，或先测出自己的结果' : 'Enter a friend\'s SBTI code to compare, or take the test first'}</p>
-      <div class="mb-4">
-        <input id="compareCodeDirect" type="text" maxlength="6" placeholder="${lang === 'zh' ? '输入SBTI代码(如CTRL)' : 'Enter SBTI code (e.g. CTRL)'}" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none text-lg text-center uppercase">
-      </div>
-      <button onclick="doDirectCompare()" class="w-full py-3 bg-blue-500 text-white rounded-full font-medium mb-3">${lang === 'zh' ? '查看对比' : 'Compare'}</button>
-      <button onclick="this.closest('.fixed').remove();startQuiz()" class="w-full py-3 border-2 border-purple-400 text-purple-600 rounded-full font-medium">${lang === 'zh' ? '先测一下' : 'Take test first'}</button>
+      <div class="text-5xl mb-4">🔍</div>
+      <h2 class="text-xl font-bold text-gray-800 mb-2">${lang === 'zh' ? '你还没有测试结果' : 'No test result yet'}</h2>
+      <p class="text-gray-500 mb-6">${lang === 'zh' ? '需要先完成测试，才能进行人格对比。\n测出你的人格后，就可以和朋友对比了！' : 'You need to complete the test first before comparing.\nOnce you know your personality, you can compare with friends!'}</p>
+      <button onclick="this.closest('.fixed').remove();startQuiz()" class="w-full py-3 bg-purple-500 text-white rounded-full font-medium hover:bg-purple-600 transition">${lang === 'zh' ? '🚀 立即测试' : '🚀 Take the test now'}</button>
+      <button onclick="this.closest('.fixed').remove()" class="w-full py-3 mt-3 border-2 border-gray-300 text-gray-500 rounded-full font-medium hover:bg-gray-50 transition">${lang === 'zh' ? '返回' : 'Go back'}</button>
     </div>`;
     document.body.appendChild(modal);
     return;
@@ -3932,10 +3929,34 @@ function _renderUserProfileContent(userData, personality, mbti, guestCode, nickn
 
 // Delete all data (server + local)
 async function deleteAllData() {
-  // 第1次确认 - 列出将删除的数据类型
+  // 第1次确认 - 列出将删除的具体数据
+  const guestCode = getGuestCode();
+  let serverInfo = '';
+  try {
+    const res = await fetch(`${API_BASE}/api/data?guest_code=${encodeURIComponent(guestCode)}`, { method: 'GET' });
+    const data = await res.json();
+    if (data.success && data.summary) {
+      const s = data.summary;
+      if (lang === 'zh') {
+        serverInfo = `\n【服务器数据】\n• 排行榜记录: ${s.rankings || 0} 条\n• 每日一测记录: ${s.daily_quiz || 0} 条\n• 测试历史: ${s.history || 0} 条`;
+      } else {
+        serverInfo = `\n[Server Data]\n• Rankings: ${s.rankings || 0}\n• Daily quiz records: ${s.daily_quiz || 0}\n• Test history: ${s.history || 0}`;
+      }
+    }
+  } catch (e) {}
+
+  // 统计本地数据
+  let localKeys = 0;
+  for (let i = 0; i < localStorage.length; i++) {
+    if (localStorage.key(i).startsWith('sbti_')) localKeys++;
+  }
+  let localInfo = lang === 'zh'
+    ? `\n【本地数据】\n• 测试结果\n• 个人设置\n• 语言偏好\n• 共 ${localKeys} 条本地记录`
+    : `\n[Local Data]\n• Test results\n• Personal settings\n• Language preference\n• ${localKeys} local records`;
+
   const confirmed1 = confirm(lang === 'zh'
-    ? '⚠️ 确定清除所有数据？将删除以下内容：\n\n【服务器数据】\n• 排行榜记录\n• 每日一测记录\n• 测试历史\n\n【本地数据】\n• 测试结果\n• 个人设置\n• 语言偏好\n\n此操作不可恢复。'
-    : '⚠️ Delete ALL data? The following will be removed:\n\n[Server]\n• Rankings\n• Daily quiz records\n• Test history\n\n[Local]\n• Test results\n• Personal settings\n• Language preference\n\nThis cannot be undone.');
+    ? `⚠️ 确定清除以下数据？${serverInfo}${localInfo}\n\n此操作不可恢复。`
+    : `⚠️ Delete the following data?${serverInfo}${localInfo}\n\nThis cannot be undone.`);
   if (!confirmed1) return;
 
   // 第2次确认

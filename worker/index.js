@@ -34,10 +34,14 @@ export default {
         return await handleStats(env, corsHeaders);
       if (path === '/api/count' && request.method === 'GET')
         return await handleCount(env, corsHeaders);
+      if (path === '/api/history' && request.method === 'POST')
+        return await handleHistorySave(request, env, corsHeaders);
       if (path === '/api/daily/submit' && request.method === 'POST')
         return await handleDailySubmit(request, env, corsHeaders);
       if (path === '/api/daily/stats' && request.method === 'GET')
         return await handleDailyStats(request, env, corsHeaders);
+      if (path === '/api/data' && request.method === 'GET')
+        return await handleDataSummary(env, corsHeaders, url);
       if (path === '/api/data' && request.method === 'DELETE')
         return await handleDataDelete(request, env, corsHeaders);
       if (path === '/api/user/history' && request.method === 'GET')
@@ -307,6 +311,18 @@ async function handleCount(env, h) {
   return json({ total: result.total, today: result.today, ranked: result.ranked }, h);
 }
 
+async function handleHistorySave(request, env, h) {
+  const body = await request.json();
+  const { guest_code, personality_code, pattern, match_score, mbti_type, answers } = body;
+  if (!personality_code) return json({ error: 'personality_code required' }, h, 400);
+  const timezone = body.timezone || null;
+  // Save to user_test_history for per-user records
+  const result = await env.DB.prepare(
+    'INSERT INTO user_test_history (guest_code, personality_code, match_score, pattern, test_date) VALUES (?, ?, ?, ?, datetime("now"))'
+  ).bind(guest_code || null, personality_code, match_score || null, pattern || null).run();
+  return json({ success: true, id: result.meta.last_row_id }, h);
+}
+
 async function handleDailySubmit(request, env, h) {
   const body = await request.json();
   const { quiz_date, answer, guest_code } = body;
@@ -324,6 +340,25 @@ async function handleDailyStats(request, env, h) {
   const result = await env.DB.prepare(`SELECT answer, COUNT(*) as count, (SELECT COUNT(*) FROM daily_quiz WHERE quiz_date = ?) as total FROM daily_quiz WHERE quiz_date = ? GROUP BY answer`).bind(date, date).all();
   const total = result.results.length > 0 ? result.results[0].total : 0;
   return json({ date, total: total, distribution: result.results }, h);
+}
+
+async function handleDataSummary(env, h, url) {
+  const guest_code = url.searchParams.get('guest_code');
+  if (!guest_code || !guest_code.startsWith('SBTI-')) {
+    return json({ error: 'Valid guest_code required (SBTI-XXXX)' }, h, 400);
+  }
+  let summary = { rankings: 0, daily_quiz: 0, history: 0, progress: 0, daily_stats: 0 };
+  const ranking = await env.DB.prepare('SELECT COUNT(*) as cnt FROM rankings WHERE guest_code = ?').bind(guest_code).first();
+  summary.rankings = ranking?.cnt || 0;
+  const dq = await env.DB.prepare('SELECT COUNT(*) as cnt FROM daily_quiz WHERE guest_code = ?').bind(guest_code).first();
+  summary.daily_quiz = dq?.cnt || 0;
+  const hist = await env.DB.prepare('SELECT COUNT(*) as cnt FROM user_test_history WHERE guest_code = ?').bind(guest_code).first();
+  summary.history = hist?.cnt || 0;
+  const prog = await env.DB.prepare('SELECT COUNT(*) as cnt FROM user_progress WHERE guest_code = ?').bind(guest_code).first();
+  summary.progress = prog?.cnt || 0;
+  const ds = await env.DB.prepare('SELECT COUNT(*) as cnt FROM user_daily_stats WHERE guest_code = ?').bind(guest_code).first();
+  summary.daily_stats = ds?.cnt || 0;
+  return json({ success: true, summary }, h);
 }
 
 async function handleDataDelete(request, env, h) {
