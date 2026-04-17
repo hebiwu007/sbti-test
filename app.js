@@ -379,10 +379,17 @@ function checkSavedProgress() {
       if (data.answers && Object.keys(data.answers).length > 0) {
         answers = data.answers;
         currentQuestion = data.currentQuestion || 0;
+        // 恢复题目顺序，如果没有则重新生成
+        if (data.questionOrder && data.questionOrder.length > 0) {
+          questionOrder = data.questionOrder;
+        } else {
+          shuffleQuestions();
+        }
         // 清理无效进度：已完成全部题目则重置
         if (currentQuestion >= questions.length || currentQuestion < 0) {
           currentQuestion = 0;
           answers = {};
+          questionOrder = [];
           localStorage.removeItem('sbti_progress');
         }
       }
@@ -397,6 +404,7 @@ function saveProgress() {
   localStorage.setItem('sbti_progress', JSON.stringify({
     answers,
     currentQuestion,
+    questionOrder,
     timestamp: Date.now()
   }));
 }
@@ -422,6 +430,7 @@ function getUserButtonHTML() {
 // Clear progress
 function clearProgress() {
   localStorage.removeItem('sbti_progress');
+  questionOrder = [];
 }
 
 // Shuffle questions
