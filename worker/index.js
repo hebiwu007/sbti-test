@@ -507,7 +507,10 @@ async function handleRegister(request, env, h) {
   }
   const password_hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password)).then(buf => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join(''));
   const result = await env.DB.prepare('INSERT INTO users (username, password_hash, nickname, mbti_type) VALUES (?, ?, ?, ?)').bind(username, password_hash, nickname || null, mbti_type || null).run();
-  return json({ success: true, user_id: result.meta.last_row_id }, h);
+  const userId = result.meta.last_row_id;
+  const user = { id: userId, username, nickname: nickname || username, mbti_type: mbti_type || null, avatar: null };
+  const token = btoa(JSON.stringify({ id: userId, username, ts: Date.now() }));
+  return json({ success: true, user_id: userId, user, token }, h);
 }
 
 async function handleLogin(request, env, h) {
@@ -540,9 +543,17 @@ async function handleLinkGuest(request, env, h) {
   if (!user_id || !guest_code) {
     return json({ error: 'user_id and guest_code required' }, h, 400);
   }
-  await env.DB.prepare('INSERT OR REPLACE INTO user_rankings (user_id, guest_code) VALUES (?, ?)').bind(user_id, guest_code).run();
-  await env.DB.prepare('UPDATE user_test_history SET user_id = ? WHERE guest_code = ?').bind(user_id, guest_code).run();
-  await env.DB.prepare('UPDATE user_progress SET user_id = ? WHERE guest_code = ?').bind(user_id, guest_code).run();
-  await env.DB.prepare('UPDATE user_daily_stats SET user_id = ? WHERE guest_code = ?').bind(user_id, guest_code).run();
+  try {
+    await env.DB.prepare('INSERT OR REPLACE INTO user_rankings (user_id, guest_code) VALUES (?, ?)').bind(user_id, guest_code).run();
+  } catch(e) { console.error('link-guest user_rankings:', e.message); }
+  try {
+    await env.DB.prepare('UPDATE user_test_history SET user_id = ? WHERE guest_code = ?').bind(user_id, guest_code).run();
+  } catch(e) { console.error('link-guest user_test_history:', e.message); }
+  try {
+    await env.DB.prepare('UPDATE user_progress SET user_id = ? WHERE guest_code = ?').bind(user_id, guest_code).run();
+  } catch(e) { console.error('link-guest user_progress:', e.message); }
+  try {
+    await env.DB.prepare('UPDATE user_daily_stats SET user_id = ? WHERE guest_code = ?').bind(user_id, guest_code).run();
+  } catch(e) { console.error('link-guest user_daily_stats:', e.message); }
   return json({ success: true, message: 'Guest code linked to user' }, h);
 }
