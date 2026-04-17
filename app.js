@@ -3935,8 +3935,8 @@ function _renderUserProfileContent(userData, personality, mbti, guestCode, nickn
 async function deleteAllData() {
   // 第1次确认 - 明确列出将删除的数据类型
   const confirmed1 = confirm(lang === 'zh'
-    ? '⚠️ 确定删除所有数据？\n\n将删除：排行榜、每日一测、测试历史及本地数据。\n\n此操作不可恢复。'
-    : '⚠️ Delete ALL data?\n\nThis will remove: Rankings, Daily quiz, Test history & Local data.\n\nThis cannot be undone.');
+    ? `⚠️ 确定删除所有数据？\n\n将删除：排行榜、每日一测、测试历史及本地数据。\n\n此操作不可恢复。`
+    : `⚠️ Delete ALL data?\n\nThis will remove: Rankings, Daily quiz, Test history & Local data.\n\nThis cannot be undone.`);
   if (!confirmed1) return;
 
   // 第2次确认
