@@ -3197,6 +3197,11 @@ function showComparison() {
           </div>
           
           <div class="space-y-6">
+            <!-- 关闭按钮 -->
+            <div class="flex justify-end">
+              <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+            </div>
+            
             <!-- 输入框 -->
             <div>
               <label class="block text-gray-700 mb-2">${t('enter_friend_code')}</label>
@@ -4251,3 +4256,10 @@ function doLogout() {
   showToast(lang === 'zh' ? '已退出' : 'Logged out');
   showUserProfile();
 }
+
+// Initialize app
+loadData().then(() => {
+  initApp();
+}).catch(err => {
+  console.error('Failed to initialize app:', err);
+});
