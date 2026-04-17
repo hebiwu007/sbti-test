@@ -1,45 +1,31 @@
-// SBTI Service Worker v3 - Network-first for JS/HTML
-const CACHE_NAME = 'sbti-v6';
-const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/app.js',
-  '/i18n.js',
-  '/personalities.json',
-  '/questions.json',
-  '/privacy.html',
-  '/manifest.json',
-  '/robots.txt',
-  '/sitemap.xml'
-];
+// SBTI Service Worker - No-cache version
+// This SW only provides offline fallback, does NOT cache any static assets
 
-// Install: cache static assets
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
-    })
-  );
+self.addEventListener('install', () => {
+  // Clear all existing caches on install
+  caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
   self.skipWaiting();
 });
 
-// Activate: clean old caches
 self.addEventListener('activate', (event) => {
+  // Clear all caches on activate
   event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
-      );
-    })
+    caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-// Fetch: cache-first for static, network-first for API
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'FORCE_UPDATE') {
+    caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))))
+      .then(() => self.skipWaiting());
+  }
+});
+
+// Fetch: always network, no caching
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // API calls: network only (no cache)
+  // API calls: network only
   if (url.hostname === 'api.sbti.solutions') {
     event.respondWith(
       fetch(event.request)
@@ -48,35 +34,14 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // External resources (fonts, CDNs): network only, don't intercept
-  if (url.origin !== self.location.origin) {
-    return; // Don't intercept - let browser handle directly
-  }
+  // External: don't intercept
+  if (url.origin !== self.location.origin) return;
 
-  // Skip non-GET requests
-  if (event.request.method !== 'GET') {
-    return;
-  }
+  // Non-GET: don't intercept
+  if (event.request.method !== 'GET') return;
 
-  // Same-origin static assets: network first, fallback to cache
+  // All same-origin requests: network only, clear any old cache
   event.respondWith(
-    fetch(event.request).then((response) => {
-      // Cache successful responses
-      if (response.ok) {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-      }
-      return response;
-    }).catch(() => {
-      // Network failed, try cache
-      return caches.match(event.request).then((cached) => {
-        if (cached) return cached;
-        // Offline fallback
-        if (event.request.mode === 'navigate') {
-          return caches.match('/index.html');
-        }
-        return new Response('Offline', { status: 503 });
-      });
-    })
+    fetch(event.request).catch(() => caches.match(event.request).then(c => c || new Response('Offline', { status: 503 })))
   );
 });

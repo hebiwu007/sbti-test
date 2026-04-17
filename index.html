@@ -95,8 +95,8 @@
     </div>
   </div>
 
-  <script src="i18n.js?v=20260417e"></script>
-  <script src="app.js?v=20260417e"></script>
+  <script src="i18n.js?v=20260417f"></script>
+  <script src="app.js?v=20260417f"></script>
   <script>
     // Privacy modal functions
     function showPrivacyModal() {
@@ -143,20 +143,20 @@
     }
   </script>
   
-  <!-- Service Worker: unregister old, then register fresh -->
+  <!-- Service Worker: unregister ALL old, register minimal no-cache SW -->
   <script>
     if ('serviceWorker' in navigator) {
-      // Force unregister all existing SW first
       navigator.serviceWorker.getRegistrations().then(regs => {
+        // Unregister ALL existing service workers
         return Promise.all(regs.map(r => r.unregister()));
       }).then(() => {
-        // Register with cache-bust to ensure latest version
-        navigator.serviceWorker.register('/sw.js?v=20260417c').catch(() => {});
-      }).then(() => {
-        // Clear all caches
+        // Clear ALL caches
         if ('caches' in window) {
-          caches.keys().then(names => names.forEach(n => caches.delete(n)));
+          return caches.keys().then(names => Promise.all(names.map(n => caches.delete(n))));
         }
+      }).then(() => {
+        // Register new no-cache SW
+        navigator.serviceWorker.register('/sw.js?t=' + Date.now()).catch(() => {});
       });
     }
   </script>

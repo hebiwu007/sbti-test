@@ -1,5 +1,5 @@
 // app.js - SBTI Personality Test Application
-// Cache-bust: 2026-04-17T21:22:00+08:00
+// Cache-bust: 2026-04-17T22:00:00+08:00
 
 // State
 let questions = [];
@@ -449,6 +449,10 @@ function shuffleQuestions() {
 }
 
 function initApp() {
+  // Force SW update on every page load
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({ type: 'FORCE_UPDATE' });
+  }
   shuffleQuestions();
   // Check for share ref parameter
   const params = new URLSearchParams(window.location.search);
