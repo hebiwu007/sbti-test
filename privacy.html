@@ -107,7 +107,7 @@
       // Also delete server-side data if guest_code exists
       if (guestCode && guestCode.startsWith('SBTI-')) {
         try {
-          await fetch(`https://sbti-api.hebiwu007.workers.dev/api/data?guest_code=${encodeURIComponent(guestCode)}`, {
+          await fetch(`https://api.sbti.solutions/api/data?guest_code=${encodeURIComponent(guestCode)}`, {
             method: 'DELETE'
           });
         } catch(e) {
