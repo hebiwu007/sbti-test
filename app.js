@@ -3916,7 +3916,7 @@ function _renderUserProfileContent(userData, personality, mbti, guestCode, nickn
           <h3 class="font-bold text-gray-800 mb-3">${lang === 'zh' ? '数据管理' : 'Data Management'}</h3>
           <div class="space-y-3">
             <button onclick="deleteAllData()" class="w-full py-3 border-2 border-red-300 text-red-500 rounded-xl font-medium hover:bg-red-50 transition">
-              ${lang === 'zh' ? '🗑 清除所有数据' : '🗑 Delete all data'}
+              ${lang === 'zh' ? '🗑 删除所有数据（排行榜、每日一测、测试历史及本地数据）' : '🗑 Delete all data (Rankings, Daily quiz, Test history & Local data)'}
             </button>
             <button onclick="exportMyData()" class="w-full py-3 border-2 border-gray-300 text-gray-600 rounded-xl font-medium hover:bg-gray-50 transition">
               ${lang === 'zh' ? '📦 导出我的数据' : '📦 Export my data'}
