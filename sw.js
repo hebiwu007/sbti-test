@@ -40,7 +40,7 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
   // API calls: network only (no cache)
-  if (url.hostname === 'sbti-api.hebiwu007.workers.dev') {
+  if (url.hostname === 'api.sbti.solutions') {
     event.respondWith(
       fetch(event.request)
         .catch(() => new Response('{}', { headers: { 'Content-Type': 'application/json' }, status: 503 }))
