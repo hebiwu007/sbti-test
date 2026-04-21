@@ -3102,74 +3102,539 @@ function showDetailedAnalysis() {
 }
 
 // Get personality details (hardcoded for now)
+// Get personality details (hardcoded for now)
 function getPersonalityDetails(code) {
-  // 默认数据模板
-  const defaultDetails = {
-    careers: [
-      lang === 'zh' ? '项目经理' : 'Project Manager',
-      lang === 'zh' ? '团队领导' : 'Team Leader', 
-      lang === 'zh' ? '创业者' : 'Entrepreneur',
-      lang === 'zh' ? '咨询顾问' : 'Consultant',
-      lang === 'zh' ? '教练/导师' : 'Coach/Mentor'
-    ],
-    celebrities: [
-      { emoji: '👑', name: lang === 'zh' ? '史蒂夫·乔布斯' : 'Steve Jobs', description: lang === 'zh' ? '苹果创始人，产品愿景家' : 'Apple founder, product visionary' },
-      { emoji: '🦅', name: lang === 'zh' ? '埃隆·马斯克' : 'Elon Musk', description: lang === 'zh' ? '特斯拉CEO，创新冒险家' : 'Tesla CEO, innovation adventurer' },
-      { emoji: '🛡️', name: lang === 'zh' ? '安格拉·默克尔' : 'Angela Merkel', description: lang === 'zh' ? '德国前总理，稳健领导者' : 'Former German Chancellor, steady leader' }
-    ],
-    compatibility: {
-      good: ['PEACE', 'CARE', 'WORK'],
-      challenge: ['SHIT', 'DRAM', 'WILD']
+  // 为每个人格类型定义独特的详细数据
+  const detailsMap = {
+    'CTRL': {
+      careers: {
+        zh: ['项目经理', '团队领导', '创业家', '运营总监', '战略顾问'],
+        en: ['Project Manager', 'Team Leader', 'Entrepreneur', 'Operations Director', 'Strategic Consultant']
+      },
+      celebrities: [
+        { emoji: '👑', name_zh: '史蒂夫·乔布斯', name_en: 'Steve Jobs', desc_zh: '苹果创始人，完美主义者', desc_en: 'Apple founder, perfectionist' },
+        { emoji: '🦅', name_zh: '埃隆·马斯克', name_en: 'Elon Musk', desc_zh: '特斯拉CEO，创新冒险家', desc_en: 'Tesla CEO, innovation adventurer' },
+        { emoji: '🛡️', name_zh: '安格拉·默克尔', name_en: 'Angela Merkel', desc_zh: '德国前总理，稳健领导者', desc_en: 'Former German Chancellor, steady leader' }
+      ],
+      compatibility: {
+        good: ['PEACE', 'CARE', 'WORK'],
+        challenge: ['SHIT', 'DRAM', 'WILD']
+      },
+      growthTips: {
+        zh: ['学会适度放手，信任他人', '关注过程而不仅仅是结果', '培养倾听能力，避免独断', '接受自己的不完美', '平衡工作与生活'],
+        en: ['Learn to let go moderately, trust others', 'Focus on process, not just results', 'Develop listening skills, avoid arbitrariness', 'Accept your imperfections', 'Balance work and life']
+      }
     },
-    growthTips: [
-      lang === 'zh' ? '学会适度放手，信任他人' : 'Learn to let go moderately, trust others',
-      lang === 'zh' ? '关注过程而不仅仅是结果' : 'Focus on process, not just results',
-      lang === 'zh' ? '培养倾听能力，避免独断' : 'Develop listening skills, avoid arbitrariness',
-      lang === 'zh' ? '接受自己的不完美' : 'Accept your imperfections',
-      lang === 'zh' ? '平衡工作与生活' : 'Balance work and life'
-    ]
+    'ATM-er': {
+      careers: {
+        zh: ['财务顾问', '银行经理', '慈善家', '社会工作者', '人力资源'],
+        en: ['Financial Advisor', 'Bank Manager', 'Philanthropist', 'Social Worker', 'Human Resources']
+      },
+      celebrities: [
+        { emoji: '💰', name_zh: '沃伦·巴菲特', name_en: 'Warren Buffett', desc_zh: '投资大师，慈善家', desc_en: 'Investment guru, philanthropist' },
+        { emoji: '🎁', name_zh: '比尔·盖茨', name_en: 'Bill Gates', desc_zh: '微软创始人，慈善家', desc_en: 'Microsoft founder, philanthropist' },
+        { emoji: '💝', name_zh: '奥普拉·温弗瑞', name_en: 'Oprah Winfrey', desc_zh: '脱口秀主持人，慈善家', desc_en: 'Talk show host, philanthropist' }
+      ],
+      compatibility: {
+        good: ['MUM', 'CARE', 'PEACE'],
+        challenge: ['SHIT', 'FAKE', 'WILD']
+      },
+      growthTips: {
+        zh: ['学会说"不"，保护自己的时间', '不要过度牺牲自己', '建立健康的边界', '学会接受他人的帮助', '关注自己的需求'],
+        en: ['Learn to say "no", protect your time', "Don't over-sacrifice yourself", 'Establish healthy boundaries', 'Learn to accept help from others', 'Focus on your own needs']
+      }
+    },
+    'Dior-s': {
+      careers: {
+        zh: ['自由职业者', '艺术家', '作家', '哲学家', '游戏设计师'],
+        en: ['Freelancer', 'Artist', 'Writer', 'Philosopher', 'Game Designer']
+      },
+      celebrities: [
+        { emoji: '🛋️', name_zh: '第欧根尼', name_en: 'Diogenes', desc_zh: '古希腊哲学家，犬儒学派', desc_en: 'Ancient Greek philosopher, Cynic school' },
+        { emoji: '🎨', name_zh: '鲍勃·迪伦', name_en: 'Bob Dylan', desc_zh: '音乐人，诺贝尔文学奖得主', desc_en: 'Musician, Nobel laureate in literature' },
+        { emoji: '📚', name_zh: '村上春树', name_en: 'Haruki Murakami', desc_zh: '日本作家，超现实主义', desc_en: 'Japanese writer, surrealist' }
+      ],
+      compatibility: {
+        good: ['OJBK', 'MALO', 'ZZZZ'],
+        challenge: ['BOSS', 'CTRL', 'GOGO']
+      },
+      growthTips: {
+        zh: ['找到真正热爱的事情', '设定小目标逐步前进', '不要过度逃避现实', '培养自律习惯', '接受适度的挑战'],
+        en: ['Find what you truly love', 'Set small goals and progress gradually', "Don't over-escape reality", 'Develop self-discipline habits', 'Accept moderate challenges']
+      }
+    },
+    'BOSS': {
+      careers: {
+        zh: ['CEO', '企业家', '投资人', '管理顾问', '政治领袖'],
+        en: ['CEO', 'Entrepreneur', 'Investor', 'Management Consultant', 'Political Leader']
+      },
+      celebrities: [
+        { emoji: '👔', name_zh: '杰克·韦尔奇', name_en: 'Jack Welch', desc_zh: '通用电气前CEO', desc_en: 'Former GE CEO' },
+        { emoji: '🏢', name_zh: '杰夫·贝索斯', name_en: 'Jeff Bezos', desc_zh: '亚马逊创始人', desc_en: 'Amazon founder' },
+        { emoji: '💼', name_zh: '董明珠', name_en: 'Dong Mingzhu', desc_zh: '格力电器董事长', desc_en: 'Gree Electric Chairman' }
+      ],
+      compatibility: {
+        good: ['CTRL', 'WORK', 'SHARP'],
+        challenge: ['Dior-s', 'OJBK', 'ZZZZ']
+      },
+      growthTips: {
+        zh: ['学会倾听下属的声音', '不要过度追求完美', '培养同理心', '接受失败是成功的一部分', '平衡工作与生活'],
+        en: ['Learn to listen to subordinates', "Don't over-pursue perfection", 'Develop empathy', 'Accept failure as part of success', 'Balance work and life']
+      }
+    },
+    'THAN-K': {
+      careers: {
+        zh: ['心理咨询师', '社工', '教师', '护士', '志愿者'],
+        en: ['Psychologist', 'Social Worker', 'Teacher', 'Nurse', 'Volunteer']
+      },
+      celebrities: [
+        { emoji: '🙏', name_zh: '特蕾莎修女', name_en: 'Mother Teresa', desc_zh: '慈善家，和平使者', desc_en: 'Philanthropist, peacemaker' },
+        { emoji: '🌟', name_zh: '尼克·胡哲', name_en: 'Nick Vujicic', desc_zh: '励志演说家', desc_en: 'Motivational speaker' },
+        { emoji: '💐', name_zh: '戴安娜王妃', name_en: 'Princess Diana', desc_zh: '慈善天使', desc_en: 'Charitable angel' }
+      ],
+      compatibility: {
+        good: ['MUM', 'CARE', 'PEACE'],
+        challenge: ['SHIT', 'CYN', 'WILD']
+      },
+      growthTips: {
+        zh: ['学会表达自己的需求', '不要过度牺牲自己', '建立健康的边界', '接受冲突是生活的一部分', '培养自信'],
+        en: ['Learn to express your needs', "Don't over-sacrifice yourself", 'Establish healthy boundaries', 'Accept conflict as part of life', 'Build self-confidence']
+      }
+    },
+    'OH-NO': {
+      careers: {
+        zh: ['风险分析师', '安全工程师', '审计师', '保险精算师', '质量控制'],
+        en: ['Risk Analyst', 'Safety Engineer', 'Auditor', 'Actuary', 'Quality Control']
+      },
+      celebrities: [
+        { emoji: '😱', name_zh: '伍迪·艾伦', name_en: 'Woody Allen', desc_zh: '导演，焦虑大师', desc_en: 'Director, anxiety master' },
+        { emoji: '📊', name_zh: '本杰明·格雷厄姆', name_en: 'Benjamin Graham', desc_zh: '价值投资之父', desc_en: 'Father of value investing' },
+        { emoji: '🔍', name_zh: '夏洛克·福尔摩斯', name_en: 'Sherlock Holmes', desc_zh: '虚构侦探，细节控', desc_en: 'Fictional detective, detail-oriented' }
+      ],
+      compatibility: {
+        good: ['THIN-K', 'LOGIC', 'SAFE'],
+        challenge: ['GOGO', 'MALO', 'WILD']
+      },
+      growthTips: {
+        zh: ['学会放松，不要过度焦虑', '接受不确定性是生活的一部分', '培养冒险精神', '不要过度控制', '学会信任他人'],
+        en: ['Learn to relax, avoid over-anxiety', 'Accept uncertainty as part of life', 'Develop a spirit of adventure', "Don't over-control", 'Learn to trust others']
+      }
+    },
+    'GOGO': {
+      careers: {
+        zh: ['销售', '运动员', '探险家', '急救人员', '创业者'],
+        en: ['Sales', 'Athlete', 'Explorer', 'Emergency Responder', 'Entrepreneur']
+      },
+      celebrities: [
+        { emoji: '🏃', name_zh: '尤塞恩·博尔特', name_en: 'Usain Bolt', desc_zh: '短跑之王', desc_en: 'Sprint king' },
+        { emoji: '🚀', name_zh: '理查德·布兰森', name_en: 'Richard Branson', desc_zh: '维珍集团创始人，冒险家', desc_en: 'Virgin Group founder, adventurer' },
+        { emoji: '⚡', name_zh: '埃隆·马斯克', name_en: 'Elon Musk', desc_zh: '行动派创新者', desc_en: 'Action-oriented innovator' }
+      ],
+      compatibility: {
+        good: ['BOSS', 'CTRL', 'SPARK'],
+        challenge: ['OH-NO', 'THIN-K', 'ZZZZ']
+      },
+      growthTips: {
+        zh: ['三思而后行', '培养耐心', '学会规划', '不要冲动决策', '考虑长期后果'],
+        en: ['Think before you act', 'Develop patience', 'Learn to plan', "Don't make impulsive decisions", 'Consider long-term consequences']
+      }
+    },
+    'SEXY': {
+      careers: {
+        zh: ['演员', '模特', '主持人', '公关', '时尚设计师'],
+        en: ['Actor', 'Model', 'Host', 'PR Specialist', 'Fashion Designer']
+      },
+      celebrities: [
+        { emoji: '💋', name_zh: '玛丽莲·梦露', name_en: 'Marilyn Monroe', desc_zh: '好莱坞性感女神', desc_en: 'Hollywood sex symbol' },
+        { emoji: '🌟', name_zh: '碧昂丝', name_en: 'Beyoncé', desc_zh: '流行天后', desc_en: 'Pop queen' },
+        { emoji: '✨', name_zh: '詹姆斯·迪恩', name_en: 'James Dean', desc_zh: '叛逆偶像', desc_en: 'Rebel icon' }
+      ],
+      compatibility: {
+        good: ['LOVE-R', 'CHARM', 'STAR'],
+        challenge: ['MONK', 'SOLO', 'DEAD']
+      },
+      growthTips: {
+        zh: ['培养内在美', '不要过度依赖外表', '建立深度关系', '学会独处', '发展多元兴趣'],
+        en: ['Develop inner beauty', "Don't over-rely on appearance", 'Build deep relationships', 'Learn to be alone', 'Develop diverse interests']
+      }
+    },
+    'LOVE-R': {
+      careers: {
+        zh: ['诗人', '音乐家', '婚礼策划', '情侣顾问', '艺术家'],
+        en: ['Poet', 'Musician', 'Wedding Planner', 'Relationship Coach', 'Artist']
+      },
+      celebrities: [
+        { emoji: '💕', name_zh: '莎士比亚', name_en: 'William Shakespeare', desc_zh: '爱情诗圣', desc_en: 'Bard of love' },
+        { emoji: '🎵', name_zh: '约翰·列侬', name_en: 'John Lennon', desc_zh: '披头士成员，爱与和平', desc_en: 'Beatles member, love and peace' },
+        { emoji: '🌹', name_zh: '罗密欧', name_en: 'Romeo', desc_zh: '经典浪漫主义者', desc_en: 'Classic romantic' }
+      ],
+      compatibility: {
+        good: ['SEXY', 'MUM', 'WARM'],
+        challenge: ['MONK', 'DEAD', 'LOGIC']
+      },
+      growthTips: {
+        zh: ['学会理性思考', '不要过度理想化', '建立现实边界', '培养独立性', '接受爱情的不完美'],
+        en: ['Learn rational thinking', "Don't over-idealize", 'Establish realistic boundaries', 'Develop independence', 'Accept imperfection in love']
+      }
+    },
+    'MUM': {
+      careers: {
+        zh: ['护士', '教师', '社工', '心理咨询师', '营养师'],
+        en: ['Nurse', 'Teacher', 'Social Worker', 'Psychologist', 'Nutritionist']
+      },
+      celebrities: [
+        { emoji: '🤱', name_zh: '弗洛伦斯·南丁格尔', name_en: 'Florence Nightingale', desc_zh: '现代护理学创始人', desc_en: 'Founder of modern nursing' },
+        { emoji: '📖', name_zh: '玛丽亚·蒙台梭利', name_en: 'Maria Montessori', desc_zh: '教育家', desc_en: 'Educator' },
+        { emoji: '💝', name_zh: '特蕾莎修女', name_en: 'Mother Teresa', desc_zh: '慈善家', desc_en: 'Philanthropist' }
+      ],
+      compatibility: {
+        good: ['THAN-K', 'CARE', 'WARM'],
+        challenge: ['SHIT', 'FUCK', 'WILD']
+      },
+      growthTips: {
+        zh: ['学会照顾自己', '不要过度付出', '建立健康边界', '学会说"不"', '关注自己的需求'],
+        en: ['Learn to take care of yourself', "Don't over-give", 'Establish healthy boundaries', 'Learn to say "no"', 'Focus on your own needs']
+      }
+    },
+    'FAKE': {
+      careers: {
+        zh: ['演员', '间谍', '谈判专家', '公关', '政治家'],
+        en: ['Actor', 'Spy', 'Negotiator', 'PR Specialist', 'Politician']
+      },
+      celebrities: [
+        { emoji: '🎭', name_zh: '丹尼尔·戴-刘易斯', name_en: 'Daniel Day-Lewis', desc_zh: '方法派演技大师', desc_en: 'Method acting master' },
+        { emoji: '🕵️', name_zh: '詹姆斯·邦德', name_en: 'James Bond', desc_zh: '虚构间谍，多重身份', desc_en: 'Fictional spy, multiple identities' },
+        { emoji: '🎪', name_zh: '大卫·布莱恩', name_en: 'David Blaine', desc_zh: '魔术师，表演大师', desc_en: 'Magician, performance master' }
+      ],
+      compatibility: {
+        good: ['CHARM', 'STAR', 'SPARK'],
+        challenge: ['REAL', 'DEEP', 'AUTH']
+      },
+      growthTips: {
+        zh: ['寻找真实的自我', '建立真诚关系', '减少伪装', '培养自我认同', '接受不完美'],
+        en: ['Find your true self', 'Build genuine relationships', 'Reduce pretense', 'Develop self-identity', 'Accept imperfection']
+      }
+    },
+    'OJBK': {
+      careers: {
+        zh: ['自由职业者', '顾问', '调解员', '瑜伽教练', '心理咨询师'],
+        en: ['Freelancer', 'Consultant', 'Mediator', 'Yoga Instructor', 'Psychologist']
+      },
+      celebrities: [
+        { emoji: '☯️', name_zh: '老子', name_en: 'Laozi', desc_zh: '道家创始人，无为而治', desc_en: 'Founder of Taoism, wu wei' },
+        { emoji: '🧘', name_zh: '达赖喇嘛', name_en: 'Dalai Lama', desc_zh: '藏传佛教领袖', desc_en: 'Tibetan Buddhist leader' },
+        { emoji: '🌊', name_zh: '艾伦·瓦茨', name_en: 'Alan Watts', desc_zh: '哲学家，禅宗传播者', desc_en: 'Philosopher, Zen popularizer' }
+      ],
+      compatibility: {
+        good: ['Dior-s', 'ZZZZ', 'PEACE'],
+        challenge: ['BOSS', 'CTRL', 'GOGO']
+      },
+      growthTips: {
+        zh: ['培养主见', '学会表达真实想法', '设定个人目标', '不要过度随波逐流', '建立自我价值感'],
+        en: ['Develop opinions', 'Learn to express true thoughts', 'Set personal goals', "Don't over-follow the crowd", 'Build self-worth']
+      }
+    },
+    'MALO': {
+      careers: {
+        zh: ['喜剧演员', '游戏主播', '创意总监', '玩具设计师', '漫画家'],
+        en: ['Comedian', 'Game Streamer', 'Creative Director', 'Toy Designer', 'Cartoonist']
+      },
+      celebrities: [
+        { emoji: '🐒', name_zh: '罗宾·威廉姆斯', name_en: 'Robin Williams', desc_zh: '喜剧天才', desc_en: 'Comedy genius' },
+        { emoji: '🎮', name_zh: ' PewDiePie', name_en: 'PewDiePie', desc_zh: '游戏主播', desc_en: 'Game streamer' },
+        { emoji: '🤪', name_zh: '金·凯瑞', name_en: 'Jim Carrey', desc_zh: '喜剧演员', desc_en: 'Comedian' }
+      ],
+      compatibility: {
+        good: ['JOKE-R', 'WOC!', 'FUN'],
+        challenge: ['MONK', 'THIN-K', 'DEAD']
+      },
+      growthTips: {
+        zh: ['学会承担责任', '培养专注力', '建立长期目标', '不要过度逃避', '学会严肃对待事情'],
+        en: ['Learn to take responsibility', 'Develop focus', 'Set long-term goals', "Don't over-escape", 'Learn to take things seriously']
+      }
+    },
+    'JOKE-R': {
+      careers: {
+        zh: ['喜剧演员', '脱口秀主持人', '编剧', '播客主持人', '广告创意'],
+        en: ['Comedian', 'Talk Show Host', 'Screenwriter', 'Podcast Host', 'Ad Creative']
+      },
+      celebrities: [
+        { emoji: '🤡', name_zh: '查理·卓别林', name_en: 'Charlie Chaplin', desc_zh: '喜剧大师', desc_en: 'Comedy master' },
+        { emoji: '😂', name_zh: '路易·C·K', name_en: 'Louis C.K.', desc_zh: '脱口秀演员', desc_en: 'Stand-up comedian' },
+        { emoji: '🎤', name_zh: '乔治·卡林', name_en: 'George Carlin', desc_zh: '喜剧演员，社会批评家', desc_en: 'Comedian, social critic' }
+      ],
+      compatibility: {
+        good: ['MALO', 'WOC!', 'FUN'],
+        challenge: ['MONK', 'DEAD', 'THIN-K']
+      },
+      growthTips: {
+        zh: ['学会表达真实情感', '不要过度用幽默掩饰', '建立深度关系', '培养自我认知', '接受脆弱'],
+        en: ['Learn to express true emotions', "Don't over-use humor to hide", 'Build deep relationships', 'Develop self-awareness', 'Accept vulnerability']
+      }
+    },
+    'WOC!': {
+      careers: {
+        zh: ['评论员', '博主', '记者', '脱口秀演员', '社交媒体经理'],
+        en: ['Commentator', 'Blogger', 'Journalist', 'Stand-up Comedian', 'Social Media Manager']
+      },
+      celebrities: [
+        { emoji: '😮', name_zh: '乔恩·斯图尔特', name_en: 'Jon Stewart', desc_zh: '政治评论员', desc_en: 'Political commentator' },
+        { emoji: '📢', name_zh: '比尔·马赫', name_en: 'Bill Maher', desc_zh: '脱口秀主持人', desc_en: 'Talk show host' },
+        { emoji: '🔥', name_zh: '乔丹·彼得森', name_en: 'Jordan Peterson', desc_zh: '心理学家，直言不讳', desc_en: 'Psychologist, outspoken' }
+      ],
+      compatibility: {
+        good: ['SHIT', 'JOKE-R', 'REAL'],
+        challenge: ['FAKE', 'PEACE', 'OJBK']
+      },
+      growthTips: {
+        zh: ['学会控制情绪', '培养同理心', '避免过度冲动', '学会倾听', '建立深度思考'],
+        en: ['Learn to control emotions', 'Develop empathy', 'Avoid over-impulsiveness', 'Learn to listen', 'Build deep thinking']
+      }
+    },
+    'THIN-K': {
+      careers: {
+        zh: ['哲学家', '科学家', '研究员', '战略顾问', '数据分析师'],
+        en: ['Philosopher', 'Scientist', 'Researcher', 'Strategic Consultant', 'Data Analyst']
+      },
+      celebrities: [
+        { emoji: '🧠', name_zh: '阿尔伯特·爱因斯坦', name_en: 'Albert Einstein', desc_zh: '物理学家，思想家', desc_en: 'Physicist, thinker' },
+        { emoji: '📚', name_zh: '伊曼努尔·康德', name_en: 'Immanuel Kant', desc_zh: '哲学家', desc_en: 'Philosopher' },
+        { emoji: '🔬', name_zh: '卡尔·萨根', name_en: 'Carl Sagan', desc_zh: '天文学家，科普作家', desc_en: 'Astronomer, science popularizer' }
+      ],
+      compatibility: {
+        good: ['LOGIC', 'DEEP', 'SAGE'],
+        challenge: ['GOGO', 'MALO', 'WOC!']
+      },
+      growthTips: {
+        zh: ['学会行动', '不要过度思考', '培养决策能力', '接受不完美', '学会信任直觉'],
+        en: ['Learn to act', "Don't over-think", 'Develop decision-making skills', 'Accept imperfection', 'Learn to trust intuition']
+      }
+    },
+    'SHIT': {
+      careers: {
+        zh: ['记者', '评论员', '审计师', '律师', '研究员'],
+        en: ['Journalist', 'Commentator', 'Auditor', 'Lawyer', 'Researcher']
+      },
+      celebrities: [
+        { emoji: '😒', name_zh: '乔治·卡林', name_en: 'George Carlin', desc_zh: '喜剧演员，社会批评家', desc_en: 'Comedian, social critic' },
+        { emoji: '📺', name_zh: '乔恩·斯图尔特', name_en: 'Jon Stewart', desc_zh: '政治评论员', desc_en: 'Political commentator' },
+        { emoji: '🎭', name_zh: '路易·C·K', name_en: 'Louis C.K.', desc_zh: '喜剧演员，直言不讳', desc_en: 'Comedian, outspoken' }
+      ],
+      compatibility: {
+        good: ['REAL', 'DEEP', 'AUTH'],
+        challenge: ['FAKE', 'PEACE', 'OJBK']
+      },
+      growthTips: {
+        zh: ['学会看到积极面', '不要过度批评', '培养同理心', '接受不完美', '学会放松'],
+        en: ['Learn to see the positive', "Don't over-criticize", 'Develop empathy', 'Accept imperfection', 'Learn to relax']
+      }
+    },
+    'ZZZZ': {
+      careers: {
+        zh: ['自由职业者', '夜班工作者', '作家', '程序员', '研究员'],
+        en: ['Freelancer', 'Night Shift Worker', 'Writer', 'Programmer', 'Researcher']
+      },
+      celebrities: [
+        { emoji: '💤', name_zh: '加菲猫', name_en: 'Garfield', desc_zh: '懒惰的猫，享受生活', desc_en: 'Lazy cat, enjoys life' },
+        { emoji: '🛌', name_zh: '奥斯卡·王尔德', name_en: 'Oscar Wilde', desc_zh: '作家，享乐主义者', desc_en: 'Writer, hedonist' },
+        { emoji: '😴', name_zh: '荷马·辛普森', name_en: 'Homer Simpson', desc_zh: '动画角色，懒人代表', desc_en: 'Cartoon character, lazy icon' }
+      ],
+      compatibility: {
+        good: ['Dior-s', 'OJBK', 'DEAD'],
+        challenge: ['BOSS', 'CTRL', 'GOGO']
+      },
+      growthTips: {
+        zh: ['建立时间管理习惯', '设定明确截止日期', '培养自律', '学会分解任务', '找到内在动力'],
+        en: ['Build time management habits', 'Set clear deadlines', 'Develop self-discipline', 'Learn to break down tasks', 'Find intrinsic motivation']
+      }
+    },
+    'POOR': {
+      careers: {
+        zh: ['研究员', '专家顾问', '技术专家', '档案管理员', '博物馆策展人'],
+        en: ['Researcher', 'Expert Consultant', 'Technical Specialist', 'Archivist', 'Museum Curator']
+      },
+      celebrities: [
+        { emoji: '🔍', name_zh: '居里夫人', name_en: 'Marie Curie', desc_zh: '物理学家，专注研究', desc_en: 'Physicist, focused researcher' },
+        { emoji: '📖', name_zh: 'J·K·罗琳', name_en: 'J.K. Rowling', desc_zh: '作家，专注创作', desc_en: 'Writer, focused creator' },
+        { emoji: '🎯', name_zh: '史蒂夫·沃兹尼亚克', name_en: 'Steve Wozniak', desc_zh: '苹果联合创始人，技术专家', desc_en: 'Apple co-founder, tech expert' }
+      ],
+      compatibility: {
+        good: ['THIN-K', 'LOGIC', 'DEEP'],
+        challenge: ['GOGO', 'MALO', 'SEXY']
+      },
+      growthTips: {
+        zh: ['拓展视野', '学会合作', '培养社交技能', '接受多元观点', '平衡专精与广博'],
+        en: ['Broaden horizons', 'Learn to collaborate', 'Develop social skills', 'Accept diverse perspectives', 'Balance depth and breadth']
+      }
+    },
+    'MONK': {
+      careers: {
+        zh: ['僧侣', '哲学家', '作家', '冥想教练', '图书管理员'],
+        en: ['Monk', 'Philosopher', 'Writer', 'Meditation Coach', 'Librarian']
+      },
+      celebrities: [
+        { emoji: '🧘', name_zh: '释迦牟尼', name_en: 'Siddhartha Gautama', desc_zh: '佛教创始人', desc_en: 'Founder of Buddhism' },
+        { emoji: '📿', name_zh: '一行禅师', name_en: 'Thich Nhat Hanh', desc_zh: '禅宗大师', desc_en: 'Zen master' },
+        { emoji: '🏔️', name_zh: '赫尔曼·黑塞', name_en: 'Hermann Hesse', desc_zh: '作家，寻求内心平静', desc_en: 'Writer, seeker of inner peace' }
+      ],
+      compatibility: {
+        good: ['DEAD', 'SAGE', 'PEACE'],
+        challenge: ['SEXY', 'LOVE-R', 'GOGO']
+      },
+      growthTips: {
+        zh: ['学会适度社交', '培养情感表达', '不要过度疏离', '建立亲密关系', '接受世俗生活'],
+        en: ['Learn moderate socializing', 'Develop emotional expression', "Don't over-distance", 'Build intimate relationships', 'Accept secular life']
+      }
+    },
+    'IMSB': {
+      careers: {
+        zh: ['学生', '初级职员', '助理', '实习生', '自由职业者'],
+        en: ['Student', 'Junior Staff', 'Assistant', 'Intern', 'Freelancer']
+      },
+      celebrities: [
+        { emoji: '🤔', name_zh: '查理·布朗', name_en: 'Charlie Brown', desc_zh: '漫画角色，自我怀疑', desc_en: 'Comic character, self-doubting' },
+        { emoji: '📚', name_zh: ' Holden Caulfield', name_en: 'Holden Caulfield', desc_zh: '《麦田守望者》主角', desc_en: 'Protagonist of Catcher in the Rye' },
+        { emoji: '🎭', name_zh: '哈姆雷特', name_en: 'Hamlet', desc_zh: '莎士比亚角色，犹豫不决', desc_en: 'Shakespeare character, indecisive' }
+      ],
+      compatibility: {
+        good: ['MUM', 'CARE', 'WARM'],
+        challenge: ['BOSS', 'CTRL', 'GOGO']
+      },
+      growthTips: {
+        zh: ['建立自信', '学会做决定', '不要过度自我批评', '培养行动力', '接受不完美'],
+        en: ['Build confidence', 'Learn to make decisions', "Don't over-self-criticize", 'Develop action skills', 'Accept imperfection']
+      }
+    },
+    'SOLO': {
+      careers: {
+        zh: ['作家', '艺术家', '程序员', '研究员', '独立工作者'],
+        en: ['Writer', 'Artist', 'Programmer', 'Researcher', 'Independent Worker']
+      },
+      celebrities: [
+        { emoji: '🥀', name_zh: '艾米莉·狄金森', name_en: 'Emily Dickinson', desc_zh: '诗人，隐居生活', desc_en: 'Poet, reclusive life' },
+        { emoji: '🎨', name_zh: '弗里达·卡罗', name_en: 'Frida Kahlo', desc_zh: '画家，独立艺术家', desc_en: 'Painter, independent artist' },
+        { emoji: '📖', name_zh: 'J·D·塞林格', name_en: 'J.D. Salinger', desc_zh: '作家，隐居', desc_en: 'Writer, recluse' }
+      ],
+      compatibility: {
+        good: ['MONK', 'DEAD', 'THIN-K'],
+        challenge: ['SEXY', 'LOVE-R', 'MUM']
+      },
+      growthTips: {
+        zh: ['学会信任他人', '建立社交联系', '不要过度封闭', '培养亲密关系', '接受帮助'],
+        en: ['Learn to trust others', 'Build social connections', "Don't over-isolate", 'Develop intimate relationships', 'Accept help']
+      }
+    },
+    'FUCK': {
+      careers: {
+        zh: ['摇滚歌手', '街头艺术家', '活动家', '自由职业者', '创业者'],
+        en: ['Rock Singer', 'Street Artist', 'Activist', 'Freelancer', 'Entrepreneur']
+      },
+      celebrities: [
+        { emoji: '🤘', name_zh: '科特·柯本', name_en: 'Kurt Cobain', desc_zh: '涅槃乐队主唱', desc_en: 'Nirvana frontman' },
+        { emoji: '🔥', name_zh: '帕蒂·史密斯', name_en: 'Patti Smith', desc_zh: '朋克教母', desc_en: 'Godmother of punk' },
+        { emoji: '⚡', name_zh: '切·格瓦拉', name_en: 'Che Guevara', desc_zh: '革命家', desc_en: 'Revolutionary' }
+      ],
+      compatibility: {
+        good: ['WILD', 'REBEL', 'FREE'],
+        challenge: ['MONK', 'PEACE', 'OJBK']
+      },
+      growthTips: {
+        zh: ['学会控制冲动', '培养责任感', '建立长期目标', '学会合作', '接受规则'],
+        en: ['Learn to control impulses', 'Develop responsibility', 'Set long-term goals', 'Learn to collaborate', 'Accept rules']
+      }
+    },
+    'DEAD': {
+      careers: {
+        zh: ['哲学家', '作家', '僧侣', '图书管理员', '博物馆管理员'],
+        en: ['Philosopher', 'Writer', 'Monk', 'Librarian', 'Museum Curator']
+      },
+      celebrities: [
+        { emoji: '💀', name_zh: '叔本华', name_en: 'Arthur Schopenhauer', desc_zh: '哲学家，悲观主义', desc_en: 'Philosopher, pessimist' },
+        { emoji: '📚', name_zh: '卡夫卡', name_en: 'Franz Kafka', desc_zh: '作家，存在主义', desc_en: 'Writer, existentialist' },
+        { emoji: '🌑', name_zh: '太宰治', name_en: 'Osamu Dazai', desc_zh: '作家，人间失格', desc_en: 'Writer, No Longer Human' }
+      ],
+      compatibility: {
+        good: ['MONK', 'SOLO', 'SAGE'],
+        challenge: ['GOGO', 'SEXY', 'LOVE-R']
+      },
+      growthTips: {
+        zh: ['寻找生活意义', '建立社交联系', '培养兴趣爱好', '接受帮助', '学会表达情感'],
+        en: ['Find meaning in life', 'Build social connections', 'Develop hobbies', 'Accept help', 'Learn to express emotions']
+      }
+    },
+    'IMFW': {
+      careers: {
+        zh: ['学生', '初级职员', '助理', '客服', '实习生'],
+        en: ['Student', 'Junior Staff', 'Assistant', 'Customer Service', 'Intern']
+      },
+      celebrities: [
+        { emoji: '🌱', name_zh: '小王子', name_en: 'The Little Prince', desc_zh: '童话角色，纯真脆弱', desc_en: 'Fairy tale character, innocent and fragile' },
+        { emoji: '🦋', name_zh: '弗吉尼亚·伍尔夫', name_en: 'Virginia Woolf', desc_zh: '作家，敏感细腻', desc_en: 'Writer, sensitive and delicate' },
+        { emoji: '💧', name_zh: '林黛玉', name_en: 'Lin Daiyu', desc_zh: '红楼梦角色，多愁善感', desc_en: 'Dream of the Red Chamber character, melancholic' }
+      ],Details(code) {
+  // 为每个人格类型定义独特的详细数据
+  const detailsMap = {
+    'CTRL': {
+      careers: {
+        zh: ['项目经理', '团队领导', '创业家', '运营总监', '战略顾问'],
+        en: ['Project Manager', 'Team Leader', 'Entrepreneur', 'Operations Director', 'Strategic Consultant']
+      },
+      celebrities: [
+        { emoji: '👑', name_zh: '史蒂夫·乔布斯', name_en: 'Steve Jobs', desc_zh: '苹果创始人，完美主义者', desc_en: 'Apple founder, perfectionist' },
+        { emoji: '🦅', name_zh: '埃隆·马斯克', name_en: 'Elon Musk', desc_zh: '特斯拉CEO，创新冒险家', desc_en: 'Tesla CEO, innovation adventurer' },
+        { emoji: '🛡️', name_zh: '安格拉·默克尔', name_en: 'Angela Merkel', desc_zh: '德国前总理，稳健领导者', desc_en: 'Former German Chancellor, steady leader' }
+      ],
+      compatibility: {
+        good: ['PEACE', 'CARE', 'WORK'],
+        challenge: ['SHIT', 'DRAM', 'WILD']
+      },
+      growthTips: {
+        zh: ['学会适度放手，信任他人', '关注过程而不仅仅是结果', '培养倾听能力，避免独断', '接受自己的不完美', '平衡工作与生活'],
+        en: ['Learn to let go moderately, trust others', 'Focus on process, not just results', 'Develop listening skills, avoid arbitrariness', 'Accept your imperfections', 'Balance work and life']
+      }
+    },
+    'PEACE': {
+      careers: {
+        zh: ['人力资源', '心理咨询师', '社工', '教师', '调解员'],
+        en: ['Human Resources', 'Psychologist', 'Social Worker', 'Teacher', 'Mediator']
+      },
+      celebrities: [
+        { emoji: '🕊️', name_zh: '特蕾莎修女', name_en: 'Mother Teresa', desc_zh: '慈善家，和平使者', desc_en: 'Philanthropist, peacemaker' },
+        { emoji: '🌸', name_zh: '达赖喇嘛', name_en: 'Dalai Lama', desc_zh: '精神领袖，和平倡导者', desc_en: 'Spiritual leader, peace advocate' },
+        { emoji: '🕊️', name_zh: '马丁·路德·金', name_en: 'Martin Luther King Jr.', desc_zh: '民权运动领袖', desc_en: 'Civil rights leader' }
+      ],
+      compatibility: {
+        good: ['CARE', 'WORK', 'DEEP'],
+        challenge: ['SHIT', 'DRAM', 'WILD']
+      },
+      growthTips: {
+        zh: ['学会表达自己的需求', '不要过度牺牲自己', '建立健康的边界', '接受冲突是生活的一部分', '培养自信'],
+        en: ['Learn to express your needs', "Don't over-sacrifice yourself", 'Establish healthy boundaries', 'Accept conflict as part of life', 'Build self-confidence']
+      }
+    },
+    'SHIT': {
+      careers: {
+        zh: ['记者', '评论员', '审计师', '律师', '研究员'],
+        en: ['Journalist', 'Commentator', 'Auditor', 'Lawyer', 'Researcher']
+      },
+      celebrities: [
+        { emoji: '😒', name_zh: '乔治·卡林', name_en: 'George Carlin', desc_zh: '喜剧演员，社会批评家', desc_en: 'Comedian, social critic' },
+        { emoji: '📺', name_zh: '乔恩·斯图尔特', name_en: 'Jon Stewart', desc_zh: '政治评论员', desc_en: 'Political commentator' },
+        { emoji: '🎭', name_zh: '路易·C·K', name_en: 'Louis C.K.', desc_zh: '喜剧演员，直言不讳', desc_en: 'Comedian, outspoken' }
+      ],
+      compatibility: {
+        good: ['REAL', 'DEEP', 'QUIT'],
+        challenge: ['FAKE', 'DRAM', 'WILD']
+      },
+      growthTips: {
+        zh: ['学会看到事物的积极面', '不要过度批评他人', '培养同理心', '接受不完美', '学会放松'],
+        en: ['Learn to see the positive side', "Don't over-criticize others", 'Develop empathy', 'Accept imperfection', 'Learn to relax']
+      }
+    }
   };
   
-  // 根据人格代码微调数据
-  const details = JSON.parse(JSON.stringify(defaultDetails));
-  
-  // 根据不同人格调整
-  switch(code) {
-    case 'CTRL':
-      details.careers = [
-        lang === 'zh' ? '项目经理' : 'Project Manager',
-        lang === 'zh' ? '团队领导' : 'Team Leader',
-        lang === 'zh' ? '创业家' : 'Entrepreneur',
-        lang === 'zh' ? '运营总监' : 'Operations Director',
-        lang === 'zh' ? '战略顾问' : 'Strategic Consultant'
-      ];
-      details.celebrities[0] = { emoji: '👑', name: lang === 'zh' ? '史蒂夫·乔布斯' : 'Steve Jobs', description: lang === 'zh' ? '苹果创始人，完美主义者' : 'Apple founder, perfectionist' };
-      break;
-    case 'PEACE':
-      details.careers = [
-        lang === 'zh' ? '人力资源' : 'Human Resources',
-        lang === 'zh' ? '心理咨询师' : 'Psychologist',
-        lang === 'zh' ? '社工' : 'Social Worker',
-        lang === 'zh' ? '教师' : 'Teacher',
-        lang === 'zh' ? '调解员' : 'Mediator'
-      ];
-      details.celebrities[0] = { emoji: '🕊️', name: lang === 'zh' ? '特蕾莎修女' : 'Mother Teresa', description: lang === 'zh' ? '慈善家，和平使者' : 'Philanthropist, peacemaker' };
-      details.compatibility.good = ['CARE', 'WORK', 'DEEP'];
-      break;
-    case 'SHIT':
-      details.careers = [
-        lang === 'zh' ? '记者' : 'Journalist',
-        lang === 'zh' ? '评论员' : 'Commentator',
-        lang === 'zh' ? '审计师' : 'Auditor',
-        lang === 'zh' ? '律师' : 'Lawyer',
-        lang === 'zh' ? '研究员' : 'Researcher'
-      ];
-      details.celebrities[0] = { emoji: '😒', name: lang === 'zh' ? '乔治·卡林' : 'George Carlin', description: lang === 'zh' ? '喜剧演员，社会批评家' : 'Comedian, social critic' };
-      details.compatibility.good = ['REAL', 'DEEP', 'QUIT'];
-      break;
-  }
-  
-  return details;
+  // 返回对应人格的数据，如果没有则返回默认数据
+  return detailsMap[code] || detailsMap['CTRL'];
 }
 
 // Render (for language toggle)
